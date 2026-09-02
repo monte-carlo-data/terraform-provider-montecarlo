@@ -36,3 +36,12 @@ dist/
 
 # Misc
 *.log
+
+# Local provider builds
+terraform-provider-montecarlo
+dist/
+
+# Terraform working files from examples
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate*
