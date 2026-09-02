@@ -31,6 +31,9 @@ func (r *awsCollectionAgentResource) Metadata(_ context.Context, req resource.Me
 
 func (r *awsCollectionAgentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_aws_collection_agent.AwsCollectionAgentResourceSchema(ctx)
+	// The API accepts these on create and not on update, so changing one replaces the
+	// resource. tfplugingen does not know that, so requiresReplace says it here.
+	requiresReplace(s.Attributes, "aws_collection_agent.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 

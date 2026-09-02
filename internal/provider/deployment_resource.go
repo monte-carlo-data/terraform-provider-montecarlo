@@ -31,6 +31,11 @@ func (r *deploymentResource) Metadata(_ context.Context, req resource.MetadataRe
 
 func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_deployment.DeploymentResourceSchema(ctx)
+	// The API accepts these on create and not on update, so changing one replaces the
+	// resource. tfplugingen does not know that, so requiresReplace says it here.
+	requiresReplace(s.Attributes, "deployment.name", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "deployment.type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

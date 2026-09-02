@@ -31,6 +31,9 @@ func (r *awsCollectionDataStoreResource) Metadata(_ context.Context, req resourc
 
 func (r *awsCollectionDataStoreResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_aws_collection_data_store.AwsCollectionDataStoreResourceSchema(ctx)
+	// The API accepts these on create and not on update, so changing one replaces the
+	// resource. tfplugingen does not know that, so requiresReplace says it here.
+	requiresReplace(s.Attributes, "aws_collection_data_store.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 
