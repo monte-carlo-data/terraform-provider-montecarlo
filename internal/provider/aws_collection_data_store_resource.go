@@ -59,8 +59,8 @@ func (r *awsCollectionDataStoreResource) Create(ctx context.Context, req resourc
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// x-mc-terraform-retry-on-transient: retry the create on 503 (IAM/STS propagation).
-	out, err := createWithRetryOn503(ctx, func() (*sdk.AwsCollectionDataStoreOut, *http.Response, error) {
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.RegisterAwsCollectionDataStore(ctx).AwsCollectionDataStoreIn(*body).Execute()
 	})
 	if err != nil {
@@ -99,7 +99,10 @@ func (r *awsCollectionDataStoreResource) Update(ctx context.Context, req resourc
 	body.SetBucketName(plan.BucketName.ValueString())
 	body.SetName(plan.Name.ValueString())
 	body.SetRoleArn(plan.RoleArn.ValueString())
-	out, _, err := r.clients.api.CollectionDataStoresAPI.UpdateAwsCollectionDataStore(ctx, state.Id.ValueString()).AwsCollectionDataStorePatch(*body).Execute()
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionDataStoreOut, *http.Response, error) {
+		return r.clients.api.CollectionDataStoresAPI.UpdateAwsCollectionDataStore(ctx, state.Id.ValueString()).AwsCollectionDataStorePatch(*body).Execute()
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Update aws_collection_data_store failed", apiErr(err))
 		return

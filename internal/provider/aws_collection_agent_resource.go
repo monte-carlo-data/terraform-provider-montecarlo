@@ -59,8 +59,8 @@ func (r *awsCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// x-mc-terraform-retry-on-transient: retry the create on 503 (IAM/STS propagation).
-	out, err := createWithRetryOn503(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAwsCollectionAgent(ctx).AwsCollectionAgentIn(*body).Execute()
 	})
 	if err != nil {
@@ -99,7 +99,10 @@ func (r *awsCollectionAgentResource) Update(ctx context.Context, req resource.Up
 	body.SetLambdaFunctionArn(plan.LambdaFunctionArn.ValueString())
 	body.SetName(plan.Name.ValueString())
 	body.SetRoleArn(plan.RoleArn.ValueString())
-	out, _, err := r.clients.api.CollectionAgentsAPI.UpdateAwsCollectionAgent(ctx, state.Id.ValueString()).AwsCollectionAgentPatch(*body).Execute()
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
+		return r.clients.api.CollectionAgentsAPI.UpdateAwsCollectionAgent(ctx, state.Id.ValueString()).AwsCollectionAgentPatch(*body).Execute()
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Update aws_collection_agent failed", apiErr(err))
 		return

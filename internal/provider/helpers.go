@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,15 +32,16 @@ const (
 	transientRetryInterval = 15 * time.Second
 )
 
-// createWithRetryOn503 retries while the API answers 503, up to a bounded budget.
+// withRetryOnTransient retries while the API reports a failure it asked to have retried, up
+// to a bounded budget.
 //
 // Provisioning reaches systems that are not immediately consistent — a freshly created role
 // is not usable the instant it exists — so the API reports a transient failure rather than
 // pretending. Terraform has no notion of "try again shortly", so the wait happens here.
-// Anything other than a 503, or exhausting the budget, is returned to the caller.
+// Exhausting the budget returns the last error to the caller.
 //
 // The generated code calls this for operations the spec marks as retryable.
-func createWithRetryOn503[T any](
+func withRetryOnTransient[T any](
 	ctx context.Context, call func() (*T, *http.Response, error),
 ) (*T, error) {
 	deadline := time.Now().Add(transientRetryTimeout)
@@ -48,18 +50,47 @@ func createWithRetryOn503[T any](
 		if err == nil {
 			return out, nil
 		}
-		retryable := httpResp != nil &&
-			httpResp.StatusCode == http.StatusServiceUnavailable &&
-			time.Now().Before(deadline)
-		if !retryable {
+		if httpResp == nil || !retryableStatus(httpResp.StatusCode) {
+			return nil, err
+		}
+		wait := retryAfter(httpResp)
+		// Waiting past the deadline would return the same error having slept for nothing.
+		if remaining := time.Until(deadline); wait >= remaining {
 			return nil, err
 		}
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-time.After(transientRetryInterval):
+		case <-time.After(wait):
 		}
 	}
+}
+
+// retryableStatus reports whether a status means the request was not carried out.
+//
+// Both of these say so, which is what makes repeating the request safe even for an operation
+// that is not idempotent: 503 is Monte Carlo being unable to serve it, and 429 is the request
+// being refused before it ran.
+//
+// 504 is deliberately absent. A gateway timeout leaves the outcome unknown, and creating a
+// deployment is not idempotent — it allocates a new one per call and counts each against the
+// account's limit — so retrying an ambiguous failure would strand one nothing knows about.
+func retryableStatus(status int) bool {
+	return status == http.StatusServiceUnavailable || status == http.StatusTooManyRequests
+}
+
+// retryAfter is how long to wait before the next attempt.
+//
+// The API sends `Retry-After` in seconds with a rate limit, so honouring it retries neither
+// sooner than Monte Carlo asked nor a fixed interval longer than it needs. A missing or
+// unparseable value falls back to the fixed interval, as does a date-form value: the API
+// sends seconds, and a wrong guess at a date is worse than the default.
+func retryAfter(httpResp *http.Response) time.Duration {
+	seconds, err := strconv.Atoi(strings.TrimSpace(httpResp.Header.Get("Retry-After")))
+	if err != nil || seconds < 0 {
+		return transientRetryInterval
+	}
+	return time.Duration(seconds) * time.Second
 }
 
 // requiresReplace marks an attribute so that changing it replaces the resource.

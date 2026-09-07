@@ -74,8 +74,8 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
-	// x-mc-terraform-retry-on-transient: retry the create on 503 (IAM/STS propagation).
-	out, err := createWithRetryOn503(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.RegisterAzureCollectionDataStore(ctx).AzureCollectionDataStoreIn(*body).Execute()
 	})
 	if err != nil {
@@ -131,7 +131,10 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
-	out, _, err := r.clients.api.CollectionDataStoresAPI.UpdateAzureCollectionDataStore(ctx, state.Id.ValueString()).AzureCollectionDataStorePatch(*body).Execute()
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
+		return r.clients.api.CollectionDataStoresAPI.UpdateAzureCollectionDataStore(ctx, state.Id.ValueString()).AzureCollectionDataStorePatch(*body).Execute()
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Update azure_collection_data_store failed", apiErr(err))
 		return

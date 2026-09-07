@@ -69,8 +69,8 @@ func (r *azureCollectionAgentResource) Create(ctx context.Context, req resource.
 		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.Audience.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
 		body.SetServicePrincipal(*nested)
 	}
-	// x-mc-terraform-retry-on-transient: retry the create on 503 (IAM/STS propagation).
-	out, err := createWithRetryOn503(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAzureCollectionAgent(ctx).AzureCollectionAgentIn(*body).Execute()
 	})
 	if err != nil {
@@ -123,7 +123,10 @@ func (r *azureCollectionAgentResource) Update(ctx context.Context, req resource.
 		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.Audience.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
 		body.SetServicePrincipal(*nested)
 	}
-	out, _, err := r.clients.api.CollectionAgentsAPI.UpdateAzureCollectionAgent(ctx, state.Id.ValueString()).AzureCollectionAgentPatch(*body).Execute()
+	// x-mc-terraform-retry-on-transient
+	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
+		return r.clients.api.CollectionAgentsAPI.UpdateAzureCollectionAgent(ctx, state.Id.ValueString()).AzureCollectionAgentPatch(*body).Execute()
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Update azure_collection_agent failed", apiErr(err))
 		return
