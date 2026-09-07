@@ -20,10 +20,6 @@ func AwsCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				Description:         "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
 				MarkdownDescription: "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
 			},
-			"collection_agent_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-			},
 			"created_time": schema.StringAttribute{
 				Computed: true,
 			},
@@ -85,7 +81,6 @@ func AwsCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 
 type AwsCollectionAgentModel struct {
 	AuthenticationType  types.String `tfsdk:"authentication_type"`
-	CollectionAgentId   types.String `tfsdk:"collection_agent_id"`
 	CreatedTime         types.String `tfsdk:"created_time"`
 	DeploymentId        types.String `tfsdk:"deployment_id"`
 	Enabled             types.Bool   `tfsdk:"enabled"`

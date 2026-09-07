@@ -20,10 +20,6 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 			"created_time": schema.StringAttribute{
 				Computed: true,
 			},
-			"deployment_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-			},
 			"enabled": schema.BoolAttribute{
 				Computed:            true,
 				Description:         "Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled.",
@@ -81,7 +77,6 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 type DeploymentModel struct {
 	AwsExternalId   types.String `tfsdk:"aws_external_id"`
 	CreatedTime     types.String `tfsdk:"created_time"`
-	DeploymentId    types.String `tfsdk:"deployment_id"`
 	Enabled         types.Bool   `tfsdk:"enabled"`
 	Id              types.String `tfsdk:"id"`
 	LastUpdatedTime types.String `tfsdk:"last_updated_time"`

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -10,15 +11,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Every attribute type the generated schemas can contain. A type missing from requiresReplace
-// is reported at runtime rather than dropped, but the error only surfaces once someone plans
-// against that resource, so the coverage is pinned here instead.
-func TestRequiresReplaceCoversEveryAttributeType(t *testing.T) {
+// Every helper that attaches a plan modifier. Each one goes through the same type switch, so
+// a type missing from it is missing from both.
+var planModifierHelpers = map[string]func(map[string]schema.Attribute, string, *diag.Diagnostics){
+	"requiresReplace":           requiresReplace,
+	"useNonNullStateForUnknown": useNonNullStateForUnknown,
+}
+
+// everyAttributeType is one of each type the generated schemas can contain.
+func everyAttributeType() map[string]schema.Attribute {
 	elem := types.StringType
-	for name, attribute := range map[string]schema.Attribute{
+	return map[string]schema.Attribute{
 		"bool":          schema.BoolAttribute{},
 		"string":        schema.StringAttribute{},
 		"int32":         schema.Int32Attribute{},
@@ -35,33 +42,81 @@ func TestRequiresReplaceCoversEveryAttributeType(t *testing.T) {
 		"list_nested":   schema.ListNestedAttribute{},
 		"set_nested":    schema.SetNestedAttribute{},
 		"map_nested":    schema.MapNestedAttribute{},
-	} {
-		t.Run(name, func(t *testing.T) {
-			attrs := map[string]schema.Attribute{name: attribute}
+	}
+}
+
+// An unhandled type is reported at runtime rather than dropped, but the error only surfaces
+// once someone plans against that resource, so the coverage is pinned here instead.
+func TestEveryHelperCoversEveryAttributeType(t *testing.T) {
+	for helper, apply := range planModifierHelpers {
+		for name, attribute := range everyAttributeType() {
+			t.Run(helper+"/"+name, func(t *testing.T) {
+				attrs := map[string]schema.Attribute{name: attribute}
+				var diags diag.Diagnostics
+
+				apply(attrs, "resource."+name, &diags)
+
+				if diags.HasError() {
+					t.Fatalf("reported %v", diags.Errors())
+				}
+				if got := planModifierCount(attrs[name]); got != 1 {
+					t.Fatalf("got %d plan modifiers, want 1", got)
+				}
+			})
+		}
+	}
+}
+
+func TestEveryHelperReportsAnAttributeTheSchemaDoesNotHave(t *testing.T) {
+	for helper, apply := range planModifierHelpers {
+		t.Run(helper, func(t *testing.T) {
 			var diags diag.Diagnostics
 
-			requiresReplace(attrs, "resource."+name, &diags)
+			apply(map[string]schema.Attribute{}, "resource.renamed", &diags)
 
-			if diags.HasError() {
-				t.Fatalf("reported %v", diags.Errors())
+			if !diags.HasError() {
+				t.Fatal("a marked attribute absent from the schema must not pass in silence")
 			}
-			if got := planModifierCount(attrs[name]); got != 1 {
-				t.Fatalf("got %d plan modifiers, want 1", got)
+			if detail := diags.Errors()[0].Detail(); !strings.Contains(detail, "resource.renamed") {
+				t.Fatalf("the error must name the attribute, got %q", detail)
 			}
 		})
 	}
 }
 
-func TestRequiresReplaceReportsAnAttributeTheSchemaDoesNotHave(t *testing.T) {
-	var diags diag.Diagnostics
+// The null-state case is what makes tagging `aws_external_id` safe. The API mints it after the
+// deployment exists, so the first plan has no value to keep and must leave it unknown.
+func TestUseNonNullStateForUnknownKeepsStateOnlyOnceThereIsAValue(t *testing.T) {
+	for name, tc := range map[string]struct {
+		state types.String
+		want  types.String
+	}{
+		"a value in state is planned": {state: types.StringValue("abc"), want: types.StringValue("abc")},
+		"a null state stays unknown":  {state: types.StringNull(), want: types.StringUnknown()},
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := map[string]schema.Attribute{"external_id": schema.StringAttribute{Computed: true}}
+			var diags diag.Diagnostics
+			useNonNullStateForUnknown(attrs, "resource.external_id", &diags)
+			if diags.HasError() {
+				t.Fatalf("reported %v", diags.Errors())
+			}
 
-	requiresReplace(map[string]schema.Attribute{}, "resource.renamed", &diags)
+			modifier, ok := attrs["external_id"].(schema.StringAttribute).PlanModifiers[0].(planmodifier.String)
+			if !ok {
+				t.Fatal("the attached modifier does not modify a string")
+			}
+			resp := &planmodifier.StringResponse{PlanValue: types.StringUnknown()}
+			modifier.PlanModifyString(context.Background(), planmodifier.StringRequest{
+				StateValue:  tc.state,
+				PlanValue:   types.StringUnknown(),
+				ConfigValue: types.StringNull(),
+			}, resp)
 
-	if !diags.HasError() {
-		t.Fatal("a marked attribute absent from the schema must not pass in silence")
-	}
-	if detail := diags.Errors()[0].Detail(); !strings.Contains(detail, "resource.renamed") {
-		t.Fatalf("the error must name the attribute, got %q", detail)
+			if !resp.PlanValue.Equal(tc.want) {
+				t.Fatalf("planned %s, want %s", resp.PlanValue, tc.want)
+			}
+		})
 	}
 }
 

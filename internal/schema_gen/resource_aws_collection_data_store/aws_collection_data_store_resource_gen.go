@@ -28,10 +28,6 @@ func AwsCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.RegexMatches(regexp.MustCompile("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"), ""),
 				},
 			},
-			"collection_data_store_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-			},
 			"created_time": schema.StringAttribute{
 				Computed: true,
 			},
@@ -81,16 +77,15 @@ func AwsCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type AwsCollectionDataStoreModel struct {
-	AuthenticationType    types.String `tfsdk:"authentication_type"`
-	BucketName            types.String `tfsdk:"bucket_name"`
-	CollectionDataStoreId types.String `tfsdk:"collection_data_store_id"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	DeploymentId          types.String `tfsdk:"deployment_id"`
-	Enabled               types.Bool   `tfsdk:"enabled"`
-	ExternalId            types.String `tfsdk:"external_id"`
-	Id                    types.String `tfsdk:"id"`
-	LastUpdatedTime       types.String `tfsdk:"last_updated_time"`
-	Name                  types.String `tfsdk:"name"`
-	RoleArn               types.String `tfsdk:"role_arn"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	AuthenticationType types.String `tfsdk:"authentication_type"`
+	BucketName         types.String `tfsdk:"bucket_name"`
+	CreatedTime        types.String `tfsdk:"created_time"`
+	DeploymentId       types.String `tfsdk:"deployment_id"`
+	Enabled            types.Bool   `tfsdk:"enabled"`
+	ExternalId         types.String `tfsdk:"external_id"`
+	Id                 types.String `tfsdk:"id"`
+	LastUpdatedTime    types.String `tfsdk:"last_updated_time"`
+	Name               types.String `tfsdk:"name"`
+	RoleArn            types.String `tfsdk:"role_arn"`
+	StorageType        types.String `tfsdk:"storage_type"`
 }

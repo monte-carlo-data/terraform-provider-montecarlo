@@ -32,10 +32,6 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					),
 				},
 			},
-			"collection_agent_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-			},
 			"created_time": schema.StringAttribute{
 				Computed: true,
 			},
@@ -142,7 +138,6 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 
 type AzureCollectionAgentModel struct {
 	AuthenticationType  types.String          `tfsdk:"authentication_type"`
-	CollectionAgentId   types.String          `tfsdk:"collection_agent_id"`
 	CreatedTime         types.String          `tfsdk:"created_time"`
 	DeploymentId        types.String          `tfsdk:"deployment_id"`
 	Enabled             types.Bool            `tfsdk:"enabled"`

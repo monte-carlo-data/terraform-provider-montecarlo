@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/numberplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -93,83 +94,154 @@ func retryAfter(httpResp *http.Response) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-// requiresReplace marks an attribute so that changing it replaces the resource.
+// planModifierSet is one plan modifier, expressed once per attribute type.
 //
-// The API accepts some attributes when creating a resource and not when updating it. The
-// generated schema comes from tfplugingen, which reads only the create body and so cannot
-// know that. Without the plan modifier Terraform reports an in-place update, calls an update
-// the API does not implement, and writes a value into state that the API never received.
+// A plan modifier is typed, so attaching one means a switch over every attribute type the
+// generated schemas can hold. Taking the set as a parameter keeps that switch in one place
+// instead of one copy per modifier, where the copies could drift.
+type planModifierSet struct {
+	str     planmodifier.String
+	boolean planmodifier.Bool
+	i32     planmodifier.Int32
+	i64     planmodifier.Int64
+	f32     planmodifier.Float32
+	f64     planmodifier.Float64
+	dynamic planmodifier.Dynamic
+	number  planmodifier.Number
+	list    planmodifier.List
+	mapping planmodifier.Map
+	set     planmodifier.Set
+	object  planmodifier.Object
+}
+
+// applyPlanModifier attaches the modifier matching the named attribute's type.
 //
-// A plan modifier is typed, so every attribute type needs its own case. An unhandled type is
-// reported rather than skipped, because skipping it would restore the silent-wrong-state
-// behaviour this exists to prevent.
-//
-// The generated code calls this for every attribute absent from the update body.
-func requiresReplace(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+// An unhandled type is reported rather than skipped: skipping restores the silent behaviour
+// the caller attached a modifier to prevent. `consequence` says what that behaviour is, so
+// the diagnostic names the effect rather than only the missing case.
+func applyPlanModifier(
+	attrs map[string]schema.Attribute,
+	name string,
+	mods planModifierSet,
+	consequence string,
+	diags *diag.Diagnostics,
+) {
 	attribute := name[strings.LastIndex(name, ".")+1:]
 	switch a := attrs[attribute].(type) {
 	case schema.StringAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.str)
 		attrs[attribute] = a
 	case schema.BoolAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, boolplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.boolean)
 		attrs[attribute] = a
 	case schema.Int32Attribute:
-		a.PlanModifiers = append(a.PlanModifiers, int32planmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.i32)
 		attrs[attribute] = a
 	case schema.Int64Attribute:
-		a.PlanModifiers = append(a.PlanModifiers, int64planmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.i64)
 		attrs[attribute] = a
 	case schema.Float32Attribute:
-		a.PlanModifiers = append(a.PlanModifiers, float32planmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.f32)
 		attrs[attribute] = a
 	case schema.Float64Attribute:
-		a.PlanModifiers = append(a.PlanModifiers, float64planmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.f64)
 		attrs[attribute] = a
 	case schema.DynamicAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, dynamicplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.dynamic)
 		attrs[attribute] = a
 	case schema.NumberAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, numberplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.number)
 		attrs[attribute] = a
 	case schema.ListAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, listplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.list)
 		attrs[attribute] = a
 	case schema.MapAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, mapplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.mapping)
 		attrs[attribute] = a
 	case schema.SetAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, setplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.set)
 		attrs[attribute] = a
 	case schema.ObjectAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, objectplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.object)
 		attrs[attribute] = a
 	case schema.SingleNestedAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, objectplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.object)
 		attrs[attribute] = a
 	case schema.ListNestedAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, listplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.list)
 		attrs[attribute] = a
 	case schema.SetNestedAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, setplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.set)
 		attrs[attribute] = a
 	case schema.MapNestedAttribute:
-		a.PlanModifiers = append(a.PlanModifiers, mapplanmodifier.RequiresReplace())
+		a.PlanModifiers = append(a.PlanModifiers, mods.mapping)
 		attrs[attribute] = a
 	case nil:
 		diags.AddError(
 			"provider bug",
-			fmt.Sprintf("%s is not in the generated schema, so it cannot require replacement.", name),
+			fmt.Sprintf("%s is not in the generated schema. %s", name, consequence),
 		)
 	default:
 		diags.AddError(
 			"provider bug",
-			fmt.Sprintf(
-				"%s cannot be updated, and %T has no plan modifier here, so Terraform "+
-					"would report an update that does nothing.", name, a,
-			),
+			fmt.Sprintf("%T has no plan modifier here for %s. %s", a, name, consequence),
 		)
 	}
+}
+
+// requiresReplace marks an attribute so that changing it replaces the resource.
+//
+// The API accepts some attributes when creating a resource and not when updating it. The
+// generated schema comes from tfplugingen, which reads only the create body and so cannot
+// know that.
+//
+// The generated code calls this for every attribute absent from the update body.
+func requiresReplace(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+	applyPlanModifier(attrs, name, planModifierSet{
+		str:     stringplanmodifier.RequiresReplace(),
+		boolean: boolplanmodifier.RequiresReplace(),
+		i32:     int32planmodifier.RequiresReplace(),
+		i64:     int64planmodifier.RequiresReplace(),
+		f32:     float32planmodifier.RequiresReplace(),
+		f64:     float64planmodifier.RequiresReplace(),
+		dynamic: dynamicplanmodifier.RequiresReplace(),
+		number:  numberplanmodifier.RequiresReplace(),
+		list:    listplanmodifier.RequiresReplace(),
+		mapping: mapplanmodifier.RequiresReplace(),
+		set:     setplanmodifier.RequiresReplace(),
+		object:  objectplanmodifier.RequiresReplace(),
+	}, "Terraform would report an in-place update the API does not implement, and write a value into state the API never received.", diags)
+}
+
+// useNonNullStateForUnknown keeps an attribute's known value in the plan instead of marking
+// it unknown.
+//
+// A computed attribute with no plan modifier is planned as unknown whenever the resource has
+// any change at all. That alone is only noise, but a reference to one of them carries the
+// unknown into another resource, and an unknown reference that requires replacement destroys
+// that resource on an update nothing asked to affect it.
+//
+// The non-null variant, because the plain `UseStateForUnknown` copies a null prior state into
+// the plan. An attribute the API fills in later — an external id it had not minted when the
+// row was first read — would then plan as null and apply as a value, which Terraform rejects
+// as an inconsistent result. This one leaves a null state unknown.
+//
+// The generated code calls this for every response field marked `x-mc-terraform-stable`.
+func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+	applyPlanModifier(attrs, name, planModifierSet{
+		str:     stringplanmodifier.UseNonNullStateForUnknown(),
+		boolean: boolplanmodifier.UseNonNullStateForUnknown(),
+		i32:     int32planmodifier.UseNonNullStateForUnknown(),
+		i64:     int64planmodifier.UseNonNullStateForUnknown(),
+		f32:     float32planmodifier.UseNonNullStateForUnknown(),
+		f64:     float64planmodifier.UseNonNullStateForUnknown(),
+		dynamic: dynamicplanmodifier.UseNonNullStateForUnknown(),
+		number:  numberplanmodifier.UseNonNullStateForUnknown(),
+		list:    listplanmodifier.UseNonNullStateForUnknown(),
+		mapping: mapplanmodifier.UseNonNullStateForUnknown(),
+		set:     setplanmodifier.UseNonNullStateForUnknown(),
+		object:  objectplanmodifier.UseNonNullStateForUnknown(),
+	}, "Terraform would plan the attribute as unknown on every update.", diags)
 }
 
 // mapOfStrings converts a Terraform string map, treating null and unknown as absent.

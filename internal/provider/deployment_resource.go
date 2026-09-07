@@ -35,6 +35,11 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 	// resource. tfplugingen does not know that, so requiresReplace says it here.
 	requiresReplace(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "deployment.type", &resp.Diagnostics)
+	// Updating the resource never changes these, so the plan keeps what state holds. Left
+	// unknown, a reference to one of them would replace whatever resource reads it.
+	useNonNullStateForUnknown(s.Attributes, "deployment.aws_external_id", &resp.Diagnostics)
+	useNonNullStateForUnknown(s.Attributes, "deployment.created_time", &resp.Diagnostics)
+	useNonNullStateForUnknown(s.Attributes, "deployment.id", &resp.Diagnostics)
 	resp.Schema = s
 }
 

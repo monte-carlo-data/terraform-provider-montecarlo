@@ -32,10 +32,6 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 					),
 				},
 			},
-			"collection_data_store_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-			},
 			"container_name": schema.StringAttribute{
 				Required:            true,
 				Description:         "Name of the blob container Monte Carlo should use.",
@@ -142,18 +138,17 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type AzureCollectionDataStoreModel struct {
-	AuthenticationType    types.String            `tfsdk:"authentication_type"`
-	CollectionDataStoreId types.String            `tfsdk:"collection_data_store_id"`
-	ContainerName         types.String            `tfsdk:"container_name"`
-	CreatedTime           types.String            `tfsdk:"created_time"`
-	DeploymentId          types.String            `tfsdk:"deployment_id"`
-	Enabled               types.Bool              `tfsdk:"enabled"`
-	Id                    types.String            `tfsdk:"id"`
-	LastUpdatedTime       types.String            `tfsdk:"last_updated_time"`
-	Name                  types.String            `tfsdk:"name"`
-	ServicePrincipal      ServicePrincipalValue   `tfsdk:"service_principal"`
-	StorageAccountKeys    StorageAccountKeysValue `tfsdk:"storage_account_keys"`
-	StorageType           types.String            `tfsdk:"storage_type"`
+	AuthenticationType types.String            `tfsdk:"authentication_type"`
+	ContainerName      types.String            `tfsdk:"container_name"`
+	CreatedTime        types.String            `tfsdk:"created_time"`
+	DeploymentId       types.String            `tfsdk:"deployment_id"`
+	Enabled            types.Bool              `tfsdk:"enabled"`
+	Id                 types.String            `tfsdk:"id"`
+	LastUpdatedTime    types.String            `tfsdk:"last_updated_time"`
+	Name               types.String            `tfsdk:"name"`
+	ServicePrincipal   ServicePrincipalValue   `tfsdk:"service_principal"`
+	StorageAccountKeys StorageAccountKeysValue `tfsdk:"storage_account_keys"`
+	StorageType        types.String            `tfsdk:"storage_type"`
 }
 
 var _ basetypes.ObjectTypable = ServicePrincipalType{}

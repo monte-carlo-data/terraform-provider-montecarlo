@@ -34,6 +34,11 @@ func (r *awsCollectionAgentResource) Schema(ctx context.Context, _ resource.Sche
 	// The API accepts these on create and not on update, so changing one replaces the
 	// resource. tfplugingen does not know that, so requiresReplace says it here.
 	requiresReplace(s.Attributes, "aws_collection_agent.deployment_id", &resp.Diagnostics)
+	// Updating the resource never changes these, so the plan keeps what state holds. Left
+	// unknown, a reference to one of them would replace whatever resource reads it.
+	useNonNullStateForUnknown(s.Attributes, "aws_collection_agent.created_time", &resp.Diagnostics)
+	useNonNullStateForUnknown(s.Attributes, "aws_collection_agent.external_id", &resp.Diagnostics)
+	useNonNullStateForUnknown(s.Attributes, "aws_collection_agent.id", &resp.Diagnostics)
 	resp.Schema = s
 }
 
