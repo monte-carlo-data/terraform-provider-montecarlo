@@ -135,6 +135,8 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 		NewDeploymentResource,
 		NewAwsCollectionAgentResource,
 		NewAwsCollectionDataStoreResource,
+		NewAzureCollectionAgentResource,
+		NewAzureCollectionDataStoreResource,
 	}
 }
 
@@ -142,5 +144,7 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		NewAwsCollectionAgentDataSource,
 		NewAwsCollectionDataStoreDataSource,
+		NewAzureCollectionAgentDataSource,
+		NewAzureCollectionDataStoreDataSource,
 	}
 }

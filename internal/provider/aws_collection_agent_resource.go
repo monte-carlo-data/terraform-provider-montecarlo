@@ -56,6 +56,9 @@ func (r *awsCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 	body := sdk.NewAwsCollectionAgentIn(plan.DeploymentId.ValueString(), plan.LambdaFunctionArn.ValueString(), plan.RoleArn.ValueString())
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
+		body.SetName(plan.Name.ValueString())
+	}
 	// x-mc-terraform-retry-on-transient: retry the create on 503 (IAM/STS propagation).
 	out, err := createWithRetryOn503(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAwsCollectionAgent(ctx).AwsCollectionAgentIn(*body).Execute()
@@ -94,6 +97,7 @@ func (r *awsCollectionAgentResource) Update(ctx context.Context, req resource.Up
 	}
 	body := sdk.NewAwsCollectionAgentPatch()
 	body.SetLambdaFunctionArn(plan.LambdaFunctionArn.ValueString())
+	body.SetName(plan.Name.ValueString())
 	body.SetRoleArn(plan.RoleArn.ValueString())
 	out, _, err := r.clients.api.CollectionAgentsAPI.UpdateAwsCollectionAgent(ctx, state.Id.ValueString()).AwsCollectionAgentPatch(*body).Execute()
 	if err != nil {

@@ -33,7 +33,6 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 	s := resource_deployment.DeploymentResourceSchema(ctx)
 	// The API accepts these on create and not on update, so changing one replaces the
 	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "deployment.name", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "deployment.type", &resp.Diagnostics)
 	resp.Schema = s
@@ -90,11 +89,21 @@ func (r *deploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, deploymentToModel(out))...)
 }
 
-// No update operation in the spec — all inputs immutable.
 func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan resource_deployment.DeploymentModel
+	var plan, state resource_deployment.DeploymentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	body := sdk.NewDeploymentPatch()
+	body.SetName(plan.Name.ValueString())
+	out, _, err := r.clients.api.DeploymentsAPI.UpdateDeployment(ctx, state.Id.ValueString()).DeploymentPatch(*body).Execute()
+	if err != nil {
+		resp.Diagnostics.AddError("Update deployment failed", apiErr(err))
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, deploymentToModel(out))...)
 }
 
 func (r *deploymentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
