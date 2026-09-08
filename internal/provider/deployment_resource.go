@@ -64,7 +64,7 @@ func (r *deploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// x-mc-terraform-retry-on-transient
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.DeploymentOut, *http.Response, error) {
 		return r.clients.api.DeploymentsAPI.CreateDeployment(ctx).DeploymentIn(*body).Execute()
 	})
@@ -101,8 +101,10 @@ func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	body := sdk.NewDeploymentPatch()
-	body.SetName(plan.Name.ValueString())
-	// x-mc-terraform-retry-on-transient
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
+		body.SetName(plan.Name.ValueString())
+	}
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.DeploymentOut, *http.Response, error) {
 		return r.clients.api.DeploymentsAPI.UpdateDeployment(ctx, state.Id.ValueString()).DeploymentPatch(*body).Execute()
 	})

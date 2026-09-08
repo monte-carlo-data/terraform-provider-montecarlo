@@ -65,7 +65,6 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// service_principal: build the nested SDK model from the block's typed sub-fields when set.
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
 		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.AccountUrl.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
 		if !plan.ServicePrincipal.AccountName.IsNull() && !plan.ServicePrincipal.AccountName.IsUnknown() {
@@ -73,12 +72,11 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 		}
 		body.SetServicePrincipal(*nested)
 	}
-	// storage_account_keys: build the nested SDK model from the block's typed sub-fields when set.
 	if !plan.StorageAccountKeys.IsNull() && !plan.StorageAccountKeys.IsUnknown() {
 		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
-	// x-mc-terraform-retry-on-transient
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.RegisterAzureCollectionDataStore(ctx).AzureCollectionDataStoreIn(*body).Execute()
 	})
@@ -119,10 +117,15 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		return
 	}
 	body := sdk.NewAzureCollectionDataStorePatch()
-	body.SetAuthenticationType(sdk.AzureDataStoreAuthenticationType(plan.AuthenticationType.ValueString()))
-	body.SetContainerName(plan.ContainerName.ValueString())
-	body.SetName(plan.Name.ValueString())
-	// service_principal: build the nested SDK model from the block's typed sub-fields when set.
+	if !plan.AuthenticationType.IsNull() && !plan.AuthenticationType.IsUnknown() {
+		body.SetAuthenticationType(sdk.AzureDataStoreAuthenticationType(plan.AuthenticationType.ValueString()))
+	}
+	if !plan.ContainerName.IsNull() && !plan.ContainerName.IsUnknown() {
+		body.SetContainerName(plan.ContainerName.ValueString())
+	}
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
+		body.SetName(plan.Name.ValueString())
+	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
 		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.AccountUrl.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
 		if !plan.ServicePrincipal.AccountName.IsNull() && !plan.ServicePrincipal.AccountName.IsUnknown() {
@@ -130,12 +133,11 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		}
 		body.SetServicePrincipal(*nested)
 	}
-	// storage_account_keys: build the nested SDK model from the block's typed sub-fields when set.
 	if !plan.StorageAccountKeys.IsNull() && !plan.StorageAccountKeys.IsUnknown() {
 		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
-	// x-mc-terraform-retry-on-transient
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.UpdateAzureCollectionDataStore(ctx, state.Id.ValueString()).AzureCollectionDataStorePatch(*body).Execute()
 	})
@@ -143,7 +145,9 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		resp.Diagnostics.AddError("Update azure_collection_data_store failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, azureCollectionDataStoreToModel(out))...)
+	m := azureCollectionDataStoreToModel(out)
+	applyAzureCollectionDataStoreNested(&m, plan)
+	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }
 
 func (r *azureCollectionDataStoreResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

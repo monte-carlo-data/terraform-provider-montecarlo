@@ -132,11 +132,11 @@ func (p *mcProvider) Configure(ctx context.Context, req provider.ConfigureReques
 
 func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewDeploymentResource,
 		NewAwsCollectionAgentResource,
 		NewAwsCollectionDataStoreResource,
 		NewAzureCollectionAgentResource,
 		NewAzureCollectionDataStoreResource,
+		NewDeploymentResource,
 	}
 }
 

@@ -63,17 +63,15 @@ func (r *azureCollectionAgentResource) Create(ctx context.Context, req resource.
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// function_app_key: build the nested SDK model from the block's typed sub-fields when set.
 	if !plan.FunctionAppKey.IsNull() && !plan.FunctionAppKey.IsUnknown() {
 		nested := sdk.NewFunctionAppKeyCredentialsIn(plan.FunctionAppKey.AppKey.ValueString())
 		body.SetFunctionAppKey(*nested)
 	}
-	// service_principal: build the nested SDK model from the block's typed sub-fields when set.
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
 		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.Audience.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
 		body.SetServicePrincipal(*nested)
 	}
-	// x-mc-terraform-retry-on-transient
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAzureCollectionAgent(ctx).AzureCollectionAgentIn(*body).Execute()
 	})
@@ -114,20 +112,24 @@ func (r *azureCollectionAgentResource) Update(ctx context.Context, req resource.
 		return
 	}
 	body := sdk.NewAzureCollectionAgentPatch()
-	body.SetAuthenticationType(sdk.AzureAgentAuthenticationType(plan.AuthenticationType.ValueString()))
-	body.SetFunctionAppUrl(plan.FunctionAppUrl.ValueString())
-	body.SetName(plan.Name.ValueString())
-	// function_app_key: build the nested SDK model from the block's typed sub-fields when set.
+	if !plan.AuthenticationType.IsNull() && !plan.AuthenticationType.IsUnknown() {
+		body.SetAuthenticationType(sdk.AzureAgentAuthenticationType(plan.AuthenticationType.ValueString()))
+	}
+	if !plan.FunctionAppUrl.IsNull() && !plan.FunctionAppUrl.IsUnknown() {
+		body.SetFunctionAppUrl(plan.FunctionAppUrl.ValueString())
+	}
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
+		body.SetName(plan.Name.ValueString())
+	}
 	if !plan.FunctionAppKey.IsNull() && !plan.FunctionAppKey.IsUnknown() {
 		nested := sdk.NewFunctionAppKeyCredentialsIn(plan.FunctionAppKey.AppKey.ValueString())
 		body.SetFunctionAppKey(*nested)
 	}
-	// service_principal: build the nested SDK model from the block's typed sub-fields when set.
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
 		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.Audience.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
 		body.SetServicePrincipal(*nested)
 	}
-	// x-mc-terraform-retry-on-transient
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.UpdateAzureCollectionAgent(ctx, state.Id.ValueString()).AzureCollectionAgentPatch(*body).Execute()
 	})
@@ -135,7 +137,9 @@ func (r *azureCollectionAgentResource) Update(ctx context.Context, req resource.
 		resp.Diagnostics.AddError("Update azure_collection_agent failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, azureCollectionAgentToModel(out))...)
+	m := azureCollectionAgentToModel(out)
+	applyAzureCollectionAgentNested(&m, plan)
+	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }
 
 func (r *azureCollectionAgentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

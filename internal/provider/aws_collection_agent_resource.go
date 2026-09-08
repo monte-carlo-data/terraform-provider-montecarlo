@@ -63,7 +63,7 @@ func (r *awsCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// x-mc-terraform-retry-on-transient
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAwsCollectionAgent(ctx).AwsCollectionAgentIn(*body).Execute()
 	})
@@ -100,10 +100,16 @@ func (r *awsCollectionAgentResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 	body := sdk.NewAwsCollectionAgentPatch()
-	body.SetLambdaFunctionArn(plan.LambdaFunctionArn.ValueString())
-	body.SetName(plan.Name.ValueString())
-	body.SetRoleArn(plan.RoleArn.ValueString())
-	// x-mc-terraform-retry-on-transient
+	if !plan.LambdaFunctionArn.IsNull() && !plan.LambdaFunctionArn.IsUnknown() {
+		body.SetLambdaFunctionArn(plan.LambdaFunctionArn.ValueString())
+	}
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
+		body.SetName(plan.Name.ValueString())
+	}
+	if !plan.RoleArn.IsNull() && !plan.RoleArn.IsUnknown() {
+		body.SetRoleArn(plan.RoleArn.ValueString())
+	}
+	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.UpdateAwsCollectionAgent(ctx, state.Id.ValueString()).AwsCollectionAgentPatch(*body).Execute()
 	})
