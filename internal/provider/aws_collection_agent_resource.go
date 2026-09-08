@@ -37,7 +37,6 @@ func (r *awsCollectionAgentResource) Schema(ctx context.Context, _ resource.Sche
 	// Updating the resource never changes these, so the plan keeps what state holds. Left
 	// unknown, a reference to one of them would replace whatever resource reads it.
 	useNonNullStateForUnknown(s.Attributes, "aws_collection_agent.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "aws_collection_agent.external_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "aws_collection_agent.id", &resp.Diagnostics)
 	resp.Schema = s
 }
