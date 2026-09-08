@@ -1,1 +1,9 @@
 **/tmp/
+
+# Working notes, plans and code-review docs stay local to whoever ran the workflow. They quote
+# internal detail — private repository paths, secret names, ticket ids, tenant ids — and this
+# repository is published.
+*
+!.gitignore
+!*/
+!**/.gitkeep

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -31,6 +32,11 @@ import (
 const (
 	transientRetryTimeout  = 5 * time.Minute
 	transientRetryInterval = 15 * time.Second
+
+	// retryAfterFloor is the shortest wait retryAfter will honour. `Retry-After: 0` is a legal
+	// value — a server truncating a sub-second window produces it — but waiting zero seconds
+	// would re-issue the request as fast as the network allows for the whole retry budget.
+	retryAfterFloor = 1 * time.Second
 )
 
 // withRetryOnTransient retries while the API reports a failure it asked to have retried, up
@@ -85,13 +91,20 @@ func retryableStatus(status int) bool {
 // The API sends `Retry-After` in seconds with a rate limit, so honouring it retries neither
 // sooner than Monte Carlo asked nor a fixed interval longer than it needs. A missing or
 // unparseable value falls back to the fixed interval, as does a date-form value: the API
-// sends seconds, and a wrong guess at a date is worse than the default.
+// sends seconds, and a wrong guess at a date is worse than the default. The result is always
+// within (0, transientRetryTimeout]: a value that would busy-loop the request is floored at
+// retryAfterFloor, and a value at or beyond the retry budget — including one that would
+// overflow time.Duration's int64 nanosecond range on conversion — falls back to the fixed
+// interval instead of being converted at all, so the overflow never happens.
 func retryAfter(httpResp *http.Response) time.Duration {
 	seconds, err := strconv.Atoi(strings.TrimSpace(httpResp.Header.Get("Retry-After")))
-	if err != nil || seconds < 0 {
+	if err != nil || seconds < 0 || seconds > int(transientRetryTimeout/time.Second) {
 		return transientRetryInterval
 	}
-	return time.Duration(seconds) * time.Second
+	if wait := time.Duration(seconds) * time.Second; wait > retryAfterFloor {
+		return wait
+	}
+	return retryAfterFloor
 }
 
 // planModifierSet is one plan modifier, expressed once per attribute type.
@@ -116,9 +129,17 @@ type planModifierSet struct {
 
 // applyPlanModifier attaches the modifier matching the named attribute's type.
 //
-// An unhandled type is reported rather than skipped: skipping restores the silent behaviour
-// the caller attached a modifier to prevent. `consequence` says what that behaviour is, so
-// the diagnostic names the effect rather than only the missing case.
+// name is exactly "<resource>.<attribute>". The resource half exists only to make the
+// diagnostics below read like a schema path — it is discarded before the lookup, which is
+// always against the top-level attrs map. A name that is not of that shape, including a
+// nested "<resource>.<block>.<attribute>" path, cannot be resolved against that map and is
+// rejected outright: silently falling back to the last segment would resolve a nested path
+// against a same-named top-level attribute instead of the one actually intended.
+//
+// An unhandled attribute type, and a planModifierSet with no modifier for the matched type,
+// are both reported rather than skipped: skipping either restores the silent behaviour the
+// caller attached a modifier to prevent. `consequence` says what that behaviour is, so the
+// diagnostic names the effect rather than only the missing case.
 func applyPlanModifier(
 	attrs map[string]schema.Attribute,
 	name string,
@@ -126,54 +147,125 @@ func applyPlanModifier(
 	consequence string,
 	diags *diag.Diagnostics,
 ) {
-	attribute := name[strings.LastIndex(name, ".")+1:]
+	_, attribute, ok := strings.Cut(name, ".")
+	if !ok || strings.Contains(attribute, ".") {
+		diags.AddError(
+			"provider bug",
+			fmt.Sprintf("%s is not a resolvable <resource>.<attribute> path; nested paths are not supported. %s", name, consequence),
+		)
+		return
+	}
 	switch a := attrs[attribute].(type) {
 	case schema.StringAttribute:
+		if mods.str == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.str)
 		attrs[attribute] = a
 	case schema.BoolAttribute:
+		if mods.boolean == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.boolean)
 		attrs[attribute] = a
 	case schema.Int32Attribute:
+		if mods.i32 == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.i32)
 		attrs[attribute] = a
 	case schema.Int64Attribute:
+		if mods.i64 == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.i64)
 		attrs[attribute] = a
 	case schema.Float32Attribute:
+		if mods.f32 == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.f32)
 		attrs[attribute] = a
 	case schema.Float64Attribute:
+		if mods.f64 == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.f64)
 		attrs[attribute] = a
 	case schema.DynamicAttribute:
+		if mods.dynamic == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.dynamic)
 		attrs[attribute] = a
 	case schema.NumberAttribute:
+		if mods.number == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.number)
 		attrs[attribute] = a
 	case schema.ListAttribute:
+		if mods.list == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.list)
 		attrs[attribute] = a
 	case schema.MapAttribute:
+		if mods.mapping == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.mapping)
 		attrs[attribute] = a
 	case schema.SetAttribute:
+		if mods.set == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.set)
 		attrs[attribute] = a
 	case schema.ObjectAttribute:
+		if mods.object == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.object)
 		attrs[attribute] = a
 	case schema.SingleNestedAttribute:
+		if mods.object == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.object)
 		attrs[attribute] = a
 	case schema.ListNestedAttribute:
+		if mods.list == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.list)
 		attrs[attribute] = a
 	case schema.SetNestedAttribute:
+		if mods.set == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.set)
 		attrs[attribute] = a
 	case schema.MapNestedAttribute:
+		if mods.mapping == nil {
+			missingModifier(name, a, consequence, diags)
+			return
+		}
 		a.PlanModifiers = append(a.PlanModifiers, mods.mapping)
 		attrs[attribute] = a
 	case nil:
@@ -187,6 +279,19 @@ func applyPlanModifier(
 			fmt.Sprintf("%T has no plan modifier here for %s. %s", a, name, consequence),
 		)
 	}
+}
+
+// missingModifier reports a planModifierSet with no entry for a's type.
+//
+// A struct literal that omits a field supplies a nil interface there, and appending it would
+// attach a nil plan modifier that the framework later dereferences — a provider panic during
+// `terraform plan` rather than a diagnostic. Reporting it here keeps the failure inside this
+// function, at the same severity as the other cases this switch already guards against.
+func missingModifier(name string, a schema.Attribute, consequence string, diags *diag.Diagnostics) {
+	diags.AddError(
+		"provider bug",
+		fmt.Sprintf("%s has no plan modifier configured for %T. %s", name, a, consequence),
+	)
 }
 
 // requiresReplace marks an attribute so that changing it replaces the resource.
@@ -245,38 +350,60 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 }
 
 // mapOfStrings converts a Terraform string map, treating null and unknown as absent.
+//
+// Known limitation: a known map containing a null or unknown element fails ElementsAs, and
+// this signature has nowhere to report that — unlike its four siblings, which all take a
+// *diag.Diagnostics. Reporting it needs that parameter, which needs a paired api-codegen
+// template change; until then, an error here returns nil so the generated caller's `!= nil`
+// guard omits the field instead of sending an empty collection that clears it. This is a
+// known limitation with the signature as it stands, not an oversight.
 func mapOfStrings(ctx context.Context, m types.Map) map[string]string {
 	if m.IsNull() || m.IsUnknown() {
 		return nil
 	}
 	out := make(map[string]string, len(m.Elements()))
-	m.ElementsAs(ctx, &out, false)
+	if diags := m.ElementsAs(ctx, &out, false); diags.HasError() {
+		return nil
+	}
 	return out
 }
 
 // listOfStrings converts a Terraform string list, treating null and unknown as absent.
+//
+// Known limitation: see mapOfStrings — the same signature constraint applies here.
 func listOfStrings(ctx context.Context, l types.List) []string {
 	if l.IsNull() || l.IsUnknown() {
 		return nil
 	}
 	out := make([]string, 0, len(l.Elements()))
-	l.ElementsAs(ctx, &out, false)
+	if diags := l.ElementsAs(ctx, &out, false); diags.HasError() {
+		return nil
+	}
 	return out
 }
 
-// apiErr renders an API failure with its response body.
+// apiErr renders an API failure using the decoded problem's named fields, falling back to the
+// raw response body only when the SDK decoded no model.
 //
-// The client's error alone reports the status and nothing else, while the body carries the
-// problem detail explaining what to change. Without this a plan failure reads as "400 Bad
-// Request" with no indication of which attribute was at fault.
+// The client's error alone reports the status and nothing else. Naming the fields — rather
+// than forwarding the whole body — also bounds what a diagnostic can ever show: an unnamed
+// problem member added on the server side does not reach a customer's screen just because it
+// showed up in the response. Without this a plan failure reads as "400 Bad Request" with no
+// indication of which attribute was at fault.
 func apiErr(err error) string {
-	var generic sdk.GenericOpenAPIError
-	if e, ok := err.(*sdk.GenericOpenAPIError); ok {
-		return fmt.Sprintf("%s: %s", e.Error(), string(e.Body()))
+	var e *sdk.GenericOpenAPIError
+	if !errors.As(err, &e) {
+		return err.Error()
 	}
-	if e, ok := err.(sdk.GenericOpenAPIError); ok {
-		generic = e
-		return fmt.Sprintf("%s: %s", generic.Error(), string(generic.Body()))
+	problem, ok := e.Model().(sdk.ProblemOut)
+	if !ok {
+		// No declared model for this status: the SDK decoded nothing, so the raw body is all
+		// there is to show.
+		return fmt.Sprintf("%s: %s", e.Error(), e.Body())
 	}
-	return err.Error()
+	msg := fmt.Sprintf("%s: %s (request %s)", problem.Title, problem.Detail, problem.RequestId)
+	for _, fieldErr := range problem.Errors {
+		msg += fmt.Sprintf("; %s: %s", strings.Join(fieldErr.Field, "."), fieldErr.Message)
+	}
+	return msg
 }

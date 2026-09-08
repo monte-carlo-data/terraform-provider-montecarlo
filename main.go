@@ -10,9 +10,6 @@ import (
 	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/provider"
 )
 
-// version is set at release time. It is reported to Terraform and appears in user agents.
-var version = "dev"
-
 func main() {
 	var debug bool
 	flag.BoolVar(&debug, "debug", false, "run with support for debuggers like delve")
