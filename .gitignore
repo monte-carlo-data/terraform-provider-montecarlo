@@ -6,32 +6,24 @@
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
 
-# .work temp directories (gitignored via .work/.gitignore)
-.work/**/tmp/
-
 # Environment / secrets
 .env
 .envrc
 *.pem
 config.json
 
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-dist/
-build/
-.ruff_cache/
-.mypy_cache/
-.pytest_cache/
-.coverage
-htmlcov/
+# Terraform working files
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate*
 
-# Node
-node_modules/
-.next/
+# Variable files, which are where the account id and token the provider authenticates with end
+# up locally. This repository is public, so a committed one is world-readable for good.
+*.tfvars
+*.tfvars.json
+
+# Local provider builds
+terraform-provider-montecarlo
 dist/
 
 # Misc

@@ -22,9 +22,8 @@
       "allowedDomains": [
         "github.com",
         "api.github.com",
-        "registry.npmjs.org",
-        "pypi.org",
-        "files.pythonhosted.org"
+        "proxy.golang.org",
+        "sum.golang.org"
       ]
     }
   }

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The job only reads the tree. Nothing here publishes, comments or writes.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, vet, format and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # The Go version comes from go.mod's `go` directive, so it cannot drift from the module.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # This module depends on github.com/monte-carlo-data/mc-sdk-go, which is still a private
+      # repository, so a runner cannot resolve it: `git ls-remote` exits 128 and the build fails
+      # before it compiles anything. The org's mc-ci-cd-app is installed org-wide, so mint a token
+      # from it rather than adding a credential of our own. Scoped down to one repository and to
+      # `contents: read` — the App holds write, which nothing here needs — and it expires in an
+      # hour. Note the org's convention reserves this App for CI *writes* and points read-only
+      # checkouts at deploy keys; a read-scoped token was preferred here over managing another
+      # keypair. Both steps are deletable the day mc-sdk-go becomes public.
+      - uses: actions/create-github-app-token@v2
+        id: sdk-token
+        with:
+          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
+          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
+          owner: monte-carlo-data
+          repositories: mc-sdk-go
+          permission-contents: read
+
+      # GOPRIVATE keeps the module off the public proxy and checksum database, neither of which can
+      # serve a private repository. go.sum still verifies the hash locally.
+      # The credential goes in an http header rather than the remote URL, so it stays out of
+      # .git/config and out of any process's command line.
+      - name: Let the build resolve the private SDK module
+        env:
+          TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: |
+          go env -w GOPRIVATE='github.com/monte-carlo-data/*'
+          header="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git config --global http.https://github.com/.extraheader "Authorization: Basic $header"
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      # gofmt exits 0 whether or not it has anything to report, so the output is the result.
+      - name: Check formatting
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "gofmt would rewrite:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Test
+        run: go test -race ./...
