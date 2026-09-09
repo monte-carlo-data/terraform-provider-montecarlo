@@ -580,7 +580,24 @@ func TestRetryAfterStaysWithinTheRetryBudget(t *testing.T) {
 // Two retries at the floored one-second wait, so this test really does sleep for about that
 // long: the budget and the interval are consts, so there is nothing to shorten. Making them
 // injectable is the outstanding half of F18 and needs helpers.go.
+// shrinkRetryTimings makes the helper's waits negligible for a test that exercises the retry
+// loop rather than the durations it waits. Restored afterwards; these tests do not run in
+// parallel, so the override cannot leak into another one.
+func shrinkRetryTimings(t *testing.T) {
+	t.Helper()
+	timeout, interval, floor := transientRetryTimeout, transientRetryInterval, retryAfterFloor
+	t.Cleanup(func() {
+		transientRetryTimeout, transientRetryInterval, retryAfterFloor = timeout, interval, floor
+	})
+	transientRetryTimeout = 2 * time.Second
+	transientRetryInterval = time.Millisecond
+	retryAfterFloor = time.Millisecond
+}
+
 func TestWithRetryOnTransientRetriesUntilItSucceeds(t *testing.T) {
+	// Without this the two floored waits cost two real seconds, which was most of the suite.
+	shrinkRetryTimings(t)
+
 	calls := 0
 	out, err := withRetryOnTransient(t.Context(), func() (*string, *http.Response, error) {
 		calls++

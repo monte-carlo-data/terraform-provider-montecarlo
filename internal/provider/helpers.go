@@ -29,7 +29,11 @@ import (
 	sdk "github.com/monte-carlo-data/mc-sdk-go"
 )
 
-const (
+// The retry helper's timings. Variables rather than constants only so a test exercising the
+// retry loop can shrink them and not spend real seconds sleeping; they are unexported, and
+// nothing in the provider writes them at runtime. Not user-configurable: the budget is a
+// property of how long the API's transient failures last, not a preference.
+var (
 	transientRetryTimeout  = 5 * time.Minute
 	transientRetryInterval = 15 * time.Second
 
