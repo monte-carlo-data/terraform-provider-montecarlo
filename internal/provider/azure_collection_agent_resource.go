@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"time"
 
-	sdk "github.com/monte-carlo-data/mc-sdk-go"
+	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/schema_gen/resource_azure_collection_agent"
 )
 

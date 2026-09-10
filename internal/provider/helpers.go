@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	sdk "github.com/monte-carlo-data/mc-sdk-go"
+	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 )
 
 // The retry helper's timings. Variables rather than constants only so a test exercising the
