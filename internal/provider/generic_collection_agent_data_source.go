@@ -9,27 +9,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"time"
 
-	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/schema_gen/datasource_aws_collection_agent"
+	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/schema_gen/datasource_generic_collection_agent"
 )
 
 var (
-	_ datasource.DataSource              = (*awsCollectionAgentDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*awsCollectionAgentDataSource)(nil)
+	_ datasource.DataSource              = (*genericCollectionAgentDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*genericCollectionAgentDataSource)(nil)
 )
 
-type awsCollectionAgentDataSource struct{ clients *clients }
+type genericCollectionAgentDataSource struct{ clients *clients }
 
-func NewAwsCollectionAgentDataSource() datasource.DataSource { return &awsCollectionAgentDataSource{} }
-
-func (d *awsCollectionAgentDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_aws_collection_agent"
+func NewGenericCollectionAgentDataSource() datasource.DataSource {
+	return &genericCollectionAgentDataSource{}
 }
 
-func (d *awsCollectionAgentDataSource) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = datasource_aws_collection_agent.AwsCollectionAgentDataSourceSchema(ctx)
+func (d *genericCollectionAgentDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_generic_collection_agent"
 }
 
-func (d *awsCollectionAgentDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *genericCollectionAgentDataSource) Schema(ctx context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = datasource_generic_collection_agent.GenericCollectionAgentDataSourceSchema(ctx)
+}
+
+func (d *genericCollectionAgentDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -41,24 +43,23 @@ func (d *awsCollectionAgentDataSource) Configure(_ context.Context, req datasour
 	d.clients = c
 }
 
-func (d *awsCollectionAgentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var cfg datasource_aws_collection_agent.AwsCollectionAgentModel
+func (d *genericCollectionAgentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var cfg datasource_generic_collection_agent.GenericCollectionAgentModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	out, _, err := d.clients.api.CollectionAgentsAPI.GetAwsCollectionAgent(ctx, cfg.CollectionAgentId.ValueString()).Execute()
+	out, _, err := d.clients.api.CollectionAgentsAPI.GetGenericCollectionAgent(ctx, cfg.CollectionAgentId.ValueString()).Execute()
 	if err != nil {
-		resp.Diagnostics.AddError("Read aws_collection_agent failed", apiErr(err))
+		resp.Diagnostics.AddError("Read generic_collection_agent failed", apiErr(err))
 		return
 	}
-	m := datasource_aws_collection_agent.AwsCollectionAgentModel{
+	m := datasource_generic_collection_agent.GenericCollectionAgentModel{
 		CollectionAgentId:   cfg.CollectionAgentId,
 		DeploymentId:        types.StringValue(out.GetDeploymentId()),
 		Enabled:             types.BoolValue(out.GetEnabled()),
 		Id:                  types.StringValue(out.GetId()),
 		IsRemoteUpgradeable: types.BoolValue(out.GetIsRemoteUpgradeable()),
-		LambdaFunctionArn:   types.StringValue(out.GetLambdaFunctionArn()),
 	}
 	if v, ok := out.GetAuthenticationTypeOk(); ok && v != nil {
 		m.AuthenticationType = types.StringValue(string(*v))
@@ -69,11 +70,6 @@ func (d *awsCollectionAgentDataSource) Read(ctx context.Context, req datasource.
 		m.CreatedTime = types.StringValue(v.Format(time.RFC3339))
 	} else {
 		m.CreatedTime = types.StringNull()
-	}
-	if v, ok := out.GetExternalIdOk(); ok && v != nil {
-		m.ExternalId = types.StringValue(*v)
-	} else {
-		m.ExternalId = types.StringNull()
 	}
 	if v, ok := out.GetImageBuildOk(); ok && v != nil {
 		m.ImageBuild = types.StringValue(*v)

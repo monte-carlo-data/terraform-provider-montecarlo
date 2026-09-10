@@ -56,12 +56,16 @@ func (d *azureCollectionAgentDataSource) Read(ctx context.Context, req datasourc
 	}
 	m := datasource_azure_collection_agent.AzureCollectionAgentModel{
 		CollectionAgentId:   cfg.CollectionAgentId,
-		AuthenticationType:  types.StringValue(string(out.GetAuthenticationType())),
 		DeploymentId:        types.StringValue(out.GetDeploymentId()),
 		Enabled:             types.BoolValue(out.GetEnabled()),
 		FunctionAppUrl:      types.StringValue(out.GetFunctionAppUrl()),
 		Id:                  types.StringValue(out.GetId()),
 		IsRemoteUpgradeable: types.BoolValue(out.GetIsRemoteUpgradeable()),
+	}
+	if v, ok := out.GetAuthenticationTypeOk(); ok && v != nil {
+		m.AuthenticationType = types.StringValue(string(*v))
+	} else {
+		m.AuthenticationType = types.StringNull()
 	}
 	if v, ok := out.GetCreatedTimeOk(); ok && v != nil {
 		m.CreatedTime = types.StringValue(v.Format(time.RFC3339))

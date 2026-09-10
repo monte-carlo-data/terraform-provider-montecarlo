@@ -137,13 +137,17 @@ func (r *awsCollectionAgentResource) ImportState(ctx context.Context, req resour
 
 func awsCollectionAgentToModel(o *sdk.AwsCollectionAgentOut, role_arn types.String) resource_aws_collection_agent.AwsCollectionAgentModel {
 	m := resource_aws_collection_agent.AwsCollectionAgentModel{
-		AuthenticationType:  types.StringValue(string(o.GetAuthenticationType())),
 		DeploymentId:        types.StringValue(o.GetDeploymentId()),
 		Enabled:             types.BoolValue(o.GetEnabled()),
 		Id:                  types.StringValue(o.GetId()),
 		IsRemoteUpgradeable: types.BoolValue(o.GetIsRemoteUpgradeable()),
 		LambdaFunctionArn:   types.StringValue(o.GetLambdaFunctionArn()),
 		RoleArn:             role_arn,
+	}
+	if v, ok := o.GetAuthenticationTypeOk(); ok && v != nil {
+		m.AuthenticationType = types.StringValue(string(*v))
+	} else {
+		m.AuthenticationType = types.StringNull()
 	}
 	if v, ok := o.GetCreatedTimeOk(); ok && v != nil {
 		m.CreatedTime = types.StringValue(v.Format(time.RFC3339))

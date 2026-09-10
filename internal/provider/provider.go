@@ -136,6 +136,11 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 		NewAzureCollectionAgentResource,
 		NewAzureCollectionDataStoreResource,
 		NewDeploymentResource,
+		NewGcpCollectionAgentResource,
+		NewGcpCollectionDataStoreResource,
+		NewGenericCollectionAgentResource,
+		NewGenericCollectionAgentOauthClientResource,
+		NewGenericCollectionAgentTokenResource,
 	}
 }
 
@@ -145,5 +150,10 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 		NewAwsCollectionDataStoreDataSource,
 		NewAzureCollectionAgentDataSource,
 		NewAzureCollectionDataStoreDataSource,
+		NewGcpCollectionAgentDataSource,
+		NewGcpCollectionDataStoreDataSource,
+		NewGenericCollectionAgentDataSource,
+		NewGenericCollectionAgentOauthClientDataSource,
+		NewGenericCollectionAgentTokenDataSource,
 	}
 }
