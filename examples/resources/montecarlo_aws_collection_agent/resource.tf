@@ -1,7 +1,7 @@
 # An AWS collection agent, end to end: the deployment, the agent's infrastructure, and the
 # registration that ties them together.
 #
-# The ordering is not cosmetic. Creating the deployment mints an external id; the agent's
+# The ordering is not cosmetic. Creating the deployment generates an external id; the agent's
 # assumable role has to trust that id, so the deployment comes first, the module takes the id as
 # an input, and the registration reads the module's outputs back. Without the provider this is
 # the manual step of copying an external id out of the Monte Carlo UI.
@@ -34,7 +34,7 @@ module "mcd_agent" {
 
   region = "us-east-1"
 
-  # The external id the deployment minted. This is the dependency that forces the ordering.
+  # The external id the deployment generated. This is the dependency that forces the ordering.
   external_id = montecarlo_deployment.agent.aws_external_id
 }
 
