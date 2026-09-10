@@ -136,7 +136,10 @@ If you do put credentials in your configuration, keep them in variables and the 
 ## Examples
 
 - [`examples/provider/`](examples/provider) — the provider block, and the credential alternatives.
-- [`examples/aws-agent/`](examples/aws-agent) — an AWS collection agent end to end, including the
-  [agent module](https://registry.terraform.io/modules/monte-carlo-data/mcd-agent/aws). The
-  manual equivalent is
-  [Create and register an AWS agent](https://docs.getmontecarlo.com/docs/create-and-register-an-aws-agent).
+- [`examples/resources/`](examples/resources) — one directory per resource, each a complete
+  configuration: the deployment, the cloud resources where the platform has any, and the
+  registration. The collection agents on AWS, Azure and GCP use the published agent modules;
+  the data stores define their bucket and role inline; the generic agent mints the credential
+  the agent presents (a [token](examples/resources/montecarlo_generic_collection_agent_token) or
+  an [OAuth client](examples/resources/montecarlo_generic_collection_agent_oauth_client)) and
+  registers the agent you run with it.
