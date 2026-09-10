@@ -193,12 +193,16 @@ func applyAzureCollectionAgentNested(m *resource_azure_collection_agent.AzureCol
 
 func azureCollectionAgentToModel(o *sdk.AzureCollectionAgentOut) resource_azure_collection_agent.AzureCollectionAgentModel {
 	m := resource_azure_collection_agent.AzureCollectionAgentModel{
-		AuthenticationType:  types.StringValue(string(o.GetAuthenticationType())),
 		DeploymentId:        types.StringValue(o.GetDeploymentId()),
 		Enabled:             types.BoolValue(o.GetEnabled()),
 		FunctionAppUrl:      types.StringValue(o.GetFunctionAppUrl()),
 		Id:                  types.StringValue(o.GetId()),
 		IsRemoteUpgradeable: types.BoolValue(o.GetIsRemoteUpgradeable()),
+	}
+	if v, ok := o.GetAuthenticationTypeOk(); ok && v != nil {
+		m.AuthenticationType = types.StringValue(string(*v))
+	} else {
+		m.AuthenticationType = types.StringNull()
 	}
 	if v, ok := o.GetCreatedTimeOk(); ok && v != nil {
 		m.CreatedTime = types.StringValue(v.Format(time.RFC3339))
