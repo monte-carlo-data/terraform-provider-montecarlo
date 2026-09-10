@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -335,7 +336,8 @@ func requiresReplace(attrs map[string]schema.Attribute, name string, diags *diag
 // row was first read — would then plan as null and apply as a value, which Terraform rejects
 // as an inconsistent result. This one leaves a null state unknown.
 //
-// The generated code calls this for every response field marked `x-mc-terraform-stable`.
+// The generated code calls this for every response field marked `x-mc-terraform-stable`, and
+// for every create-only output: a value the API returns once can never change on an update.
 func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseNonNullStateForUnknown(),
@@ -384,6 +386,31 @@ func listOfStrings(ctx context.Context, l types.List) []string {
 		return nil
 	}
 	return out
+}
+
+// stringMap converts a map of strings the API returned into a Terraform map attribute value.
+//
+// The reverse of mapOfStrings. It is total: a nil map is an empty known map, and every string
+// is a valid element, so nothing here can fail. The generated model literal needs one
+// expression per field, and types.MapValueFrom returns a (value, diags) pair, so this is what
+// the generated Read calls for a map-typed response field.
+func stringMap(m map[string]string) types.Map {
+	elems := make(map[string]attr.Value, len(m))
+	for k, v := range m {
+		elems[k] = types.StringValue(v)
+	}
+	return types.MapValueMust(types.StringType, elems)
+}
+
+// stringList converts a list of strings the API returned into a Terraform list attribute value.
+//
+// The reverse of listOfStrings; see stringMap for why it is total and why it exists.
+func stringList(l []string) types.List {
+	elems := make([]attr.Value, 0, len(l))
+	for _, v := range l {
+		elems = append(elems, types.StringValue(v))
+	}
+	return types.ListValueMust(types.StringType, elems)
 }
 
 // apiErr renders an API failure using the decoded problem's named fields, falling back to the

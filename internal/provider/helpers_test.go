@@ -764,6 +764,42 @@ func TestMapOfStringsAndListOfStringsHonourTheirDocumentedContract(t *testing.T)
 	})
 }
 
+func TestStringMapAndStringListAreTheTotalInverseOfTheirWriteSideHelpers(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("stringMap", func(t *testing.T) {
+		t.Run("a nil map is an empty known map, not null", func(t *testing.T) {
+			got := stringMap(nil)
+			if got.IsNull() || got.IsUnknown() || len(got.Elements()) != 0 {
+				t.Errorf("got %#v, want an empty known map", got)
+			}
+		})
+		t.Run("round-trips through mapOfStrings", func(t *testing.T) {
+			want := map[string]string{"env": "prod", "team": "data"}
+			got := mapOfStrings(ctx, stringMap(want))
+			if len(got) != len(want) || got["env"] != want["env"] || got["team"] != want["team"] {
+				t.Errorf("got %#v, want %#v", got, want)
+			}
+		})
+	})
+
+	t.Run("stringList", func(t *testing.T) {
+		t.Run("a nil list is an empty known list, not null", func(t *testing.T) {
+			got := stringList(nil)
+			if got.IsNull() || got.IsUnknown() || len(got.Elements()) != 0 {
+				t.Errorf("got %#v, want an empty known list", got)
+			}
+		})
+		t.Run("round-trips through listOfStrings, keeping order", func(t *testing.T) {
+			want := []string{"b", "a"}
+			got := listOfStrings(ctx, stringList(want))
+			if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+				t.Errorf("got %#v, want %#v", got, want)
+			}
+		})
+	})
+}
+
 // The last segment of a dotted name is not enough to resolve it: a nested path like
 // "azure_collection_agent.service_principal.name" would find the top-level "name" and attach
 // the modifier to the wrong attribute, which for requiresReplace destroys a resource the API
