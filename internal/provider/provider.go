@@ -10,8 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	sdk "github.com/monte-carlo-data/mc-sdk-go"
-	"github.com/monte-carlo-data/mc-sdk-go/auth"
+	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 )
 
 // clients is handed to every resource and data source through Configure. The client already
@@ -110,7 +109,7 @@ func (p *mcProvider) Configure(ctx context.Context, req provider.ConfigureReques
 	// Only what the configuration set is passed on. Environment variables and the profile are
 	// resolved by the SDK, so this provider, the CLI and the SDKs agree on precedence rather
 	// than each implementing it.
-	api, err := auth.NewClient(ctx, auth.Options{
+	api, err := sdk.NewClient(ctx, sdk.Options{
 		Endpoint:     cfg.Endpoint.ValueString(),
 		TokenID:      cfg.TokenID.ValueString(),
 		TokenSecret:  cfg.TokenSecret.ValueString(),
