@@ -129,6 +129,13 @@ Before the first release:
   then fails at module download. A green local build does not disprove it — the module cache
   still holds the orphaned version — so after any upstream merge, confirm the pinned commit is
   still reachable from the SDK's default branch and re-pin if it is not.
+
+  Moving the pin means regenerating, not `go get`. The SDK and the files under
+  `internal/provider/` come from one spec export and move together. A constructor's parameters
+  follow the order the spec declares the properties in, so an export that changes that order
+  changes signatures with no schema change behind it, and two same-typed parameters swapping is
+  invisible to the compiler. A pin moved on its own can compile and pass the tests while
+  sending a bucket name as a deployment id.
 - **A GPG key**, with the private half held as a repository or organisation secret and the
   public half uploaded to the registry. The registry verifies the signature on every release.
 - **`.goreleaser.yml`**, which builds the per-platform archives, the `SHA256SUMS` file and its
