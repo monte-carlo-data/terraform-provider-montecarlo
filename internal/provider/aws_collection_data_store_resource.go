@@ -59,11 +59,11 @@ func (r *awsCollectionDataStoreResource) Create(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewAwsCollectionDataStoreIn(plan.BucketName.ValueString(), plan.DeploymentId.ValueString(), plan.RoleArn.ValueString())
+	body := sdk.NewAwsCollectionDataStoreIn(plan.DeploymentId.ValueString(), plan.BucketName.ValueString(), plan.RoleArn.ValueString())
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.RegisterAwsCollectionDataStore(ctx).AwsCollectionDataStoreIn(*body).Execute()
 	})
@@ -109,7 +109,7 @@ func (r *awsCollectionDataStoreResource) Update(ctx context.Context, req resourc
 	if !plan.RoleArn.IsNull() && !plan.RoleArn.IsUnknown() {
 		body.SetRoleArn(plan.RoleArn.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.UpdateAwsCollectionDataStore(ctx, state.Id.ValueString()).AwsCollectionDataStorePatch(*body).Execute()
 	})

@@ -69,7 +69,7 @@ func (r *genericCollectionAgentTokenResource) Create(ctx context.Context, req re
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		body.SetDescription(plan.Description.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GenericCollectionAgentTokenCreatedOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.CreateGenericCollectionAgentToken(ctx).GenericCollectionAgentTokenIn(*body).Execute()
 	})

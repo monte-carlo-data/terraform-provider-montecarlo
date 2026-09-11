@@ -61,12 +61,12 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewAzureCollectionDataStoreIn(sdk.AzureDataStoreAuthenticationType(plan.AuthenticationType.ValueString()), plan.ContainerName.ValueString(), plan.DeploymentId.ValueString())
+	body := sdk.NewAzureCollectionDataStoreIn(sdk.AzureDataStoreAuthenticationType(plan.AuthenticationType.ValueString()), plan.DeploymentId.ValueString(), plan.ContainerName.ValueString())
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
-		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.AccountUrl.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
+		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.AccountUrl.ValueString())
 		if !plan.ServicePrincipal.AccountName.IsNull() && !plan.ServicePrincipal.AccountName.IsUnknown() {
 			nested.SetAccountName(plan.ServicePrincipal.AccountName.ValueString())
 		}
@@ -76,7 +76,7 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.RegisterAzureCollectionDataStore(ctx).AzureCollectionDataStoreIn(*body).Execute()
 	})
@@ -127,7 +127,7 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		body.SetName(plan.Name.ValueString())
 	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
-		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.AccountUrl.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
+		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.AccountUrl.ValueString())
 		if !plan.ServicePrincipal.AccountName.IsNull() && !plan.ServicePrincipal.AccountName.IsUnknown() {
 			nested.SetAccountName(plan.ServicePrincipal.AccountName.ValueString())
 		}
@@ -137,7 +137,7 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.UpdateAzureCollectionDataStore(ctx, state.Id.ValueString()).AzureCollectionDataStorePatch(*body).Execute()
 	})

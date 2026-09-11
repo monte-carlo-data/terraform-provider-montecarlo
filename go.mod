@@ -6,7 +6,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
-	github.com/monte-carlo-data/mc-sdk-go v0.0.0-20260910172621-7364d00eb748
+	github.com/monte-carlo-data/mc-sdk-go v0.0.0-20260911221248-fa75dc7afcaf
 )
 
 require (

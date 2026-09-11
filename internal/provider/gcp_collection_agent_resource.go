@@ -59,7 +59,7 @@ func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewGcpCollectionAgentIn(sdk.GcpAgentAuthenticationType(plan.AuthenticationType.ValueString()), plan.CloudRunUrl.ValueString(), plan.DeploymentId.ValueString())
+	body := sdk.NewGcpCollectionAgentIn(sdk.GcpAgentAuthenticationType(plan.AuthenticationType.ValueString()), plan.DeploymentId.ValueString(), plan.CloudRunUrl.ValueString())
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
@@ -70,7 +70,7 @@ func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, plan.AuthHeaders.Headers))
 		body.SetAuthHeaders(*nested)
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterGcpCollectionAgent(ctx).GcpCollectionAgentIn(*body).Execute()
 	})
@@ -127,7 +127,7 @@ func (r *gcpCollectionAgentResource) Update(ctx context.Context, req resource.Up
 		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, plan.AuthHeaders.Headers))
 		body.SetAuthHeaders(*nested)
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.UpdateGcpCollectionAgent(ctx, state.Id.ValueString()).GcpCollectionAgentPatch(*body).Execute()
 	})

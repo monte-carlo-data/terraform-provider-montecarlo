@@ -60,11 +60,11 @@ func (r *deploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewDeploymentIn(sdk.RuntimePlatform(plan.RuntimePlatform.ValueString()), sdk.DeploymentType(plan.Type.ValueString()))
+	body := sdk.NewDeploymentIn(sdk.DeploymentType(plan.Type.ValueString()), sdk.RuntimePlatform(plan.RuntimePlatform.ValueString()))
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.DeploymentOut, *http.Response, error) {
 		return r.clients.api.DeploymentsAPI.CreateDeployment(ctx).DeploymentIn(*body).Execute()
 	})
@@ -104,7 +104,7 @@ func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.DeploymentOut, *http.Response, error) {
 		return r.clients.api.DeploymentsAPI.UpdateDeployment(ctx, state.Id.ValueString()).DeploymentPatch(*body).Execute()
 	})
