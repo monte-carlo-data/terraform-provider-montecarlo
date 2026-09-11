@@ -63,7 +63,7 @@ func (r *genericCollectionAgentResource) Create(ctx context.Context, req resourc
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GenericCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterGenericCollectionAgent(ctx).GenericCollectionAgentIn(*body).Execute()
 	})
@@ -103,7 +103,7 @@ func (r *genericCollectionAgentResource) Update(ctx context.Context, req resourc
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GenericCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.UpdateGenericCollectionAgent(ctx, state.Id.ValueString()).GenericCollectionAgentPatch(*body).Execute()
 	})

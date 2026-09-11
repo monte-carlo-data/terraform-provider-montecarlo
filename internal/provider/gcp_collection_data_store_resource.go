@@ -59,11 +59,11 @@ func (r *gcpCollectionDataStoreResource) Create(ctx context.Context, req resourc
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewGcpCollectionDataStoreIn(plan.BucketName.ValueString(), plan.DeploymentId.ValueString(), plan.ServiceAccountKey.ValueString())
+	body := sdk.NewGcpCollectionDataStoreIn(plan.DeploymentId.ValueString(), plan.BucketName.ValueString(), plan.ServiceAccountKey.ValueString())
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.RegisterGcpCollectionDataStore(ctx).GcpCollectionDataStoreIn(*body).Execute()
 	})
@@ -109,7 +109,7 @@ func (r *gcpCollectionDataStoreResource) Update(ctx context.Context, req resourc
 	if !plan.ServiceAccountKey.IsNull() && !plan.ServiceAccountKey.IsUnknown() {
 		body.SetServiceAccountKey(plan.ServiceAccountKey.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpCollectionDataStoreOut, *http.Response, error) {
 		return r.clients.api.CollectionDataStoresAPI.UpdateGcpCollectionDataStore(ctx, state.Id.ValueString()).GcpCollectionDataStorePatch(*body).Execute()
 	})

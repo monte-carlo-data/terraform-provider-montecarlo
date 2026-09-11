@@ -68,10 +68,10 @@ func (r *azureCollectionAgentResource) Create(ctx context.Context, req resource.
 		body.SetFunctionAppKey(*nested)
 	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
-		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.Audience.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
+		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.Audience.ValueString())
 		body.SetServicePrincipal(*nested)
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAzureCollectionAgent(ctx).AzureCollectionAgentIn(*body).Execute()
 	})
@@ -126,10 +126,10 @@ func (r *azureCollectionAgentResource) Update(ctx context.Context, req resource.
 		body.SetFunctionAppKey(*nested)
 	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
-		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.Audience.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.TenantId.ValueString())
+		nested := sdk.NewServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.Audience.ValueString())
 		body.SetServicePrincipal(*nested)
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.UpdateAzureCollectionAgent(ctx, state.Id.ValueString()).AzureCollectionAgentPatch(*body).Execute()
 	})

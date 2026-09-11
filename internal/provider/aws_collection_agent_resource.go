@@ -63,7 +63,7 @@ func (r *awsCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.RegisterAwsCollectionAgent(ctx).AwsCollectionAgentIn(*body).Execute()
 	})
@@ -109,7 +109,7 @@ func (r *awsCollectionAgentResource) Update(ctx context.Context, req resource.Up
 	if !plan.RoleArn.IsNull() && !plan.RoleArn.IsUnknown() {
 		body.SetRoleArn(plan.RoleArn.ValueString())
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsCollectionAgentOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.UpdateAwsCollectionAgent(ctx, state.Id.ValueString()).AwsCollectionAgentPatch(*body).Execute()
 	})

@@ -74,7 +74,7 @@ func (r *genericCollectionAgentOauthClientResource) Create(ctx context.Context, 
 	if !plan.ExpirationDays.IsNull() && !plan.ExpirationDays.IsUnknown() {
 		body.SetExpirationDays(int32(plan.ExpirationDays.ValueInt64()))
 	}
-	// Retried: the spec marks this operation x-mc-terraform-retry-on-transient.
+	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GenericCollectionAgentOAuthClientCreatedOut, *http.Response, error) {
 		return r.clients.api.CollectionAgentsAPI.CreateGenericCollectionAgentOauthClient(ctx).GenericCollectionAgentOAuthClientIn(*body).Execute()
 	})
