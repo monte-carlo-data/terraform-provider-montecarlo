@@ -75,8 +75,8 @@ onto the deployment using the module's outputs — the three blocks above, in th
 | `montecarlo_gcp_collection_agent` | Registration of a Cloud Run-backed collection agent onto a GCP deployment. |
 | `montecarlo_gcp_collection_data_store` | Registration of a GCS bucket as a deployment's collection data store. |
 | `montecarlo_generic_collection_agent` | Registration of a self-hosted collection agent onto a generic deployment. |
-| `montecarlo_generic_collection_agent_oauth_client` | An OAuth client a generic collection agent presents; the secret is returned once, on create. |
-| `montecarlo_generic_collection_agent_token` | A token a generic collection agent presents; the secret is returned once, on create. |
+| `montecarlo_generic_collection_agent_oauth_client` | An OAuth client a generic collection agent presents. The secret is returned once, on create. |
+| `montecarlo_generic_collection_agent_token` | A token a generic collection agent presents. The secret is returned once, on create. |
 
 Data sources read an already-registered agent or data store. Each is looked up by its own id
 attribute — not by `id`, which is computed:
