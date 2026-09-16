@@ -76,6 +76,26 @@ outside the patterns, as `helpers.go` and `helpers_test.go` do.
 
 Hand-written: `main.go`, the helpers the generated code calls, and the examples.
 
+## Regeneration is automatic
+
+api-codegen regenerates this repository and opens a pull request whenever it is behind the API
+spec or behind `mc-sdk-go`. Nobody runs the generator from outside any more.
+
+That pull request moves the SDK pin in the same commit as the code that needs it, which is the
+only correct way to move it, and it has already been built and vetted against that pin before
+being pushed. The generated paths carry no code owner, so it asks nobody for review — a person
+still approves and merges it, and `go.mod` and `go.sum` are checked to make sure the bot changed
+nothing there but the SDK's own lines.
+
+`.api-codegen-source.json` at the root records what produced the tree: the api-codegen commit
+and run, both `tfplugingen` versions, the `mc-sdk-go` commit pinned, and the monolith export the
+spec came from. The next regeneration reads it to list what has changed since.
+
+Two things the bot leaves behind for whoever merges it. README.md's tables of every resource,
+data source and import id are hand-written, so a pull request that adds a resource leaves them
+stale. And a new resource ships with no `examples/` entry; those are written deliberately,
+afterwards, rather than generated.
+
 ## Running a locally built provider
 
 `dev_overrides` in `~/.terraformrc` points Terraform at a local binary, which needs no
