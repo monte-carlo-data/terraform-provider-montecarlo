@@ -141,6 +141,12 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 		NewGenericCollectionAgentResource,
 		NewGenericCollectionAgentOauthClientResource,
 		NewGenericCollectionAgentTokenResource,
+		NewSelfHostedAwsCredentialsResource,
+		NewSelfHostedAzureCredentialsResource,
+		NewSelfHostedEnvVarCredentialsResource,
+		NewSelfHostedFileCredentialsResource,
+		NewSelfHostedGcpCredentialsResource,
+		NewSnowflakeCredentialsResource,
 		NewWarehouseResource,
 	}
 }
@@ -156,6 +162,12 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 		NewGenericCollectionAgentDataSource,
 		NewGenericCollectionAgentOauthClientDataSource,
 		NewGenericCollectionAgentTokenDataSource,
+		NewSelfHostedAwsCredentialsDataSource,
+		NewSelfHostedAzureCredentialsDataSource,
+		NewSelfHostedEnvVarCredentialsDataSource,
+		NewSelfHostedFileCredentialsDataSource,
+		NewSelfHostedGcpCredentialsDataSource,
+		NewSnowflakeCredentialsDataSource,
 		NewWarehouseDataSource,
 	}
 }
