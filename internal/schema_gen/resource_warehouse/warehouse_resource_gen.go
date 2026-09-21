@@ -14,6 +14,13 @@ import (
 func WarehouseResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"connection_type": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 200),
+				},
+			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
 				Description:         "When the warehouse was created.",
@@ -38,7 +45,8 @@ func WarehouseResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"type": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Description:         "The kind of data platform a warehouse represents.\n\nEvery connection on a warehouse has to fit its type. A `DATA_LAKE` warehouse holds the\nconnections of a lake made of several systems, such as a metastore and a query engine. A\n`CUSTOM_INTEGRATION` warehouse holds connections you implement yourself.",
 				MarkdownDescription: "The kind of data platform a warehouse represents.\n\nEvery connection on a warehouse has to fit its type. A `DATA_LAKE` warehouse holds the\nconnections of a lake made of several systems, such as a metastore and a query engine. A\n`CUSTOM_INTEGRATION` warehouse holds connections you implement yourself.",
 				Validators: []validator.String{
@@ -72,9 +80,10 @@ func WarehouseResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type WarehouseModel struct {
-	CreatedTime  types.String `tfsdk:"created_time"`
-	DeploymentId types.String `tfsdk:"deployment_id"`
-	Id           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Type         types.String `tfsdk:"type"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	DeploymentId   types.String `tfsdk:"deployment_id"`
+	Id             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	Type           types.String `tfsdk:"type"`
 }
