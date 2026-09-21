@@ -33,6 +33,7 @@ func (r *warehouseResource) Schema(ctx context.Context, _ resource.SchemaRequest
 	s := resource_warehouse.WarehouseResourceSchema(ctx)
 	// The API accepts these on create and not on update, so changing one replaces the
 	// resource. tfplugingen does not know that, so requiresReplace says it here.
+	requiresReplace(s.Attributes, "warehouse.connection_type", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "warehouse.deployment_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "warehouse.type", &resp.Diagnostics)
 	// Updating the resource never changes these, so the plan keeps what state holds. Left
@@ -62,7 +63,13 @@ func (r *warehouseResource) Create(ctx context.Context, req resource.CreateReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewWarehouseIn(plan.Name.ValueString(), sdk.WarehouseType(plan.Type.ValueString()), plan.DeploymentId.ValueString())
+	body := sdk.NewWarehouseIn(plan.Name.ValueString(), plan.DeploymentId.ValueString())
+	if !plan.ConnectionType.IsNull() && !plan.ConnectionType.IsUnknown() {
+		body.SetConnectionType(plan.ConnectionType.ValueString())
+	}
+	if !plan.Type.IsNull() && !plan.Type.IsUnknown() {
+		body.SetType(sdk.WarehouseType(plan.Type.ValueString()))
+	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.WarehouseOut, *http.Response, error) {
 		return r.clients.api.WarehousesAPI.CreateWarehouse(ctx).WarehouseIn(*body).Execute()
@@ -71,7 +78,7 @@ func (r *warehouseResource) Create(ctx context.Context, req resource.CreateReque
 		resp.Diagnostics.AddError("Create warehouse failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, warehouseToModel(out))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, warehouseToModel(out, plan.ConnectionType))...)
 }
 
 func (r *warehouseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -89,7 +96,7 @@ func (r *warehouseResource) Read(ctx context.Context, req resource.ReadRequest, 
 		resp.Diagnostics.AddError("Read warehouse failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, warehouseToModel(out))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, warehouseToModel(out, state.ConnectionType))...)
 }
 
 func (r *warehouseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -111,7 +118,7 @@ func (r *warehouseResource) Update(ctx context.Context, req resource.UpdateReque
 		resp.Diagnostics.AddError("Update warehouse failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, warehouseToModel(out))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, warehouseToModel(out, plan.ConnectionType))...)
 }
 
 func (r *warehouseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -129,11 +136,12 @@ func (r *warehouseResource) ImportState(ctx context.Context, req resource.Import
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func warehouseToModel(o *sdk.WarehouseOut) resource_warehouse.WarehouseModel {
+func warehouseToModel(o *sdk.WarehouseOut, connection_type types.String) resource_warehouse.WarehouseModel {
 	m := resource_warehouse.WarehouseModel{
-		CreatedTime: types.StringValue(o.GetCreatedTime().Format(time.RFC3339)),
-		Id:          types.StringValue(o.GetId()),
-		Type:        types.StringValue(string(o.GetType())),
+		CreatedTime:    types.StringValue(o.GetCreatedTime().Format(time.RFC3339)),
+		Id:             types.StringValue(o.GetId()),
+		Type:           types.StringValue(string(o.GetType())),
+		ConnectionType: connection_type,
 	}
 	if v, ok := o.GetDeploymentIdOk(); ok && v != nil {
 		m.DeploymentId = types.StringValue(*v)
@@ -144,6 +152,11 @@ func warehouseToModel(o *sdk.WarehouseOut) resource_warehouse.WarehouseModel {
 		m.Name = types.StringValue(*v)
 	} else {
 		m.Name = types.StringNull()
+	}
+	// Optional+Computed write-only field omitted from config -> plan value is unknown,
+	// and the response never carries it, so resolve it to null (never leave it unknown).
+	if connection_type.IsUnknown() {
+		m.ConnectionType = types.StringNull()
 	}
 	return m
 }
