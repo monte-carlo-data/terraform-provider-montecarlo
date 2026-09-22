@@ -14,14 +14,16 @@ func AzureCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"authentication_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
-				MarkdownDescription: "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
+				Description:         "How Monte Carlo authenticates when it calls the collection agent. Null for an agent that connects out instead, such as a generic one.",
+				MarkdownDescription: "How Monte Carlo authenticates when it calls the collection agent. Null for an agent that connects out instead, such as a generic one.",
 			},
 			"collection_agent_id": schema.StringAttribute{
 				Required: true,
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the collection agent was created. That is when its deployment was provisioned, which is before you register the agent.",
+				MarkdownDescription: "When the collection agent was created. That is when its deployment was provisioned, which is before you register the agent.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
@@ -44,10 +46,14 @@ func AzureCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the collection agent.",
 			},
 			"image_build": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Build of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
+				MarkdownDescription: "Build of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
 			},
 			"image_version": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
+				MarkdownDescription: "Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
 			},
 			"is_remote_upgradeable": schema.BoolAttribute{
 				Computed:            true,
@@ -55,10 +61,14 @@ func AzureCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Whether Monte Carlo can update the collection agent's image for you.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.",
+				MarkdownDescription: "When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.",
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of the collection agent. Null when it has no name.",
+				MarkdownDescription: "Display name of the collection agent. Null when it has no name.",
 			},
 		},
 	}

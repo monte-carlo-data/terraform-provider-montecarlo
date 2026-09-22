@@ -39,21 +39,25 @@ func GenericCollectionAgentOauthClientResourceSchema(ctx context.Context) schema
 			"description": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "What this credential is for.",
-				MarkdownDescription: "What this credential is for.",
+				Description:         "What this credential is for. Monte Carlo generates one naming the agent if you leave it out.",
+				MarkdownDescription: "What this credential is for. Monte Carlo generates one naming the agent if you leave it out.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(200),
 				},
 			},
 			"expiration_days": schema.Int64Attribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Days until the client stops being accepted. Leave it out for a client that does not expire.",
+				MarkdownDescription: "Days until the client stops being accepted. Leave it out for a client that does not expire.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
 			},
 			"expiration_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the client stops being accepted. Null for a client that does not expire.",
+				MarkdownDescription: "When the client stops being accepted. Null for a client that does not expire.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -73,8 +77,8 @@ func GenericCollectionAgentOauthClientResourceSchema(ctx context.Context) schema
 			},
 			"type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The kind of credential a generic collection agent presents to Monte Carlo.\n\n`TOKEN` is a key id and secret the agent sends as headers. `OAUTH_CLIENT` is an OAuth 2.0\nclient the agent exchanges for short-lived access tokens.",
-				MarkdownDescription: "The kind of credential a generic collection agent presents to Monte Carlo.\n\n`TOKEN` is a key id and secret the agent sends as headers. `OAUTH_CLIENT` is an OAuth 2.0\nclient the agent exchanges for short-lived access tokens.",
+				Description:         "Which kind of credential this is.",
+				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
 	}

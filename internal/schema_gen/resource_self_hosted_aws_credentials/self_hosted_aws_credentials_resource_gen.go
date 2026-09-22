@@ -15,15 +15,19 @@ func SelfHostedAwsCredentialsResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"assumable_role": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "ARN of a role the deployment assumes to read the secret. Omit it to read as itself.",
+				MarkdownDescription: "ARN of a role the deployment assumes to read the secret. Omit it to read as itself.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 2048),
 				},
 			},
 			"aws_region": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "AWS region of the secret. Omit it to use the deployment's own region.",
+				MarkdownDescription: "AWS region of the secret. Omit it to use the deployment's own region.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -37,8 +41,10 @@ func SelfHostedAwsCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"bq_project_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "BigQuery project the connection reads from. Only for a BigQuery connection.",
+				MarkdownDescription: "BigQuery project the connection reads from. Only for a BigQuery connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -57,15 +63,19 @@ func SelfHostedAwsCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"databricks_warehouse_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
 			},
 			"external_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "External id the assumed role's trust policy requires, if it requires one.",
+				MarkdownDescription: "External id the assumed role's trust policy requires, if it requires one.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 1224),
 				},
@@ -77,8 +87,8 @@ func SelfHostedAwsCredentialsResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
 	}

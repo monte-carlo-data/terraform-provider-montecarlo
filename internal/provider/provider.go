@@ -106,9 +106,8 @@ func (p *mcProvider) Configure(ctx context.Context, req provider.ConfigureReques
 		return
 	}
 
-	// Only what the configuration set is passed on. Environment variables and the profile are
-	// resolved by the SDK, so this provider, the CLI and the SDKs agree on precedence rather
-	// than each implementing it.
+	// Only what the configuration set is passed on. The SDK resolves the environment variables
+	// and the profile.
 	api, err := sdk.NewClient(ctx, sdk.Options{
 		Endpoint:     cfg.Endpoint.ValueString(),
 		TokenID:      cfg.TokenID.ValueString(),

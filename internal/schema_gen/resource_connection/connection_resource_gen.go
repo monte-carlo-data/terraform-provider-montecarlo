@@ -32,14 +32,18 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"credentials_storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where that secret lives. Null when there are no credentials to describe.",
+				MarkdownDescription: "Where that secret lives. Null when there are no credentials to describe.",
 			},
 			"deployment_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
 			},
 			"deployment_name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of that deployment. Null when there is no deployment to name.",
+				MarkdownDescription: "Display name of that deployment. Null when there is no deployment to name.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -50,8 +54,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				Computed:            true,
-				Description:         "The jobs Monte Carlo runs on this connection, such as `metadata`.",
-				MarkdownDescription: "The jobs Monte Carlo runs on this connection, such as `metadata`.",
+				Description:         "The jobs to run on this connection. Omit it to run what the connection type runs by default, which is what the app does. Which values are accepted depends on the connection type. An empty list is not accepted; omit the field to take the defaults.",
+				MarkdownDescription: "The jobs to run on this connection. Omit it to run what the connection type runs by default, which is what the app does. Which values are accepted depends on the connection type. An empty list is not accepted; omit the field to take the defaults.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -70,7 +74,9 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The warehouse to add the connection to. Its type has to match what the credentials are for.",
 			},
 			"warehouse_name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of that warehouse. Null for a warehouse that was never named.",
+				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named.",
 			},
 		},
 	}

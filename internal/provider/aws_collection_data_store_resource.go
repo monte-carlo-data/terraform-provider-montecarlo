@@ -31,13 +31,12 @@ func (r *awsCollectionDataStoreResource) Metadata(_ context.Context, req resourc
 
 func (r *awsCollectionDataStoreResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_aws_collection_data_store.AwsCollectionDataStoreResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "aws_collection_data_store.deployment_id", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "aws_collection_data_store.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "aws_collection_data_store.id", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "aws_collection_data_store.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 
@@ -165,8 +164,8 @@ func awsCollectionDataStoreToModel(o *sdk.AwsCollectionDataStoreOut, role_arn ty
 	} else {
 		m.Name = types.StringNull()
 	}
-	// Optional+Computed write-only field omitted from config -> plan value is unknown,
-	// and the response never carries it, so resolve it to null (never leave it unknown).
+	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// resolves to null. Terraform rejects an unknown after apply.
 	if role_arn.IsUnknown() {
 		m.RoleArn = types.StringNull()
 	}

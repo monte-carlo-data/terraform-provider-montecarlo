@@ -33,15 +33,14 @@ func (r *selfHostedEnvVarCredentialsResource) Metadata(_ context.Context, req re
 
 func (r *selfHostedEnvVarCredentialsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_self_hosted_env_var_credentials.SelfHostedEnvVarCredentialsResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "self_hosted_env_var_credentials.connection_type", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "self_hosted_env_var_credentials.connection_type", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "self_hosted_env_var_credentials.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "self_hosted_env_var_credentials.id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "self_hosted_env_var_credentials.storage_type", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "self_hosted_env_var_credentials.connection_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

@@ -13,7 +13,9 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"bq_project_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "BigQuery project the connection reads from. Null unless set.",
+				MarkdownDescription: "BigQuery project the connection reads from. Null unless set.",
 			},
 			"connection_type": schema.StringAttribute{
 				Computed:            true,
@@ -29,7 +31,9 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				Required: true,
 			},
 			"databricks_warehouse_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
 			},
 			"env_var_name": schema.StringAttribute{
 				Computed:            true,
@@ -42,12 +46,14 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "Unique identifier of the credentials.",
 			},
 			"kms_key_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "AWS KMS key the value is encrypted with. Null for a value in the clear.",
+				MarkdownDescription: "AWS KMS key the value is encrypted with. Null for a value in the clear.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
 	}

@@ -26,18 +26,24 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the connection was created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.",
+				MarkdownDescription: "The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.",
 			},
 			"credentials_storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where that secret lives. Null when there are no credentials to describe.",
+				MarkdownDescription: "Where that secret lives. Null when there are no credentials to describe.",
 			},
 			"deployment_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
 			},
 			"deployment_name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of that deployment. Null when there is no deployment to name.",
+				MarkdownDescription: "Display name of that deployment. Null when there is no deployment to name.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -51,7 +57,9 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The jobs Monte Carlo runs on this connection, such as `metadata`.",
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of the connection. Null for a connection that was never named.",
+				MarkdownDescription: "Display name of the connection. Null for a connection that was never named.",
 			},
 			"warehouse_id": schema.StringAttribute{
 				Computed:            true,
@@ -59,7 +67,9 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The warehouse the connection belongs to. Fixed once created.",
 			},
 			"warehouse_name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of that warehouse. Null for a warehouse that was never named.",
+				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named.",
 			},
 		},
 	}

@@ -42,8 +42,8 @@ func GenericCollectionAgentTokenDataSourceSchema(ctx context.Context) schema.Sch
 			},
 			"type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The kind of credential a generic collection agent presents to Monte Carlo.\n\n`TOKEN` is a key id and secret the agent sends as headers. `OAUTH_CLIENT` is an OAuth 2.0\nclient the agent exchanges for short-lived access tokens.",
-				MarkdownDescription: "The kind of credential a generic collection agent presents to Monte Carlo.\n\n`TOKEN` is a key id and secret the agent sends as headers. `OAUTH_CLIENT` is an OAuth 2.0\nclient the agent exchanges for short-lived access tokens.",
+				Description:         "Which kind of credential this is.",
+				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
 	}

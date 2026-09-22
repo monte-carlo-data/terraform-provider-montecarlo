@@ -31,13 +31,12 @@ func (r *gcpCollectionAgentResource) Metadata(_ context.Context, req resource.Me
 
 func (r *gcpCollectionAgentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_gcp_collection_agent.GcpCollectionAgentResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "gcp_collection_agent.deployment_id", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "gcp_collection_agent.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "gcp_collection_agent.id", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "gcp_collection_agent.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 
@@ -155,10 +154,8 @@ func (r *gcpCollectionAgentResource) ImportState(ctx context.Context, req resour
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// applyGcpCollectionAgentNested copies the write-only nested credential blocks from src (plan on create,
-// state on read) into m. These blocks are Optional+Computed and never returned by the API, so an
-// omitted block — or an omitted optional sub-field — arrives unknown; resolve those to null so the
-// applied result is fully known (Terraform rejects unknowns after apply).
+// applyGcpCollectionAgentNested copies the write-only nested credential blocks from src into m,
+// resolving an omitted block or sub-field to null. src is the plan on create, state on read.
 func applyGcpCollectionAgentNested(m *resource_gcp_collection_agent.GcpCollectionAgentModel, src resource_gcp_collection_agent.GcpCollectionAgentModel) {
 	if src.AuthHeaders.IsNull() || src.AuthHeaders.IsUnknown() {
 		m.AuthHeaders = resource_gcp_collection_agent.NewAuthHeadersValueNull()
@@ -210,8 +207,8 @@ func gcpCollectionAgentToModel(o *sdk.GcpCollectionAgentOut, service_account_key
 	} else {
 		m.Name = types.StringNull()
 	}
-	// Optional+Computed write-only field omitted from config -> plan value is unknown,
-	// and the response never carries it, so resolve it to null (never leave it unknown).
+	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// resolves to null. Terraform rejects an unknown after apply.
 	if service_account_key.IsUnknown() {
 		m.ServiceAccountKey = types.StringNull()
 	}

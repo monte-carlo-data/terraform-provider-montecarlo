@@ -37,8 +37,8 @@ func SnowflakeCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 			"user": schema.StringAttribute{
 				Computed:            true,
@@ -46,7 +46,9 @@ func SnowflakeCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Snowflake user the key pair belongs to.",
 			},
 			"warehouse": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Snowflake virtual warehouse queries run in. Null when none is set.",
+				MarkdownDescription: "Snowflake virtual warehouse queries run in. Null when none is set.",
 			},
 		},
 	}

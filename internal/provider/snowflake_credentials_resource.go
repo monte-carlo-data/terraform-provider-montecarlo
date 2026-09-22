@@ -31,8 +31,7 @@ func (r *snowflakeCredentialsResource) Metadata(_ context.Context, req resource.
 
 func (r *snowflakeCredentialsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_snowflake_credentials.SnowflakeCredentialsResourceSchema(ctx)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "snowflake_credentials.connection_type", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "snowflake_credentials.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "snowflake_credentials.id", &resp.Diagnostics)
@@ -159,8 +158,8 @@ func snowflakeCredentialsToModel(o *sdk.SnowflakeCredentialsOut, private_key typ
 	} else {
 		m.Warehouse = types.StringNull()
 	}
-	// Optional+Computed write-only field omitted from config -> plan value is unknown,
-	// and the response never carries it, so resolve it to null (never leave it unknown).
+	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// resolves to null. Terraform rejects an unknown after apply.
 	if private_key.IsUnknown() {
 		m.PrivateKey = types.StringNull()
 	}

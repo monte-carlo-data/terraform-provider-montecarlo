@@ -47,16 +47,18 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"private_key_passphrase": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Passphrase the private key is encrypted with. Omit it for an unencrypted key. Never returned.",
+				MarkdownDescription: "Passphrase the private key is encrypted with. Omit it for an unencrypted key. Never returned.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 32768),
 				},
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 			"user": schema.StringAttribute{
 				Required:            true,
@@ -67,8 +69,10 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"warehouse": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Snowflake virtual warehouse to run queries in. Omit it to use the user's default.",
+				MarkdownDescription: "Snowflake virtual warehouse to run queries in. Omit it to use the user's default.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},

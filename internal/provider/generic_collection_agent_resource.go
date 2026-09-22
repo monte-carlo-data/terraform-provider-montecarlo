@@ -31,13 +31,12 @@ func (r *genericCollectionAgentResource) Metadata(_ context.Context, req resourc
 
 func (r *genericCollectionAgentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_generic_collection_agent.GenericCollectionAgentResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "generic_collection_agent.deployment_id", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent.id", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "generic_collection_agent.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 

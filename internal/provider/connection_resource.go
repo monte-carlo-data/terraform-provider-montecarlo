@@ -31,17 +31,17 @@ func (r *connectionResource) Metadata(_ context.Context, req resource.MetadataRe
 
 func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_connection.ConnectionResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "connection.job_types", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "connection.connection_type", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
+	useNonNullStateForUnknown(s.Attributes, "connection.job_types", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "connection.job_types", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 

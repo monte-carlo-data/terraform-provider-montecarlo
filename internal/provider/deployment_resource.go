@@ -31,14 +31,13 @@ func (r *deploymentResource) Metadata(_ context.Context, req resource.MetadataRe
 
 func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_deployment.DeploymentResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "deployment.type", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "deployment.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "deployment.id", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "deployment.type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

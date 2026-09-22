@@ -33,13 +33,12 @@ func (r *azureCollectionDataStoreResource) Metadata(_ context.Context, req resou
 
 func (r *azureCollectionDataStoreResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_azure_collection_data_store.AzureCollectionDataStoreResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "azure_collection_data_store.deployment_id", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "azure_collection_data_store.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "azure_collection_data_store.id", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "azure_collection_data_store.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
 }
 
@@ -165,10 +164,8 @@ func (r *azureCollectionDataStoreResource) ImportState(ctx context.Context, req 
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// applyAzureCollectionDataStoreNested copies the write-only nested credential blocks from src (plan on create,
-// state on read) into m. These blocks are Optional+Computed and never returned by the API, so an
-// omitted block — or an omitted optional sub-field — arrives unknown; resolve those to null so the
-// applied result is fully known (Terraform rejects unknowns after apply).
+// applyAzureCollectionDataStoreNested copies the write-only nested credential blocks from src into m,
+// resolving an omitted block or sub-field to null. src is the plan on create, state on read.
 func applyAzureCollectionDataStoreNested(m *resource_azure_collection_data_store.AzureCollectionDataStoreModel, src resource_azure_collection_data_store.AzureCollectionDataStoreModel) {
 	if src.ServicePrincipal.IsNull() || src.ServicePrincipal.IsUnknown() {
 		m.ServicePrincipal = resource_azure_collection_data_store.NewServicePrincipalValueNull()
