@@ -2,7 +2,8 @@
 
 The official Terraform provider for Monte Carlo. It manages the deployments, collection agents
 and collection data stores that connect your environment to
-[Monte Carlo](https://docs.getmontecarlo.com/docs/platform-architecture).
+[Monte Carlo](https://docs.getmontecarlo.com/docs/platform-architecture), and the warehouses,
+credentials and connections that run through them.
 
 ## Status
 
@@ -16,7 +17,9 @@ locally, which takes two commands — see
 
 ## Usage
 
-The configuration below is [`examples/aws-agent/`](examples/aws-agent) without its comments and
+The configuration below is
+[`examples/resources/montecarlo_aws_collection_agent/`](examples/resources/montecarlo_aws_collection_agent)
+without its comments and
 outputs, so that directory can be run as-is. Once published, the `required_providers` block is
 all it needs; today it also needs the `dev_overrides` setup in
 [AGENTS.md](AGENTS.md#running-a-locally-built-provider).
@@ -65,6 +68,8 @@ onto the deployment using the module's outputs — the three blocks above, in th
 
 ## Resources and data sources
 
+The deployment, and the agents and data stores that register onto it:
+
 | Resource | Manages |
 |----------|---------|
 | `montecarlo_deployment` | A deployment: what a collection agent or data store registers onto. Mints `aws_external_id`. |
@@ -78,8 +83,27 @@ onto the deployment using the module's outputs — the three blocks above, in th
 | `montecarlo_generic_collection_agent_oauth_client` | An OAuth client a generic collection agent presents. The secret is returned once, on create. |
 | `montecarlo_generic_collection_agent_token` | A token a generic collection agent presents. The secret is returned once, on create. |
 
-Data sources read an already-registered agent or data store. Each is looked up by its own id
-attribute — not by `id`, which is computed:
+The integrations that run through a deployment. A warehouse holds connections; a connection
+joins a warehouse to the credentials it reads with, and takes its type from them:
+
+| Resource | Manages |
+|----------|---------|
+| `montecarlo_warehouse` | A warehouse: the container its connections belong to, and the deployment they run through. |
+| `montecarlo_connection` | A connection on a warehouse, reading with a given set of credentials. |
+| `montecarlo_snowflake_credentials` | Snowflake key pair credentials stored by Monte Carlo. |
+| `montecarlo_self_hosted_aws_credentials` | Credentials your agent reads from AWS Secrets Manager. Monte Carlo stores only where to find them. |
+| `montecarlo_self_hosted_azure_credentials` | The same, from Azure Key Vault. |
+| `montecarlo_self_hosted_gcp_credentials` | The same, from GCP Secret Manager. |
+| `montecarlo_self_hosted_env_var_credentials` | The same, from an environment variable on the agent. |
+| `montecarlo_self_hosted_file_credentials` | The same, from a file mounted into the agent. |
+
+A self-hosted credentials resource records a reference, not a secret. The secret itself has to
+exist in your store already, holding the JSON schema documented for its connection type, and
+the agent has to be able to read it. See
+[self-hosted credentials](https://docs.getmontecarlo.com/docs/self-hosted-credentials) for both.
+
+Data sources read something already registered. Each is looked up by its own id attribute —
+not by `id`, which is computed:
 
 | Data source | Lookup argument |
 |-------------|-----------------|
@@ -92,10 +116,17 @@ attribute — not by `id`, which is computed:
 | `montecarlo_generic_collection_agent` | `collection_agent_id` |
 | `montecarlo_generic_collection_agent_oauth_client` | `credential_id` |
 | `montecarlo_generic_collection_agent_token` | `credential_id` |
+| `montecarlo_warehouse` | `warehouse_id` |
+| `montecarlo_connection` | `connection_id` |
+| `montecarlo_snowflake_credentials` | `credentials_id` |
+| `montecarlo_self_hosted_aws_credentials` | `credentials_id` |
+| `montecarlo_self_hosted_azure_credentials` | `credentials_id` |
+| `montecarlo_self_hosted_gcp_credentials` | `credentials_id` |
+| `montecarlo_self_hosted_env_var_credentials` | `credentials_id` |
+| `montecarlo_self_hosted_file_credentials` | `credentials_id` |
 
-There is no deployment data source yet.
-
-`terraform providers schema -json` lists every attribute of all nineteen with its description.
+`terraform providers schema -json` lists every attribute of every resource and data source
+above, with its description.
 
 ## Import
 
@@ -153,3 +184,14 @@ If you do put credentials in your configuration, keep them in variables and the 
   the agent presents (a [token](examples/resources/montecarlo_generic_collection_agent_token) or
   an [OAuth client](examples/resources/montecarlo_generic_collection_agent_oauth_client)) and
   registers the agent you run with it.
+
+For an integration, [`montecarlo_connection`](examples/resources/montecarlo_connection) is the
+one to read first: it carries the whole chain, from the deployment through to the connection.
+The others narrow it — [`montecarlo_warehouse`](examples/resources/montecarlo_warehouse) stops
+at the warehouse, and the two credentials examples cover the alternatives for where the secret
+lives, Monte Carlo managed
+([`montecarlo_snowflake_credentials`](examples/resources/montecarlo_snowflake_credentials)) or
+your own store
+([`montecarlo_self_hosted_aws_credentials`](examples/resources/montecarlo_self_hosted_aws_credentials)).
+The self-hosted credentials resources differ only in where the secret is read from, so the AWS
+one reads across to the others. A resource with no directory here has no example yet.

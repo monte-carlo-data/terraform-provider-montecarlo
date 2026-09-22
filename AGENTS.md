@@ -44,7 +44,7 @@ gofmt -l .          # must be empty
 
 go build -o . .     # writes ./terraform-provider-montecarlo, which dev_overrides needs
 
-terraform -chdir=examples/aws-agent plan   # against that binary, see below
+terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # against that binary, see below
 ```
 
 ## Key Directories
