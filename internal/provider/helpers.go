@@ -355,6 +355,35 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 	}, "Terraform would plan the attribute as unknown on every update.", diags)
 }
 
+// useStateForUnknown keeps an attribute's prior state value in the plan, including a null one.
+//
+// The plain variant, for the write-only inputs no response carries. State holds null for one of
+// those as soon as the config omits it, and `useNonNullStateForUnknown` refuses to copy a null,
+// which leaves the attribute unknown. An unknown planned value is what `requiresReplace` reads as
+// a change, so a write-only attribute that requires replacement destroys the resource on any
+// edit until its null is held.
+//
+// Only safe because no response carries these: an attribute the API fills in later needs the
+// non-null variant, or the plan says null and the apply says otherwise.
+//
+// The generated code calls this for every optional write-only input.
+func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+	applyPlanModifier(attrs, name, planModifierSet{
+		str:     stringplanmodifier.UseStateForUnknown(),
+		boolean: boolplanmodifier.UseStateForUnknown(),
+		i32:     int32planmodifier.UseStateForUnknown(),
+		i64:     int64planmodifier.UseStateForUnknown(),
+		f32:     float32planmodifier.UseStateForUnknown(),
+		f64:     float64planmodifier.UseStateForUnknown(),
+		dynamic: dynamicplanmodifier.UseStateForUnknown(),
+		number:  numberplanmodifier.UseStateForUnknown(),
+		list:    listplanmodifier.UseStateForUnknown(),
+		mapping: mapplanmodifier.UseStateForUnknown(),
+		set:     setplanmodifier.UseStateForUnknown(),
+		object:  objectplanmodifier.UseStateForUnknown(),
+	}, "Terraform would plan the attribute as unknown on every update, and replace the resource when it also requires replacement.", diags)
+}
+
 // mapOfStrings converts a Terraform string map, treating null and unknown as absent.
 //
 // Known limitation: a known map containing a null or unknown element fails ElementsAs, and

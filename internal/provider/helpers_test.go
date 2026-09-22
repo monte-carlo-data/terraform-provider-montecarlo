@@ -43,6 +43,11 @@ var planModifierHelpers = map[string]planModifierHelper{
 		description: "Once set to a non-null value, the value of this attribute in state will not change.",
 		consequence: "plan the attribute as unknown on every update",
 	},
+	"useStateForUnknown": {
+		apply:       useStateForUnknown,
+		description: "Once set, the value of this attribute in state will not change.",
+		consequence: "replace the resource when it also requires replacement",
+	},
 }
 
 // everyAttributeType is one of each type the generated schemas can contain.
@@ -380,6 +385,124 @@ func TestRequiresReplaceReplacesOnlyOnAnUpdateThatChangesTheValue(t *testing.T) 
 			}
 		})
 	}
+}
+
+// A write-only input is null in state once the config omits it, and the framework re-plans it
+// unknown whenever the resource changes at all. requiresReplace reads that unknown as a change,
+// so before the null was held a warehouse rename destroyed the warehouse and every connection on
+// it. Both modifiers are attached here in the order the generated schema attaches them, and run
+// the way the framework runs them: each one handed the value the one before it planned.
+func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
+	const attribute = "connection_type"
+	for name, tc := range map[string]struct {
+		state       tftypes.Value
+		plan        tftypes.Value
+		stateValue  types.String
+		planValue   types.String
+		configValue types.String
+		want        types.String
+		wantReplace bool
+	}{
+		// The rename: the config changes another attribute and leaves this one out.
+		"an omitted write-only attribute keeps its null": {
+			state:       resourceRaw(attribute, nil),
+			plan:        resourceRaw(attribute, tftypes.UnknownValue),
+			stateValue:  types.StringNull(),
+			planValue:   types.StringUnknown(),
+			configValue: types.StringNull(),
+			want:        types.StringNull(),
+		},
+		// Held or not, a value the customer actually changes has to replace: the API will not
+		// accept it on an update.
+		"a configured write-only attribute that changes still replaces": {
+			state:       resourceRaw(attribute, "presto"),
+			plan:        resourceRaw(attribute, "trino"),
+			stateValue:  types.StringValue("presto"),
+			planValue:   types.StringValue("trino"),
+			configValue: types.StringValue("trino"),
+			want:        types.StringValue("trino"),
+			wantReplace: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := map[string]schema.Attribute{
+				attribute: schema.StringAttribute{Optional: true, Computed: true},
+			}
+			var diags diag.Diagnostics
+			useStateForUnknown(attrs, "resource."+attribute, &diags)
+			requiresReplace(attrs, "resource."+attribute, &diags)
+			if diags.HasError() {
+				t.Fatalf("reported %v", diags.Errors())
+			}
+
+			planned, replace := chainStringModifiers(t, attrs[attribute], planmodifier.StringRequest{
+				State:       tfsdk.State{Schema: stringResourceSchema(attribute), Raw: tc.state},
+				Plan:        tfsdk.Plan{Schema: stringResourceSchema(attribute), Raw: tc.plan},
+				StateValue:  tc.stateValue,
+				PlanValue:   tc.planValue,
+				ConfigValue: tc.configValue,
+			})
+
+			if !planned.Equal(tc.want) {
+				t.Errorf("planned %s, want %s", planned, tc.want)
+			}
+			if replace != tc.wantReplace {
+				t.Errorf("RequiresReplace = %t, want %t", replace, tc.wantReplace)
+			}
+		})
+	}
+}
+
+// The order the two modifiers are attached in is load-bearing, and it is decided in api-codegen's
+// template rather than here. Attached after the replacement, the hold runs too late: the
+// replacement has already compared an unknown plan value against the null in state.
+func TestHoldingAWriteOnlyValueAfterTheReplacementComesTooLate(t *testing.T) {
+	const attribute = "connection_type"
+	attrs := map[string]schema.Attribute{
+		attribute: schema.StringAttribute{Optional: true, Computed: true},
+	}
+	var diags diag.Diagnostics
+	requiresReplace(attrs, "resource."+attribute, &diags)
+	useStateForUnknown(attrs, "resource."+attribute, &diags)
+	if diags.HasError() {
+		t.Fatalf("reported %v", diags.Errors())
+	}
+
+	planned, replace := chainStringModifiers(t, attrs[attribute], planmodifier.StringRequest{
+		State:       tfsdk.State{Schema: stringResourceSchema(attribute), Raw: resourceRaw(attribute, nil)},
+		Plan:        tfsdk.Plan{Schema: stringResourceSchema(attribute), Raw: resourceRaw(attribute, tftypes.UnknownValue)},
+		StateValue:  types.StringNull(),
+		PlanValue:   types.StringUnknown(),
+		ConfigValue: types.StringNull(),
+	})
+
+	if !planned.Equal(types.StringNull()) {
+		t.Errorf("planned %s, want null", planned)
+	}
+	if !replace {
+		t.Error("RequiresReplace = false, so this order is safe and the generated one need not be")
+	}
+}
+
+// chainStringModifiers runs every modifier attached to a string attribute the way the framework
+// runs them, handing each the value the one before it planned and keeping any replacement.
+func chainStringModifiers(t *testing.T, a schema.Attribute, req planmodifier.StringRequest) (types.String, bool) {
+	t.Helper()
+	mods := a.(schema.StringAttribute).PlanModifiers
+	if len(mods) != 2 {
+		t.Fatalf("got %d plan modifiers, want 2", len(mods))
+	}
+	planned, replace := req.PlanValue, false
+	for _, mod := range mods {
+		req.PlanValue = planned
+		resp := &planmodifier.StringResponse{PlanValue: planned}
+		mod.PlanModifyString(t.Context(), req, resp)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("reported %v", resp.Diagnostics.Errors())
+		}
+		planned, replace = resp.PlanValue, replace || resp.RequiresReplace
+	}
+	return planned, replace
 }
 
 // Every name the generated resource schemas pass to the helpers has to resolve against the
