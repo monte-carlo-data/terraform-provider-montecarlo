@@ -15,10 +15,14 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"aws_external_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Value to supply when you register an AWS collection agent or data store on this deployment. It goes in the trust policy of the role Monte Carlo assumes. Null until Monte Carlo has generated one, for a deployment on another platform, for a caller who is not permitted to register one, and if the value could not be read just now. Retry the request in that last case.",
+				MarkdownDescription: "Value to supply when you register an AWS collection agent or data store on this deployment. It goes in the trust policy of the role Monte Carlo assumes. Null until Monte Carlo has generated one, for a deployment on another platform, for a caller who is not permitted to register one, and if the value could not be read just now. Retry the request in that last case.",
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the deployment was assigned to your account. Null when Monte Carlo has no record of that.",
+				MarkdownDescription: "When the deployment was assigned to your account. Null when Monte Carlo has no record of that.",
 			},
 			"enabled": schema.BoolAttribute{
 				Computed:            true,
@@ -31,21 +35,23 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the deployment.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When Monte Carlo last updated the infrastructure behind the deployment. Null when Monte Carlo has no record of an update.",
+				MarkdownDescription: "When Monte Carlo last updated the infrastructure behind the deployment. Null when Monte Carlo has no record of an update.",
 			},
 			"name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Display name of the deployment.",
-				MarkdownDescription: "Display name of the deployment.",
+				Description:         "Display name for the deployment. Monte Carlo generates one if you leave it out.",
+				MarkdownDescription: "Display name for the deployment. Monte Carlo generates one if you leave it out.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(200),
 				},
 			},
 			"runtime_platform": schema.StringAttribute{
 				Required:            true,
-				Description:         "Where a deployment's collection agent or data store runs.\n\nA proxied platform — `AWS_PROXIED` or `GCP_PROXIED` — is one Monte Carlo reaches over\nHTTPS through a proxy or gateway you run, instead of calling the cloud provider directly.\n`GENERIC` and `SNOWFLAKE` are not called at all: they connect out to Monte Carlo.",
-				MarkdownDescription: "Where a deployment's collection agent or data store runs.\n\nA proxied platform — `AWS_PROXIED` or `GCP_PROXIED` — is one Monte Carlo reaches over\nHTTPS through a proxy or gateway you run, instead of calling the cloud provider directly.\n`GENERIC` and `SNOWFLAKE` are not called at all: they connect out to Monte Carlo.",
+				Description:         "Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected.",
+				MarkdownDescription: "Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"AWS",
@@ -60,8 +66,8 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"type": schema.StringAttribute{
 				Required:            true,
-				Description:         "What a deployment hosts.\n\n`CLOUD` is a deployment Monte Carlo hosts and runs for you, rather than one you run in\nyour own environment.",
-				MarkdownDescription: "What a deployment hosts.\n\n`CLOUD` is a deployment Monte Carlo hosts and runs for you, rather than one you run in\nyour own environment.",
+				Description:         "What the deployment will host. Only `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned today. Any other value is rejected.",
+				MarkdownDescription: "What the deployment will host. Only `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned today. Any other value is rejected.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"COLLECTION_AGENT",

@@ -31,17 +31,18 @@ func (r *warehouseResource) Metadata(_ context.Context, req resource.MetadataReq
 
 func (r *warehouseResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_warehouse.WarehouseResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "warehouse.connection_type", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "warehouse.deployment_id", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "warehouse.type", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "warehouse.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "warehouse.deployment_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "warehouse.id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "warehouse.type", &resp.Diagnostics)
+	// No response carries these, so state holds null. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "warehouse.connection_type", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "warehouse.connection_type", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "warehouse.deployment_id", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "warehouse.type", &resp.Diagnostics)
 	resp.Schema = s
 }
 
@@ -153,8 +154,8 @@ func warehouseToModel(o *sdk.WarehouseOut, connection_type types.String) resourc
 	} else {
 		m.Name = types.StringNull()
 	}
-	// Optional+Computed write-only field omitted from config -> plan value is unknown,
-	// and the response never carries it, so resolve it to null (never leave it unknown).
+	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// resolves to null. Terraform rejects an unknown after apply.
 	if connection_type.IsUnknown() {
 		m.ConnectionType = types.StringNull()
 	}

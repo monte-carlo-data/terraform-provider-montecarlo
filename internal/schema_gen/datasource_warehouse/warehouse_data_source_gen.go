@@ -18,7 +18,9 @@ func WarehouseDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the warehouse was created.",
 			},
 			"deployment_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The deployment the warehouse's connections run through. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform. The deployments endpoints do not list those.",
+				MarkdownDescription: "The deployment the warehouse's connections run through. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform. The deployments endpoints do not list those.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -26,12 +28,14 @@ func WarehouseDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the warehouse.",
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of the warehouse. Null for a warehouse that was never named.",
+				MarkdownDescription: "Display name of the warehouse. Null for a warehouse that was never named.",
 			},
 			"type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The kind of data platform a warehouse represents.\n\nEvery connection on a warehouse has to fit its type. A `DATA_LAKE` warehouse holds the\nconnections of a lake made of several systems, such as a metastore and a query engine. A\n`CUSTOM_INTEGRATION` warehouse holds connections you implement yourself.",
-				MarkdownDescription: "The kind of data platform a warehouse represents.\n\nEvery connection on a warehouse has to fit its type. A `DATA_LAKE` warehouse holds the\nconnections of a lake made of several systems, such as a metastore and a query engine. A\n`CUSTOM_INTEGRATION` warehouse holds connections you implement yourself.",
+				Description:         "The kind of data platform the warehouse represents. Fixed once created.",
+				MarkdownDescription: "The kind of data platform the warehouse represents. Fixed once created.",
 			},
 			"warehouse_id": schema.StringAttribute{
 				Required: true,

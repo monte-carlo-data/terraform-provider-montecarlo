@@ -33,19 +33,21 @@ func (r *genericCollectionAgentOauthClientResource) Metadata(_ context.Context, 
 
 func (r *genericCollectionAgentOauthClientResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_generic_collection_agent_oauth_client.GenericCollectionAgentOauthClientResourceSchema(ctx)
-	// The API accepts these on create and not on update, so changing one replaces the
-	// resource. tfplugingen does not know that, so requiresReplace says it here.
-	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.deployment_id", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.description", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.expiration_days", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds. Left
-	// unknown, a reference to one of them would replace whatever resource reads it.
+	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.client_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.deployment_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.client_secret", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.secret_id", &resp.Diagnostics)
+	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.description", &resp.Diagnostics)
+	// No response carries these, so state holds null. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.expiration_days", &resp.Diagnostics)
+	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.deployment_id", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.description", &resp.Diagnostics)
+	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.expiration_days", &resp.Diagnostics)
 	resp.Schema = s
 }
 
@@ -146,8 +148,8 @@ func genericCollectionAgentOauthClientToModel(o *sdk.GenericCollectionAgentOAuth
 	} else {
 		m.ExpirationTime = types.StringNull()
 	}
-	// Optional+Computed write-only field omitted from config -> plan value is unknown,
-	// and the response never carries it, so resolve it to null (never leave it unknown).
+	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// resolves to null. Terraform rejects an unknown after apply.
 	if expiration_days.IsUnknown() {
 		m.ExpirationDays = types.Int64Null()
 	}
@@ -180,8 +182,8 @@ func genericCollectionAgentOauthClientCreatedToModel(o *sdk.GenericCollectionAge
 	} else {
 		m.ExpirationTime = types.StringNull()
 	}
-	// Optional+Computed write-only field omitted from config -> plan value is unknown,
-	// and the response never carries it, so resolve it to null (never leave it unknown).
+	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// resolves to null. Terraform rejects an unknown after apply.
 	if expiration_days.IsUnknown() {
 		m.ExpirationDays = types.Int64Null()
 	}

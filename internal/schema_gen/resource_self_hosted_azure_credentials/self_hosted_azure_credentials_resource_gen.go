@@ -23,22 +23,28 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 				},
 			},
 			"akv_vault_name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the key vault. Send this, `akv_vault_url`, or both.",
+				MarkdownDescription: "Name of the key vault. Send this, `akv_vault_url`, or both.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
 			},
 			"akv_vault_url": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "URL of the key vault. Send this, `akv_vault_name`, or both.",
+				MarkdownDescription: "URL of the key vault. Send this, `akv_vault_name`, or both.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 2048),
 				},
 			},
 			"bq_project_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "BigQuery project the connection reads from. Only for a BigQuery connection.",
+				MarkdownDescription: "BigQuery project the connection reads from. Only for a BigQuery connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -57,8 +63,10 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"databricks_warehouse_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -70,8 +78,8 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
 	}

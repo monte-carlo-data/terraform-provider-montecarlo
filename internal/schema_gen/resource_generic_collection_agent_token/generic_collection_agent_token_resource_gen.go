@@ -27,8 +27,8 @@ func GenericCollectionAgentTokenResourceSchema(ctx context.Context) schema.Schem
 			"description": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "What this credential is for.",
-				MarkdownDescription: "What this credential is for.",
+				Description:         "What this credential is for. Monte Carlo generates one naming the agent if you leave it out.",
+				MarkdownDescription: "What this credential is for. Monte Carlo generates one naming the agent if you leave it out.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(200),
 				},
@@ -51,8 +51,8 @@ func GenericCollectionAgentTokenResourceSchema(ctx context.Context) schema.Schem
 			},
 			"type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The kind of credential a generic collection agent presents to Monte Carlo.\n\n`TOKEN` is a key id and secret the agent sends as headers. `OAUTH_CLIENT` is an OAuth 2.0\nclient the agent exchanges for short-lived access tokens.",
-				MarkdownDescription: "The kind of credential a generic collection agent presents to Monte Carlo.\n\n`TOKEN` is a key id and secret the agent sends as headers. `OAUTH_CLIENT` is an OAuth 2.0\nclient the agent exchanges for short-lived access tokens.",
+				Description:         "Which kind of credential this is.",
+				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
 	}

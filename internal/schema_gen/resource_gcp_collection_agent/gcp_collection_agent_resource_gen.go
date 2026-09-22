@@ -37,13 +37,13 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Optional:            true,
 				Computed:            true,
-				Description:         "The HTTP headers Monte Carlo presents when it calls the agent.",
-				MarkdownDescription: "The HTTP headers Monte Carlo presents when it calls the agent.",
+				Description:         "Credentials for `CUSTOM_AUTH_HEADERS`. Send this or `service_account_key`, never both. It replaces the stored credentials rather than merging into them.",
+				MarkdownDescription: "Credentials for `CUSTOM_AUTH_HEADERS`. Send this or `service_account_key`, never both. It replaces the stored credentials rather than merging into them.",
 			},
 			"authentication_type": schema.StringAttribute{
 				Required:            true,
-				Description:         "How Monte Carlo authenticates to a collection agent running on GCP.",
-				MarkdownDescription: "How Monte Carlo authenticates to a collection agent running on GCP.",
+				Description:         "How Monte Carlo authenticates when it calls the agent. Send it together with the matching credentials.",
+				MarkdownDescription: "How Monte Carlo authenticates when it calls the agent. Send it together with the matching credentials.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"GCP_JSON_SERVICE_ACCOUNT_KEY",
@@ -60,7 +60,9 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the collection agent was created. That is when its deployment was provisioned, which is before you register the agent.",
+				MarkdownDescription: "When the collection agent was created. That is when its deployment was provisioned, which is before you register the agent.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Required:            true,
@@ -78,10 +80,14 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the collection agent.",
 			},
 			"image_build": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Build of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
+				MarkdownDescription: "Build of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
 			},
 			"image_version": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
+				MarkdownDescription: "Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
 			},
 			"is_remote_upgradeable": schema.BoolAttribute{
 				Computed:            true,
@@ -89,18 +95,24 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Whether Monte Carlo can update the collection agent's image for you.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.",
+				MarkdownDescription: "When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.",
 			},
 			"name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Display name for the collection agent. Replaces the name it currently has.",
+				MarkdownDescription: "Display name for the collection agent. Replaces the name it currently has.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(200),
 				},
 			},
 			"service_account_key": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Credentials for `GCP_JSON_SERVICE_ACCOUNT_KEY`, as the contents of the JSON key file Google issued for the service account. Send this or `auth_headers`, never both. It replaces the stored credentials rather than merging into them.",
+				MarkdownDescription: "Credentials for `GCP_JSON_SERVICE_ACCOUNT_KEY`, as the contents of the JSON key file Google issued for the service account. Send this or `auth_headers`, never both. It replaces the stored credentials rather than merging into them.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(16384),
 				},

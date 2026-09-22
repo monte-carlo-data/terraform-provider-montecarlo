@@ -23,8 +23,8 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"authentication_type": schema.StringAttribute{
 				Required:            true,
-				Description:         "How Monte Carlo authenticates to a collection agent running on Azure.",
-				MarkdownDescription: "How Monte Carlo authenticates to a collection agent running on Azure.",
+				Description:         "How Monte Carlo authenticates when it calls the agent. Send it together with the matching credentials object.",
+				MarkdownDescription: "How Monte Carlo authenticates when it calls the agent. Send it together with the matching credentials object.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"AZURE_FUNCTION_APP_KEY",
@@ -33,7 +33,9 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the collection agent was created. That is when its deployment was provisioned, which is before you register the agent.",
+				MarkdownDescription: "When the collection agent was created. That is when its deployment was provisioned, which is before you register the agent.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Required:            true,
@@ -61,8 +63,8 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Optional:            true,
 				Computed:            true,
-				Description:         "Credentials Monte Carlo uses when it authenticates with a function app key.",
-				MarkdownDescription: "Credentials Monte Carlo uses when it authenticates with a function app key.",
+				Description:         "Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both.",
+				MarkdownDescription: "Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both.",
 			},
 			"function_app_url": schema.StringAttribute{
 				Required:            true,
@@ -78,10 +80,14 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the collection agent.",
 			},
 			"image_build": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Build of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
+				MarkdownDescription: "Build of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
 			},
 			"image_version": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
+				MarkdownDescription: "Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.",
 			},
 			"is_remote_upgradeable": schema.BoolAttribute{
 				Computed:            true,
@@ -89,11 +95,15 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Whether Monte Carlo can update the collection agent's image for you.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.",
+				MarkdownDescription: "When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.",
 			},
 			"name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Display name for the collection agent. Replaces the name it currently has.",
+				MarkdownDescription: "Display name for the collection agent. Replaces the name it currently has.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(200),
 				},
@@ -129,8 +139,8 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Optional:            true,
 				Computed:            true,
-				Description:         "The service principal Monte Carlo authenticates as.",
-				MarkdownDescription: "The service principal Monte Carlo authenticates as.",
+				Description:         "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both.",
+				MarkdownDescription: "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both.",
 			},
 		},
 	}

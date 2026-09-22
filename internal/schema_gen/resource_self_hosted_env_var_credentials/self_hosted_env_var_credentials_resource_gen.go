@@ -15,8 +15,10 @@ func SelfHostedEnvVarCredentialsResourceSchema(ctx context.Context) schema.Schem
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"bq_project_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "BigQuery project the connection reads from. Only for a BigQuery connection.",
+				MarkdownDescription: "BigQuery project the connection reads from. Only for a BigQuery connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -35,8 +37,10 @@ func SelfHostedEnvVarCredentialsResourceSchema(ctx context.Context) schema.Schem
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"databricks_warehouse_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -55,16 +59,18 @@ func SelfHostedEnvVarCredentialsResourceSchema(ctx context.Context) schema.Schem
 				MarkdownDescription: "Unique identifier of the credentials.",
 			},
 			"kms_key_id": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "AWS KMS key the variable's value is encrypted with. Omit it for a value stored in the clear.",
+				MarkdownDescription: "AWS KMS key the variable's value is encrypted with. Omit it for a value stored in the clear.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
 	}

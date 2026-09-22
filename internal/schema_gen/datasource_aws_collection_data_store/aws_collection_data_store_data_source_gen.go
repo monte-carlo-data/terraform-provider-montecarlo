@@ -14,8 +14,8 @@ func AwsCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"authentication_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
-				MarkdownDescription: "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
+				Description:         "How Monte Carlo authenticates when it reaches the data store.",
+				MarkdownDescription: "How Monte Carlo authenticates when it reaches the data store.",
 			},
 			"bucket_name": schema.StringAttribute{
 				Computed:            true,
@@ -26,7 +26,9 @@ func AwsCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				Required: true,
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the data store was created, which is when its deployment was provisioned.",
+				MarkdownDescription: "When the data store was created, which is when its deployment was provisioned.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
@@ -39,7 +41,9 @@ func AwsCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Whether Monte Carlo is using this data store. One that is unregistered, or whose validation failed, is not enabled.",
 			},
 			"external_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Value to put in the trust policy of the role Monte Carlo assumes to access the bucket. Null before Monte Carlo has generated one, and for a caller who cannot register a data store. Also null if the value could not be read just now, so retry once before treating it as absent.",
+				MarkdownDescription: "Value to put in the trust policy of the role Monte Carlo assumes to access the bucket. Null before Monte Carlo has generated one, and for a caller who cannot register a data store. Also null if the value could not be read just now, so retry once before treating it as absent.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -47,15 +51,19 @@ func AwsCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the data store.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the data store was last registered, renamed, or given different storage or credentials. Null until one of those has happened.",
+				MarkdownDescription: "When the data store was last registered, renamed, or given different storage or credentials. Null until one of those has happened.",
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of the data store. Null when it has no name.",
+				MarkdownDescription: "Display name of the data store. Null when it has no name.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Which kind of storage a collection data store keeps its data in.\n\nWhich values are possible depends on the platform the data store runs on.",
-				MarkdownDescription: "Which kind of storage a collection data store keeps its data in.\n\nWhich values are possible depends on the platform the data store runs on.",
+				Description:         "Which kind of storage the data store keeps its data in.",
+				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
 	}

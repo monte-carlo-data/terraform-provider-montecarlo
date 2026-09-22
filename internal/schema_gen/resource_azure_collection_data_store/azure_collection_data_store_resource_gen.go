@@ -23,8 +23,8 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"authentication_type": schema.StringAttribute{
 				Required:            true,
-				Description:         "How Monte Carlo authenticates to a data store in Azure Blob Storage.",
-				MarkdownDescription: "How Monte Carlo authenticates to a data store in Azure Blob Storage.",
+				Description:         "How Monte Carlo authenticates to the storage account. Send it together with the matching credentials object.",
+				MarkdownDescription: "How Monte Carlo authenticates to the storage account. Send it together with the matching credentials object.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"AZURE_STORAGE_ACCOUNT_KEYS",
@@ -41,7 +41,9 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the data store was created, which is when its deployment was provisioned.",
+				MarkdownDescription: "When the data store was created, which is when its deployment was provisioned.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Required:            true,
@@ -59,11 +61,15 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Unique identifier of the data store.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the data store was last registered, renamed, or given different storage or credentials. Null until one of those has happened.",
+				MarkdownDescription: "When the data store was last registered, renamed, or given different storage or credentials. Null until one of those has happened.",
 			},
 			"name": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
+				Optional:            true,
+				Computed:            true,
+				Description:         "Display name for the data store. Replaces the name its deployment gave it.",
+				MarkdownDescription: "Display name for the data store. Replaces the name its deployment gave it.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(200),
 				},
@@ -71,8 +77,10 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 			"service_principal": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"account_name": schema.StringAttribute{
-						Optional: true,
-						Computed: true,
+						Optional:            true,
+						Computed:            true,
+						Description:         "Name of the storage account, needed only when `account_url` does not start with it. Monte Carlo takes the first label of the host otherwise, which is right for a standard or private-link URL but not for a custom ingress host.",
+						MarkdownDescription: "Name of the storage account, needed only when `account_url` does not start with it. Monte Carlo takes the first label of the host otherwise, which is right for a standard or private-link URL but not for a custom ingress host.",
 					},
 					"account_url": schema.StringAttribute{
 						Required:            true,
@@ -106,8 +114,8 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Optional:            true,
 				Computed:            true,
-				Description:         "The service principal Monte Carlo authenticates to the storage account as.",
-				MarkdownDescription: "The service principal Monte Carlo authenticates to the storage account as.",
+				Description:         "Credentials for `AZURE_STORAGE_SERVICE_PRINCIPAL`. Send this or `storage_account_keys`, never both.",
+				MarkdownDescription: "Credentials for `AZURE_STORAGE_SERVICE_PRINCIPAL`. Send this or `storage_account_keys`, never both.",
 			},
 			"storage_account_keys": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -125,13 +133,13 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				},
 				Optional:            true,
 				Computed:            true,
-				Description:         "The connection string Monte Carlo uses to reach the storage account.",
-				MarkdownDescription: "The connection string Monte Carlo uses to reach the storage account.",
+				Description:         "Credentials for `AZURE_STORAGE_ACCOUNT_KEYS`. Send this or `service_principal`, never both.",
+				MarkdownDescription: "Credentials for `AZURE_STORAGE_ACCOUNT_KEYS`. Send this or `service_principal`, never both.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Which kind of storage a collection data store keeps its data in.\n\nWhich values are possible depends on the platform the data store runs on.",
-				MarkdownDescription: "Which kind of storage a collection data store keeps its data in.\n\nWhich values are possible depends on the platform the data store runs on.",
+				Description:         "Which kind of storage the data store keeps its data in.",
+				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
 	}

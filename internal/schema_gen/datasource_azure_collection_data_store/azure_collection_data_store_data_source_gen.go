@@ -14,8 +14,8 @@ func AzureCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema
 		Attributes: map[string]schema.Attribute{
 			"authentication_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
-				MarkdownDescription: "How Monte Carlo authenticates to a collection agent or a data store.\n\nWhich values are possible depends on the platform it runs on.",
+				Description:         "How Monte Carlo authenticates when it reaches the data store.",
+				MarkdownDescription: "How Monte Carlo authenticates when it reaches the data store.",
 			},
 			"collection_data_store_id": schema.StringAttribute{
 				Required: true,
@@ -26,7 +26,9 @@ func AzureCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "Name of the blob container Monte Carlo uses. Empty until it has been registered. The storage account holding it is part of the credentials, so it is not returned.",
 			},
 			"created_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the data store was created, which is when its deployment was provisioned.",
+				MarkdownDescription: "When the data store was created, which is when its deployment was provisioned.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
@@ -44,15 +46,19 @@ func AzureCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "Unique identifier of the data store.",
 			},
 			"last_updated_time": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "When the data store was last registered, renamed, or given different storage or credentials. Null until one of those has happened.",
+				MarkdownDescription: "When the data store was last registered, renamed, or given different storage or credentials. Null until one of those has happened.",
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Display name of the data store. Null when it has no name.",
+				MarkdownDescription: "Display name of the data store. Null when it has no name.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Which kind of storage a collection data store keeps its data in.\n\nWhich values are possible depends on the platform the data store runs on.",
-				MarkdownDescription: "Which kind of storage a collection data store keeps its data in.\n\nWhich values are possible depends on the platform the data store runs on.",
+				Description:         "Which kind of storage the data store keeps its data in.",
+				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
 	}

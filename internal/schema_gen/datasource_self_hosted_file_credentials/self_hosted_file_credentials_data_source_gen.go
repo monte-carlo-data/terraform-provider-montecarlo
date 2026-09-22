@@ -13,7 +13,9 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"bq_project_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "BigQuery project the connection reads from. Null unless set.",
+				MarkdownDescription: "BigQuery project the connection reads from. Null unless set.",
 			},
 			"connection_type": schema.StringAttribute{
 				Computed:            true,
@@ -29,7 +31,9 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 				Required: true,
 			},
 			"databricks_warehouse_id": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
 			},
 			"file_path": schema.StringAttribute{
 				Computed:            true,
@@ -43,8 +47,8 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
-				MarkdownDescription: "Where the secret lives.\n\n`MC_MANAGED` credentials are stored by Monte Carlo. Every other value names a store you\nrun, which Monte Carlo reads from at connection time using the reference you supply.",
+				Description:         "Where the secret lives. Fixed once created.",
+				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
 	}
