@@ -511,11 +511,8 @@ func chainStringModifiers(t *testing.T, a schema.Attribute, req planmodifier.Str
 // "provider bug" diagnostic on a practitioner's plan. Reading the registration list means new
 // resources are covered without touching this test.
 //
-// The finished schema also has to pass the framework's own validation, which otherwise runs
-// only inside a provider server that no test here starts. It is what rejects a write-only
-// attribute that is also Computed, or one nested under a Computed parent, so a generated schema
-// that marks a secret write-only without clearing Computed fails here rather than on a
-// practitioner's first plan.
+// It also runs the framework's schema validation, which otherwise runs only in a provider server:
+// that is what rejects a write-only attribute under a Computed one.
 func TestEveryGeneratedResourceSchemaResolvesTheNamesTheHelpersAreGiven(t *testing.T) {
 	ctx := t.Context()
 	resources := (&mcProvider{}).Resources(ctx)
@@ -538,6 +535,117 @@ func TestEveryGeneratedResourceSchemaResolvesTheNamesTheHelpersAreGiven(t *testi
 			}
 			if len(resp.Schema.Attributes) == 0 {
 				t.Fatal("the schema has no attributes, so no name was resolved against it")
+			}
+		})
+	}
+}
+
+// credentialAttributes is shaped like a generated resource with secrets: top-level and nested,
+// string and map. Fresh per call, since writeOnly edits in place.
+func credentialAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"private_key_wo": schema.StringAttribute{Required: true, Sensitive: true},
+		"name":           schema.StringAttribute{Required: true},
+		"credentials": schema.SingleNestedAttribute{
+			Optional: true,
+			Attributes: map[string]schema.Attribute{
+				"client_secret_wo": schema.StringAttribute{Required: true, Sensitive: true},
+				"headers_wo":       schema.MapAttribute{Required: true, Sensitive: true, ElementType: types.StringType},
+				"client_id":        schema.StringAttribute{Required: true},
+			},
+		},
+	}
+}
+
+// attributeAt reads a dotted path back through the original map, which catches a flag set on a
+// copy and never written back.
+func attributeAt(t *testing.T, attrs map[string]schema.Attribute, path string) schema.Attribute {
+	t.Helper()
+	segments := strings.Split(path, ".")
+	for _, segment := range segments[:len(segments)-1] {
+		attrs = attrs[segment].(schema.SingleNestedAttribute).Attributes
+	}
+	return attrs[segments[len(segments)-1]]
+}
+
+// Marking anything beyond the secret would hide a value Terraform needs to diff.
+func TestWriteOnlyMarksTheNamedSecretAtAnyDepthAndNothingElse(t *testing.T) {
+	everyPath := []string{
+		"private_key_wo", "name", "credentials",
+		"credentials.client_secret_wo", "credentials.headers_wo", "credentials.client_id",
+	}
+	for _, target := range []string{"private_key_wo", "credentials.client_secret_wo", "credentials.headers_wo"} {
+		t.Run(target, func(t *testing.T) {
+			attrs := credentialAttributes()
+			var diags diag.Diagnostics
+
+			writeOnly(attrs, "resource."+target, &diags)
+
+			if diags.HasError() {
+				t.Fatalf("reported %v", diags.Errors())
+			}
+			for _, path := range everyPath {
+				got := attributeAt(t, attrs, path).IsWriteOnly()
+				if want := path == target; got != want {
+					t.Errorf("%s: WriteOnly = %t, want %t", path, got, want)
+				}
+			}
+			block := attrs["credentials"].(schema.SingleNestedAttribute)
+			if !block.Optional || block.Computed {
+				t.Errorf("the credential block's flags changed: Optional = %t, Computed = %t", block.Optional, block.Computed)
+			}
+			if !attributeAt(t, attrs, target).IsSensitive() {
+				t.Error("the secret lost Sensitive")
+			}
+		})
+	}
+}
+
+// An unresolved secret would stay an ordinary attribute, stored in state.
+func TestWriteOnlyReportsAPathItCannotResolve(t *testing.T) {
+	for name, path := range map[string]string{
+		"no resource prefix":                 "private_key_wo",
+		"an absent top-level attribute":      "resource.renamed_wo",
+		"an absent nested attribute":         "resource.credentials.renamed_wo",
+		"an absent block":                    "resource.renamed.client_secret_wo",
+		"a path through a non-nested string": "resource.name.client_secret_wo",
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := credentialAttributes()
+			var diags diag.Diagnostics
+
+			writeOnly(attrs, path, &diags)
+
+			if !diags.HasError() {
+				t.Fatal("an unresolved path must not pass in silence")
+			}
+			detail := diags.Errors()[0].Detail()
+			for _, want := range []string{path, "store the secret in state"} {
+				if !strings.Contains(detail, want) {
+					t.Errorf("the error must mention %q, got %q", want, detail)
+				}
+			}
+		})
+	}
+}
+
+// Every secret the spec declares is a string or a map; anything else is a generator change.
+func TestWriteOnlyReportsAnAttributeTypeNoSecretHas(t *testing.T) {
+	for name, a := range map[string]schema.Attribute{
+		"bool":      schema.BoolAttribute{},
+		"unhandled": unhandledAttribute{},
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := map[string]schema.Attribute{"secret_wo": a}
+			var diags diag.Diagnostics
+
+			writeOnly(attrs, "resource.secret_wo", &diags)
+
+			if !diags.HasError() {
+				t.Fatal("an attribute type writeOnly has no case for must not pass in silence")
+			}
+			if attrs["secret_wo"].IsWriteOnly() {
+				t.Error("the attribute was marked anyway")
 			}
 		})
 	}
