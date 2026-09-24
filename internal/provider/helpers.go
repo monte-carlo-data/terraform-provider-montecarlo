@@ -384,6 +384,70 @@ func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *d
 	}, "Terraform would plan the attribute as unknown on every update, and replace the resource when it also requires replacement.", diags)
 }
 
+// writeOnlyConsequence is what a secret the generated code could not mark write-only costs.
+const writeOnlyConsequence = "Terraform would store the secret in state and in plan files."
+
+// writeOnly marks an attribute write-only, so Terraform never stores its value in state or plan.
+// tfplugingen's code spec cannot express write-only, so the generated code calls this for every
+// secret input.
+//
+// name is "<resource>.<path>", with nested paths dotted:
+// "azure_collection_agent.service_principal.client_secret_wo". A path that does not resolve, or
+// a leaf that is not a string or map, is reported: skipping it leaves the secret in state.
+func writeOnly(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+	_, path, ok := strings.Cut(name, ".")
+	if !ok {
+		diags.AddError(
+			"provider bug",
+			fmt.Sprintf("%s is not a resolvable <resource>.<attribute> path. %s", name, writeOnlyConsequence),
+		)
+		return
+	}
+	markWriteOnly(attrs, strings.Split(path, "."), name, diags)
+}
+
+// markWriteOnly sets WriteOnly on the attribute segments names within attrs. Attributes are
+// values, so each level writes its modified copy back.
+func markWriteOnly(attrs map[string]schema.Attribute, segments []string, name string, diags *diag.Diagnostics) {
+	head := segments[0]
+	if len(segments) > 1 {
+		switch parent := attrs[head].(type) {
+		case schema.SingleNestedAttribute:
+			markWriteOnly(parent.Attributes, segments[1:], name, diags)
+			attrs[head] = parent
+		case nil:
+			diags.AddError(
+				"provider bug",
+				fmt.Sprintf("%s is not in the generated schema: it has no %q. %s", name, head, writeOnlyConsequence),
+			)
+		default:
+			diags.AddError(
+				"provider bug",
+				fmt.Sprintf("%s descends through %q, a %T rather than a single nested attribute. %s", name, head, parent, writeOnlyConsequence),
+			)
+		}
+		return
+	}
+	switch a := attrs[head].(type) {
+	case schema.StringAttribute:
+		a.WriteOnly = true
+		attrs[head] = a
+	case schema.MapAttribute:
+		a.WriteOnly = true
+		attrs[head] = a
+	case nil:
+		diags.AddError(
+			"provider bug",
+			fmt.Sprintf("%s is not in the generated schema. %s", name, writeOnlyConsequence),
+		)
+	default:
+		diags.AddError(
+			"provider bug",
+			fmt.Sprintf("%T is not a type a secret takes, so %s cannot be marked write-only here. %s", a, name, writeOnlyConsequence),
+		)
+	}
+}
+
 // mapOfStrings converts a Terraform string map, treating null and unknown as absent.
 //
 // Known limitation: a known map containing a null or unknown element fails ElementsAs, and
