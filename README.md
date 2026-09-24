@@ -15,6 +15,10 @@ locally, which takes two commands — see
 > There are community providers with the same name. This one will be published as
 > `monte-carlo-data/montecarlo` — check the source when adding it.
 
+Requires Terraform 1.11 or later, the first release with write-only arguments; see
+[Secrets](#secrets). An older Terraform fails with an error when given a secret, rather than
+storing it.
+
 ## Usage
 
 The configuration below is
@@ -140,6 +144,39 @@ terraform import montecarlo_deployment.agent <deployment-id>
 
 Import brings the resource under management without recreating it. Run `terraform plan`
 afterwards: an empty plan means the configuration matches what is registered.
+
+Secrets are the exception. Monte Carlo never returns them, so an import brings in none, and a
+resource that takes one plans an in-place update to set each `<name>_wo_version`. Applying it
+sends the secrets in the configuration. An empty plan therefore says nothing about whether a
+secret matches what Monte Carlo holds.
+
+## Secrets
+
+Every secret you give the provider is a write-only argument, named `<name>_wo`: Terraform sends
+it to Monte Carlo on apply and never stores it in state or in a plan file. For example
+`private_key_wo` on `montecarlo_snowflake_credentials`, or `client_secret_wo` inside a
+`service_principal` block.
+
+Terraform cannot see a change to a value it never stored, so each one has a
+`<name>_wo_version` beside it, required whenever the secret is set. Changing only the secret
+plans nothing. To send a new value, change it and bump the version together:
+
+```hcl
+private_key_wo         = file("${path.module}/snowflake_key.p8")
+private_key_wo_version = 2 # was 1
+```
+
+A secret that comes from another resource, such as a generated key, does not trigger an update
+when that resource replaces it; bump the version in the same change. That other resource usually
+still holds the secret in its own state.
+
+The secrets Monte Carlo generates are different. `mcd_token` on
+`montecarlo_generic_collection_agent_token` and `client_secret` on
+`montecarlo_generic_collection_agent_oauth_client` are returned once, when created, so the
+resource holds them in state, and anyone who can read the state can read them. Keep state in a
+backend that encrypts it and limits who can read it. To pass one on, use a write-only argument,
+such as `aws_secretsmanager_secret_version.secret_string_wo`, so it is not stored twice; a
+`sensitive` output is stored in state too. The two examples show how.
 
 ## Credentials
 
