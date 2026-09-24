@@ -9,6 +9,9 @@
 # to be created first so the role can trust it.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
@@ -65,13 +68,17 @@ data "azurerm_function_app_host_keys" "agent" {
 # `authentication_type` is the discriminator, and exactly one matching credential block is
 # accepted. Reading it from the module means the two cannot disagree.
 #
+# The key is write-only here, but the data source above still holds it in state. A rotated key
+# alone plans nothing: bump the version with it.
+#
 # Under AZURE_FUNCTION_SERVICE_PRINCIPAL, replace the `function_app_key` block with:
 #
 #   service_principal = {
-#     audience      = module.mcd_agent.mcd_agent_sp_audience
-#     client_id     = module.mcd_agent.mcd_agent_sp_client_id
-#     client_secret = module.mcd_agent.mcd_agent_sp_client_secret
-#     tenant_id     = module.mcd_agent.mcd_agent_sp_tenant_id
+#     audience                 = module.mcd_agent.mcd_agent_sp_audience
+#     client_id                = module.mcd_agent.mcd_agent_sp_client_id
+#     client_secret_wo         = module.mcd_agent.mcd_agent_sp_client_secret
+#     client_secret_wo_version = 1
+#     tenant_id                = module.mcd_agent.mcd_agent_sp_tenant_id
 #   }
 resource "montecarlo_azure_collection_agent" "agent" {
   deployment_id       = montecarlo_deployment.agent.id
@@ -79,7 +86,8 @@ resource "montecarlo_azure_collection_agent" "agent" {
   function_app_url    = module.mcd_agent.mcd_agent_function_url
 
   function_app_key = {
-    app_key = data.azurerm_function_app_host_keys.agent.default_function_key
+    app_key_wo         = data.azurerm_function_app_host_keys.agent.default_function_key
+    app_key_wo_version = 1
   }
 }
 

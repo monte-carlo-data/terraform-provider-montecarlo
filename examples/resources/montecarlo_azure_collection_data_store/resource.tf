@@ -8,6 +8,9 @@
 # reaches the container with comes out of them.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
@@ -126,19 +129,21 @@ resource "azurerm_storage_container" "store" {
 }
 
 # `authentication_type` is the discriminator, and exactly one matching credential block is
-# accepted. The connection string is the whole account's key: the API never returns it and
-# Terraform holds it in state, so use a backend that encrypts state.
+# accepted. The connection string is the whole account's key. It is write-only here, so this
+# resource never stores it, but azurerm_storage_account still holds it in state, so use a backend
+# that encrypts state. A rotated key alone plans nothing: bump the version with it.
 #
 # The alternative is AZURE_STORAGE_SERVICE_PRINCIPAL, which authenticates as an Entra ID
 # application granted `Storage Blob Data Contributor` on the account rather than sharing the
 # account key. It replaces the `storage_account_keys` block with:
 #
 #   service_principal = {
-#     account_name  = azurerm_storage_account.store.name
-#     account_url   = trimsuffix(azurerm_storage_account.store.primary_blob_endpoint, "/")
-#     client_id     = <the application's client id>
-#     client_secret = <the application's client secret>
-#     tenant_id     = <your tenant id>
+#     account_name             = azurerm_storage_account.store.name
+#     account_url              = trimsuffix(azurerm_storage_account.store.primary_blob_endpoint, "/")
+#     client_id                = <the application's client id>
+#     client_secret_wo         = <the application's client secret>
+#     client_secret_wo_version = 1
+#     tenant_id                = <your tenant id>
 #   }
 #
 # Registering validates storage access, so it has to wait for the lifecycle policy too — the
@@ -149,7 +154,8 @@ resource "montecarlo_azure_collection_data_store" "store" {
   container_name      = azurerm_storage_container.store.name
 
   storage_account_keys = {
-    connection_string = azurerm_storage_account.store.primary_connection_string
+    connection_string_wo         = azurerm_storage_account.store.primary_connection_string
+    connection_string_wo_version = 1
   }
 
   depends_on = [azurerm_storage_management_policy.store]

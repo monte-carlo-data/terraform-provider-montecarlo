@@ -8,6 +8,9 @@
 # so nothing has to exist before the GCP resources are built.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
@@ -48,16 +51,21 @@ module "mcd_agent" {
 }
 
 # The module returns the key base64-encoded, as the google provider does; the API takes the
-# key file's contents. Under CUSTOM_AUTH_HEADERS, replace `service_account_key` with:
+# key file's contents. The key is write-only here, but the module still holds it in state.
+# A new key alone plans nothing: bump the version with it.
+#
+# Under CUSTOM_AUTH_HEADERS, replace the two `service_account_key_wo` arguments with:
 #
 #   auth_headers = {
-#     headers = { "x-api-key" = var.agent_api_key }
+#     headers_wo         = { "x-api-key" = var.agent_api_key }
+#     headers_wo_version = 1
 #   }
 resource "montecarlo_gcp_collection_agent" "agent" {
-  deployment_id       = montecarlo_deployment.agent.id
-  authentication_type = "GCP_JSON_SERVICE_ACCOUNT_KEY"
-  cloud_run_url       = module.mcd_agent.mcd_agent_uri
-  service_account_key = base64decode(module.mcd_agent.mcd_agent_invoker_key[0])
+  deployment_id                  = montecarlo_deployment.agent.id
+  authentication_type            = "GCP_JSON_SERVICE_ACCOUNT_KEY"
+  cloud_run_url                  = module.mcd_agent.mcd_agent_uri
+  service_account_key_wo         = base64decode(module.mcd_agent.mcd_agent_invoker_key[0])
+  service_account_key_wo_version = 1
 }
 
 output "cloud_run_url" {

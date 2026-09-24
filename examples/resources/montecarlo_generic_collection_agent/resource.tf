@@ -8,7 +8,8 @@
 # again once the agent is up.
 #
 # The EKS module below is one way to run the agent. The AKS and GKE modules take the same
-# `backend_service_url` and `oauth_credentials` inputs:
+# `backend_service_url` and `oauth_secret` inputs, with the secret in Key Vault or Secret Manager
+# instead of Secrets Manager:
 #
 #   https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/azurerm
 #   https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/google
@@ -17,12 +18,16 @@
 # client id and secret; the docs page above covers those.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
     }
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
+      version = ">= 6.50"
     }
   }
 }
@@ -50,23 +55,45 @@ resource "montecarlo_deployment" "agent" {
 }
 
 # The credential. An OAuth client here; see ../montecarlo_generic_collection_agent_token for
-# the other kind. The secret is returned once and held in state.
+# the other kind. The secret is returned once, so this resource holds it in state: anyone who
+# can read the state can read it. Keep state in a backend that encrypts it and limits access.
 resource "montecarlo_generic_collection_agent_oauth_client" "agent" {
   deployment_id = montecarlo_deployment.agent.id
 }
 
+# The secret goes to Secrets Manager through a write-only argument, so this is the only other
+# copy and it is not in state. Handing it to the module's `oauth_credentials` instead would
+# store it a second time. The JSON keys are the ones the module's chart reads.
+resource "aws_secretsmanager_secret" "mcd_agent_oauth" {
+  name = "mcd/agent/oauth"
+}
+
+resource "aws_secretsmanager_secret_version" "mcd_agent_oauth" {
+  secret_id = aws_secretsmanager_secret.mcd_agent_oauth.id
+  secret_string_wo = jsonencode({
+    client_id     = montecarlo_generic_collection_agent_oauth_client.agent.client_id
+    client_secret = montecarlo_generic_collection_agent_oauth_client.agent.client_secret
+  })
+  # Bump when the client is replaced, so the new secret is written.
+  secret_string_wo_version = 1
+}
+
 # https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/aws
-# A new EKS cluster with the agent installed by Helm. The module stores the OAuth client in
-# Secrets Manager and points the chart at it.
+# A new EKS cluster with the agent installed by Helm, pointed at the secret above.
+#
+# With `create = false` the module grants the agent read access to every secret whose name
+# starts with `name`, rather than to this one secret's ARN, so pick a name no other secret
+# shares as a prefix.
 module "mcd_agent" {
-  source  = "monte-carlo-data/mcd-k8s-agent/aws"
-  version = "~> 0.1"
+  source = "monte-carlo-data/mcd-k8s-agent/aws"
+  # 0.1.4 is the first to take an existing secret.
+  version = "~> 0.1, >= 0.1.4"
 
   backend_service_url = var.backend_service_url
 
-  oauth_credentials = {
-    client_id     = montecarlo_generic_collection_agent_oauth_client.agent.client_id
-    client_secret = montecarlo_generic_collection_agent_oauth_client.agent.client_secret
+  oauth_secret = {
+    create = false
+    name   = aws_secretsmanager_secret.mcd_agent_oauth.name
   }
 
   helm = {

@@ -14,6 +14,9 @@
 # it the reads Monte Carlo needs.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
@@ -37,16 +40,19 @@ resource "montecarlo_snowflake_credentials" "snowflake" {
   # `file("${path.module}/snowflake_key.p8")`, rather than pasting it into a .tf file that
   # gets committed.
   #
-  # Monte Carlo stores this and never returns it, so Terraform cannot detect a key changed
-  # outside this configuration. Changing it here does update it.
-  private_key = <<-EOT
+  # Write-only: Terraform sends the key to Monte Carlo and never stores it in state or in a plan.
+  # Changing it alone plans nothing, so bump the version with it. Bumping either version sends
+  # the key and the passphrase together.
+  private_key_wo         = <<-EOT
     -----BEGIN PRIVATE KEY-----
     MII...
     -----END PRIVATE KEY-----
   EOT
+  private_key_wo_version = 1
 
-  # Only for an encrypted key. Omit it for an unencrypted one.
-  # private_key_passphrase = "..."
+  # Only for an encrypted key. Omit both for an unencrypted one.
+  # private_key_passphrase_wo         = "..."
+  # private_key_passphrase_wo_version = 1
 
   # The virtual warehouse queries run in. Omit it to use the user's default.
   warehouse = "MONTE_CARLO_WH"
