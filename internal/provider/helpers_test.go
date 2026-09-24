@@ -387,12 +387,12 @@ func TestRequiresReplaceReplacesOnlyOnAnUpdateThatChangesTheValue(t *testing.T) 
 	}
 }
 
-// A write-only input is null in state once the config omits it, and the framework re-plans it
+// An unreturned input is null in state once the config omits it, and the framework re-plans it
 // unknown whenever the resource changes at all. requiresReplace reads that unknown as a change,
 // so before the null was held a warehouse rename destroyed the warehouse and every connection on
 // it. Both modifiers are attached here in the order the generated schema attaches them, and run
 // the way the framework runs them: each one handed the value the one before it planned.
-func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
+func TestAnUnreturnedAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 	const attribute = "connection_type"
 	for name, tc := range map[string]struct {
 		state       tftypes.Value
@@ -404,7 +404,7 @@ func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 		wantReplace bool
 	}{
 		// The rename: the config changes another attribute and leaves this one out.
-		"an omitted write-only attribute keeps its null": {
+		"an omitted unreturned attribute keeps its null": {
 			state:       resourceRaw(attribute, nil),
 			plan:        resourceRaw(attribute, tftypes.UnknownValue),
 			stateValue:  types.StringNull(),
@@ -414,7 +414,7 @@ func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 		},
 		// Held or not, a value the customer actually changes has to replace: the API will not
 		// accept it on an update.
-		"a configured write-only attribute that changes still replaces": {
+		"a configured unreturned attribute that changes still replaces": {
 			state:       resourceRaw(attribute, "presto"),
 			plan:        resourceRaw(attribute, "trino"),
 			stateValue:  types.StringValue("presto"),
@@ -456,7 +456,7 @@ func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 // The order the two modifiers are attached in is load-bearing, and it is decided in api-codegen's
 // template rather than here. Attached after the replacement, the hold runs too late: the
 // replacement has already compared an unknown plan value against the null in state.
-func TestHoldingAWriteOnlyValueAfterTheReplacementComesTooLate(t *testing.T) {
+func TestHoldingAnUnreturnedValueAfterTheReplacementComesTooLate(t *testing.T) {
 	const attribute = "connection_type"
 	attrs := map[string]schema.Attribute{
 		attribute: schema.StringAttribute{Optional: true, Computed: true},

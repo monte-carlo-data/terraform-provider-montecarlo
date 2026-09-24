@@ -357,16 +357,16 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 
 // useStateForUnknown keeps an attribute's prior state value in the plan, including a null one.
 //
-// The plain variant, for the write-only inputs no response carries. State holds null for one of
-// those as soon as the config omits it, and `useNonNullStateForUnknown` refuses to copy a null,
-// which leaves the attribute unknown. An unknown planned value is what `requiresReplace` reads as
-// a change, so a write-only attribute that requires replacement destroys the resource on any
-// edit until its null is held.
+// The plain variant, for the unreturned inputs: ones the API accepts and no response carries.
+// State holds null for one of those as soon as the config omits it, and
+// `useNonNullStateForUnknown` refuses to copy a null, which leaves the attribute unknown. An
+// unknown planned value is what `requiresReplace` reads as a change, so an unreturned attribute
+// that requires replacement destroys the resource on any edit until its null is held.
 //
 // Only safe because no response carries these: an attribute the API fills in later needs the
 // non-null variant, or the plan says null and the apply says otherwise.
 //
-// The generated code calls this for every optional write-only input.
+// The generated code calls this for every optional unreturned input that requires replacement.
 func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseStateForUnknown(),
