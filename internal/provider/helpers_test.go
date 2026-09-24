@@ -510,6 +510,12 @@ func chainStringModifiers(t *testing.T, a schema.Attribute, req planmodifier.Str
 // derived in another repo, so a renamed attribute compiles here and surfaces first as a
 // "provider bug" diagnostic on a practitioner's plan. Reading the registration list means new
 // resources are covered without touching this test.
+//
+// The finished schema also has to pass the framework's own validation, which otherwise runs
+// only inside a provider server that no test here starts. It is what rejects a write-only
+// attribute that is also Computed, or one nested under a Computed parent, so a generated schema
+// that marks a secret write-only without clearing Computed fails here rather than on a
+// practitioner's first plan.
 func TestEveryGeneratedResourceSchemaResolvesTheNamesTheHelpersAreGiven(t *testing.T) {
 	ctx := t.Context()
 	resources := (&mcProvider{}).Resources(ctx)
@@ -525,6 +531,7 @@ func TestEveryGeneratedResourceSchemaResolvesTheNamesTheHelpersAreGiven(t *testi
 		t.Run(meta.TypeName, func(t *testing.T) {
 			var resp resource.SchemaResponse
 			r.Schema(ctx, resource.SchemaRequest{}, &resp)
+			resp.Diagnostics.Append(resp.Schema.ValidateImplementation(ctx)...)
 
 			if resp.Diagnostics.HasError() {
 				t.Fatalf("reported %v", resp.Diagnostics.Errors())
