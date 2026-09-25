@@ -95,11 +95,16 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 						Description:         "Application (client) id of the service principal.",
 						MarkdownDescription: "Application (client) id of the service principal.",
 					},
-					"client_secret": schema.StringAttribute{
+					"client_secret_wo": schema.StringAttribute{
 						Required:            true,
 						Sensitive:           true,
 						Description:         "Client secret of the service principal.",
 						MarkdownDescription: "Client secret of the service principal.",
+					},
+					"client_secret_wo_version": schema.Int64Attribute{
+						Required:            true,
+						Description:         "Bump to send `client_secret_wo` again. Terraform stores this, never the secret.",
+						MarkdownDescription: "Bump to send `client_secret_wo` again. Terraform stores this, never the secret.",
 					},
 					"tenant_id": schema.StringAttribute{
 						Required:            true,
@@ -113,17 +118,21 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Computed:            true,
 				Description:         "Credentials for `AZURE_STORAGE_SERVICE_PRINCIPAL`. Send this or `storage_account_keys`, never both.",
 				MarkdownDescription: "Credentials for `AZURE_STORAGE_SERVICE_PRINCIPAL`. Send this or `storage_account_keys`, never both.",
 			},
 			"storage_account_keys": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
-					"connection_string": schema.StringAttribute{
+					"connection_string_wo": schema.StringAttribute{
 						Required:            true,
 						Sensitive:           true,
 						Description:         "Connection string for the storage account holding the container. It carries the account key, so treat it as a secret.",
 						MarkdownDescription: "Connection string for the storage account holding the container. It carries the account key, so treat it as a secret.",
+					},
+					"connection_string_wo_version": schema.Int64Attribute{
+						Required:            true,
+						Description:         "Bump to send `connection_string_wo` again. Terraform stores this, never the secret.",
+						MarkdownDescription: "Bump to send `connection_string_wo` again. Terraform stores this, never the secret.",
 					},
 				},
 				CustomType: StorageAccountKeysType{
@@ -132,7 +141,6 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Computed:            true,
 				Description:         "Credentials for `AZURE_STORAGE_ACCOUNT_KEYS`. Send this or `service_principal`, never both.",
 				MarkdownDescription: "Credentials for `AZURE_STORAGE_ACCOUNT_KEYS`. Send this or `service_principal`, never both.",
 			},
@@ -238,22 +246,40 @@ func (t ServicePrincipalType) ValueFromObject(ctx context.Context, in basetypes.
 			fmt.Sprintf(`client_id expected to be basetypes.StringValue, was: %T`, clientIdAttribute))
 	}
 
-	clientSecretAttribute, ok := attributes["client_secret"]
+	clientSecretWoAttribute, ok := attributes["client_secret_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`client_secret is missing from object`)
+			`client_secret_wo is missing from object`)
 
 		return nil, diags
 	}
 
-	clientSecretVal, ok := clientSecretAttribute.(basetypes.StringValue)
+	clientSecretWoVal, ok := clientSecretWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`client_secret expected to be basetypes.StringValue, was: %T`, clientSecretAttribute))
+			fmt.Sprintf(`client_secret_wo expected to be basetypes.StringValue, was: %T`, clientSecretWoAttribute))
+	}
+
+	clientSecretWoVersionAttribute, ok := attributes["client_secret_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`client_secret_wo_version is missing from object`)
+
+		return nil, diags
+	}
+
+	clientSecretWoVersionVal, ok := clientSecretWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`client_secret_wo_version expected to be basetypes.Int64Value, was: %T`, clientSecretWoVersionAttribute))
 	}
 
 	tenantIdAttribute, ok := attributes["tenant_id"]
@@ -279,12 +305,13 @@ func (t ServicePrincipalType) ValueFromObject(ctx context.Context, in basetypes.
 	}
 
 	return ServicePrincipalValue{
-		AccountName:  accountNameVal,
-		AccountUrl:   accountUrlVal,
-		ClientId:     clientIdVal,
-		ClientSecret: clientSecretVal,
-		TenantId:     tenantIdVal,
-		state:        attr.ValueStateKnown,
+		AccountName:           accountNameVal,
+		AccountUrl:            accountUrlVal,
+		ClientId:              clientIdVal,
+		ClientSecretWo:        clientSecretWoVal,
+		ClientSecretWoVersion: clientSecretWoVersionVal,
+		TenantId:              tenantIdVal,
+		state:                 attr.ValueStateKnown,
 	}, diags
 }
 
@@ -405,22 +432,40 @@ func NewServicePrincipalValue(attributeTypes map[string]attr.Type, attributes ma
 			fmt.Sprintf(`client_id expected to be basetypes.StringValue, was: %T`, clientIdAttribute))
 	}
 
-	clientSecretAttribute, ok := attributes["client_secret"]
+	clientSecretWoAttribute, ok := attributes["client_secret_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`client_secret is missing from object`)
+			`client_secret_wo is missing from object`)
 
 		return NewServicePrincipalValueUnknown(), diags
 	}
 
-	clientSecretVal, ok := clientSecretAttribute.(basetypes.StringValue)
+	clientSecretWoVal, ok := clientSecretWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`client_secret expected to be basetypes.StringValue, was: %T`, clientSecretAttribute))
+			fmt.Sprintf(`client_secret_wo expected to be basetypes.StringValue, was: %T`, clientSecretWoAttribute))
+	}
+
+	clientSecretWoVersionAttribute, ok := attributes["client_secret_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`client_secret_wo_version is missing from object`)
+
+		return NewServicePrincipalValueUnknown(), diags
+	}
+
+	clientSecretWoVersionVal, ok := clientSecretWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`client_secret_wo_version expected to be basetypes.Int64Value, was: %T`, clientSecretWoVersionAttribute))
 	}
 
 	tenantIdAttribute, ok := attributes["tenant_id"]
@@ -446,12 +491,13 @@ func NewServicePrincipalValue(attributeTypes map[string]attr.Type, attributes ma
 	}
 
 	return ServicePrincipalValue{
-		AccountName:  accountNameVal,
-		AccountUrl:   accountUrlVal,
-		ClientId:     clientIdVal,
-		ClientSecret: clientSecretVal,
-		TenantId:     tenantIdVal,
-		state:        attr.ValueStateKnown,
+		AccountName:           accountNameVal,
+		AccountUrl:            accountUrlVal,
+		ClientId:              clientIdVal,
+		ClientSecretWo:        clientSecretWoVal,
+		ClientSecretWoVersion: clientSecretWoVersionVal,
+		TenantId:              tenantIdVal,
+		state:                 attr.ValueStateKnown,
 	}, diags
 }
 
@@ -523,16 +569,17 @@ func (t ServicePrincipalType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = ServicePrincipalValue{}
 
 type ServicePrincipalValue struct {
-	AccountName  basetypes.StringValue `tfsdk:"account_name"`
-	AccountUrl   basetypes.StringValue `tfsdk:"account_url"`
-	ClientId     basetypes.StringValue `tfsdk:"client_id"`
-	ClientSecret basetypes.StringValue `tfsdk:"client_secret"`
-	TenantId     basetypes.StringValue `tfsdk:"tenant_id"`
-	state        attr.ValueState
+	AccountName           basetypes.StringValue `tfsdk:"account_name"`
+	AccountUrl            basetypes.StringValue `tfsdk:"account_url"`
+	ClientId              basetypes.StringValue `tfsdk:"client_id"`
+	ClientSecretWo        basetypes.StringValue `tfsdk:"client_secret_wo"`
+	ClientSecretWoVersion basetypes.Int64Value  `tfsdk:"client_secret_wo_version"`
+	TenantId              basetypes.StringValue `tfsdk:"tenant_id"`
+	state                 attr.ValueState
 }
 
 func (v ServicePrincipalValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 5)
+	attrTypes := make(map[string]tftypes.Type, 6)
 
 	var val tftypes.Value
 	var err error
@@ -540,14 +587,15 @@ func (v ServicePrincipalValue) ToTerraformValue(ctx context.Context) (tftypes.Va
 	attrTypes["account_name"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["account_url"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["client_id"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["client_secret"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["client_secret_wo"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["client_secret_wo_version"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["tenant_id"] = basetypes.StringType{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 5)
+		vals := make(map[string]tftypes.Value, 6)
 
 		val, err = v.AccountName.ToTerraformValue(ctx)
 
@@ -573,13 +621,21 @@ func (v ServicePrincipalValue) ToTerraformValue(ctx context.Context) (tftypes.Va
 
 		vals["client_id"] = val
 
-		val, err = v.ClientSecret.ToTerraformValue(ctx)
+		val, err = v.ClientSecretWo.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["client_secret"] = val
+		vals["client_secret_wo"] = val
+
+		val, err = v.ClientSecretWoVersion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["client_secret_wo_version"] = val
 
 		val, err = v.TenantId.ToTerraformValue(ctx)
 
@@ -619,11 +675,12 @@ func (v ServicePrincipalValue) ToObjectValue(ctx context.Context) (basetypes.Obj
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"account_name":  basetypes.StringType{},
-		"account_url":   basetypes.StringType{},
-		"client_id":     basetypes.StringType{},
-		"client_secret": basetypes.StringType{},
-		"tenant_id":     basetypes.StringType{},
+		"account_name":             basetypes.StringType{},
+		"account_url":              basetypes.StringType{},
+		"client_id":                basetypes.StringType{},
+		"client_secret_wo":         basetypes.StringType{},
+		"client_secret_wo_version": basetypes.Int64Type{},
+		"tenant_id":                basetypes.StringType{},
 	}
 
 	if v.IsNull() {
@@ -637,11 +694,12 @@ func (v ServicePrincipalValue) ToObjectValue(ctx context.Context) (basetypes.Obj
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"account_name":  v.AccountName,
-			"account_url":   v.AccountUrl,
-			"client_id":     v.ClientId,
-			"client_secret": v.ClientSecret,
-			"tenant_id":     v.TenantId,
+			"account_name":             v.AccountName,
+			"account_url":              v.AccountUrl,
+			"client_id":                v.ClientId,
+			"client_secret_wo":         v.ClientSecretWo,
+			"client_secret_wo_version": v.ClientSecretWoVersion,
+			"tenant_id":                v.TenantId,
 		})
 
 	return objVal, diags
@@ -674,7 +732,11 @@ func (v ServicePrincipalValue) Equal(o attr.Value) bool {
 		return false
 	}
 
-	if !v.ClientSecret.Equal(other.ClientSecret) {
+	if !v.ClientSecretWo.Equal(other.ClientSecretWo) {
+		return false
+	}
+
+	if !v.ClientSecretWoVersion.Equal(other.ClientSecretWoVersion) {
 		return false
 	}
 
@@ -695,11 +757,12 @@ func (v ServicePrincipalValue) Type(ctx context.Context) attr.Type {
 
 func (v ServicePrincipalValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"account_name":  basetypes.StringType{},
-		"account_url":   basetypes.StringType{},
-		"client_id":     basetypes.StringType{},
-		"client_secret": basetypes.StringType{},
-		"tenant_id":     basetypes.StringType{},
+		"account_name":             basetypes.StringType{},
+		"account_url":              basetypes.StringType{},
+		"client_id":                basetypes.StringType{},
+		"client_secret_wo":         basetypes.StringType{},
+		"client_secret_wo_version": basetypes.Int64Type{},
+		"tenant_id":                basetypes.StringType{},
 	}
 }
 
@@ -728,22 +791,40 @@ func (t StorageAccountKeysType) ValueFromObject(ctx context.Context, in basetype
 
 	attributes := in.Attributes()
 
-	connectionStringAttribute, ok := attributes["connection_string"]
+	connectionStringWoAttribute, ok := attributes["connection_string_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`connection_string is missing from object`)
+			`connection_string_wo is missing from object`)
 
 		return nil, diags
 	}
 
-	connectionStringVal, ok := connectionStringAttribute.(basetypes.StringValue)
+	connectionStringWoVal, ok := connectionStringWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`connection_string expected to be basetypes.StringValue, was: %T`, connectionStringAttribute))
+			fmt.Sprintf(`connection_string_wo expected to be basetypes.StringValue, was: %T`, connectionStringWoAttribute))
+	}
+
+	connectionStringWoVersionAttribute, ok := attributes["connection_string_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`connection_string_wo_version is missing from object`)
+
+		return nil, diags
+	}
+
+	connectionStringWoVersionVal, ok := connectionStringWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`connection_string_wo_version expected to be basetypes.Int64Value, was: %T`, connectionStringWoVersionAttribute))
 	}
 
 	if diags.HasError() {
@@ -751,8 +832,9 @@ func (t StorageAccountKeysType) ValueFromObject(ctx context.Context, in basetype
 	}
 
 	return StorageAccountKeysValue{
-		ConnectionString: connectionStringVal,
-		state:            attr.ValueStateKnown,
+		ConnectionStringWo:        connectionStringWoVal,
+		ConnectionStringWoVersion: connectionStringWoVersionVal,
+		state:                     attr.ValueStateKnown,
 	}, diags
 }
 
@@ -819,22 +901,40 @@ func NewStorageAccountKeysValue(attributeTypes map[string]attr.Type, attributes 
 		return NewStorageAccountKeysValueUnknown(), diags
 	}
 
-	connectionStringAttribute, ok := attributes["connection_string"]
+	connectionStringWoAttribute, ok := attributes["connection_string_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`connection_string is missing from object`)
+			`connection_string_wo is missing from object`)
 
 		return NewStorageAccountKeysValueUnknown(), diags
 	}
 
-	connectionStringVal, ok := connectionStringAttribute.(basetypes.StringValue)
+	connectionStringWoVal, ok := connectionStringWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`connection_string expected to be basetypes.StringValue, was: %T`, connectionStringAttribute))
+			fmt.Sprintf(`connection_string_wo expected to be basetypes.StringValue, was: %T`, connectionStringWoAttribute))
+	}
+
+	connectionStringWoVersionAttribute, ok := attributes["connection_string_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`connection_string_wo_version is missing from object`)
+
+		return NewStorageAccountKeysValueUnknown(), diags
+	}
+
+	connectionStringWoVersionVal, ok := connectionStringWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`connection_string_wo_version expected to be basetypes.Int64Value, was: %T`, connectionStringWoVersionAttribute))
 	}
 
 	if diags.HasError() {
@@ -842,8 +942,9 @@ func NewStorageAccountKeysValue(attributeTypes map[string]attr.Type, attributes 
 	}
 
 	return StorageAccountKeysValue{
-		ConnectionString: connectionStringVal,
-		state:            attr.ValueStateKnown,
+		ConnectionStringWo:        connectionStringWoVal,
+		ConnectionStringWoVersion: connectionStringWoVersionVal,
+		state:                     attr.ValueStateKnown,
 	}, diags
 }
 
@@ -915,31 +1016,41 @@ func (t StorageAccountKeysType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = StorageAccountKeysValue{}
 
 type StorageAccountKeysValue struct {
-	ConnectionString basetypes.StringValue `tfsdk:"connection_string"`
-	state            attr.ValueState
+	ConnectionStringWo        basetypes.StringValue `tfsdk:"connection_string_wo"`
+	ConnectionStringWoVersion basetypes.Int64Value  `tfsdk:"connection_string_wo_version"`
+	state                     attr.ValueState
 }
 
 func (v StorageAccountKeysValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 1)
+	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["connection_string"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["connection_string_wo"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["connection_string_wo_version"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 1)
+		vals := make(map[string]tftypes.Value, 2)
 
-		val, err = v.ConnectionString.ToTerraformValue(ctx)
+		val, err = v.ConnectionStringWo.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["connection_string"] = val
+		vals["connection_string_wo"] = val
+
+		val, err = v.ConnectionStringWoVersion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["connection_string_wo_version"] = val
 
 		if err := tftypes.ValidateValue(objectType, vals); err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
@@ -971,7 +1082,8 @@ func (v StorageAccountKeysValue) ToObjectValue(ctx context.Context) (basetypes.O
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"connection_string": basetypes.StringType{},
+		"connection_string_wo":         basetypes.StringType{},
+		"connection_string_wo_version": basetypes.Int64Type{},
 	}
 
 	if v.IsNull() {
@@ -985,7 +1097,8 @@ func (v StorageAccountKeysValue) ToObjectValue(ctx context.Context) (basetypes.O
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"connection_string": v.ConnectionString,
+			"connection_string_wo":         v.ConnectionStringWo,
+			"connection_string_wo_version": v.ConnectionStringWoVersion,
 		})
 
 	return objVal, diags
@@ -1006,7 +1119,11 @@ func (v StorageAccountKeysValue) Equal(o attr.Value) bool {
 		return true
 	}
 
-	if !v.ConnectionString.Equal(other.ConnectionString) {
+	if !v.ConnectionStringWo.Equal(other.ConnectionStringWo) {
+		return false
+	}
+
+	if !v.ConnectionStringWoVersion.Equal(other.ConnectionStringWoVersion) {
 		return false
 	}
 
@@ -1023,6 +1140,7 @@ func (v StorageAccountKeysValue) Type(ctx context.Context) attr.Type {
 
 func (v StorageAccountKeysValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"connection_string": basetypes.StringType{},
+		"connection_string_wo":         basetypes.StringType{},
+		"connection_string_wo_version": basetypes.Int64Type{},
 	}
 }

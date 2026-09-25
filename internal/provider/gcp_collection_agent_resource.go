@@ -31,6 +31,9 @@ func (r *gcpCollectionAgentResource) Metadata(_ context.Context, req resource.Me
 
 func (r *gcpCollectionAgentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_gcp_collection_agent.GcpCollectionAgentResourceSchema(ctx)
+	// Secrets: Terraform passes them to the provider on apply and never stores them.
+	writeOnly(s.Attributes, "gcp_collection_agent.auth_headers.headers_wo", &resp.Diagnostics)
+	writeOnly(s.Attributes, "gcp_collection_agent.service_account_key_wo", &resp.Diagnostics)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "gcp_collection_agent.created_time", &resp.Diagnostics)
@@ -55,6 +58,9 @@ func (r *gcpCollectionAgentResource) Configure(_ context.Context, req resource.C
 func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan resource_gcp_collection_agent.GcpCollectionAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_gcp_collection_agent.GcpCollectionAgentModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -62,11 +68,11 @@ func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	if !plan.ServiceAccountKey.IsNull() && !plan.ServiceAccountKey.IsUnknown() {
-		body.SetServiceAccountKey(plan.ServiceAccountKey.ValueString())
+	if !config.ServiceAccountKeyWo.IsNull() && !config.ServiceAccountKeyWo.IsUnknown() {
+		body.SetServiceAccountKey(config.ServiceAccountKeyWo.ValueString())
 	}
 	if !plan.AuthHeaders.IsNull() && !plan.AuthHeaders.IsUnknown() {
-		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, plan.AuthHeaders.Headers))
+		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, config.AuthHeaders.HeadersWo))
 		body.SetAuthHeaders(*nested)
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
@@ -77,7 +83,7 @@ func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 		resp.Diagnostics.AddError("Create gcp_collection_agent failed", apiErr(err))
 		return
 	}
-	m := gcpCollectionAgentToModel(out, plan.ServiceAccountKey)
+	m := gcpCollectionAgentToModel(out, plan.ServiceAccountKeyWoVersion)
 	applyGcpCollectionAgentNested(&m, plan)
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }
@@ -97,7 +103,7 @@ func (r *gcpCollectionAgentResource) Read(ctx context.Context, req resource.Read
 		resp.Diagnostics.AddError("Read gcp_collection_agent failed", apiErr(err))
 		return
 	}
-	m := gcpCollectionAgentToModel(out, state.ServiceAccountKey)
+	m := gcpCollectionAgentToModel(out, state.ServiceAccountKeyWoVersion)
 	applyGcpCollectionAgentNested(&m, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }
@@ -106,6 +112,9 @@ func (r *gcpCollectionAgentResource) Update(ctx context.Context, req resource.Up
 	var plan, state resource_gcp_collection_agent.GcpCollectionAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_gcp_collection_agent.GcpCollectionAgentModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -119,11 +128,11 @@ func (r *gcpCollectionAgentResource) Update(ctx context.Context, req resource.Up
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	if !plan.ServiceAccountKey.IsNull() && !plan.ServiceAccountKey.IsUnknown() {
-		body.SetServiceAccountKey(plan.ServiceAccountKey.ValueString())
+	if !config.ServiceAccountKeyWo.IsNull() && !config.ServiceAccountKeyWo.IsUnknown() {
+		body.SetServiceAccountKey(config.ServiceAccountKeyWo.ValueString())
 	}
 	if !plan.AuthHeaders.IsNull() && !plan.AuthHeaders.IsUnknown() {
-		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, plan.AuthHeaders.Headers))
+		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, config.AuthHeaders.HeadersWo))
 		body.SetAuthHeaders(*nested)
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
@@ -134,7 +143,7 @@ func (r *gcpCollectionAgentResource) Update(ctx context.Context, req resource.Up
 		resp.Diagnostics.AddError("Update gcp_collection_agent failed", apiErr(err))
 		return
 	}
-	m := gcpCollectionAgentToModel(out, plan.ServiceAccountKey)
+	m := gcpCollectionAgentToModel(out, plan.ServiceAccountKeyWoVersion)
 	applyGcpCollectionAgentNested(&m, plan)
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }
@@ -154,28 +163,28 @@ func (r *gcpCollectionAgentResource) ImportState(ctx context.Context, req resour
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// applyGcpCollectionAgentNested copies the write-only nested credential blocks from src into m,
+// applyGcpCollectionAgentNested copies the unreturned nested credential blocks from src into m,
 // resolving an omitted block or sub-field to null. src is the plan on create, state on read.
 func applyGcpCollectionAgentNested(m *resource_gcp_collection_agent.GcpCollectionAgentModel, src resource_gcp_collection_agent.GcpCollectionAgentModel) {
 	if src.AuthHeaders.IsNull() || src.AuthHeaders.IsUnknown() {
 		m.AuthHeaders = resource_gcp_collection_agent.NewAuthHeadersValueNull()
 	} else {
 		v := src.AuthHeaders
-		if v.Headers.IsUnknown() {
-			v.Headers = types.MapNull(types.StringType)
+		if v.HeadersWo.IsUnknown() {
+			v.HeadersWo = types.MapNull(types.StringType)
 		}
 		m.AuthHeaders = v
 	}
 }
 
-func gcpCollectionAgentToModel(o *sdk.GcpCollectionAgentOut, service_account_key types.String) resource_gcp_collection_agent.GcpCollectionAgentModel {
+func gcpCollectionAgentToModel(o *sdk.GcpCollectionAgentOut, service_account_key_wo_version types.Int64) resource_gcp_collection_agent.GcpCollectionAgentModel {
 	m := resource_gcp_collection_agent.GcpCollectionAgentModel{
-		CloudRunUrl:         types.StringValue(o.GetCloudRunUrl()),
-		DeploymentId:        types.StringValue(o.GetDeploymentId()),
-		Enabled:             types.BoolValue(o.GetEnabled()),
-		Id:                  types.StringValue(o.GetId()),
-		IsRemoteUpgradeable: types.BoolValue(o.GetIsRemoteUpgradeable()),
-		ServiceAccountKey:   service_account_key,
+		CloudRunUrl:                types.StringValue(o.GetCloudRunUrl()),
+		DeploymentId:               types.StringValue(o.GetDeploymentId()),
+		Enabled:                    types.BoolValue(o.GetEnabled()),
+		Id:                         types.StringValue(o.GetId()),
+		IsRemoteUpgradeable:        types.BoolValue(o.GetIsRemoteUpgradeable()),
+		ServiceAccountKeyWoVersion: service_account_key_wo_version,
 	}
 	if v, ok := o.GetAuthenticationTypeOk(); ok && v != nil {
 		m.AuthenticationType = types.StringValue(string(*v))
@@ -207,10 +216,10 @@ func gcpCollectionAgentToModel(o *sdk.GcpCollectionAgentOut, service_account_key
 	} else {
 		m.Name = types.StringNull()
 	}
-	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
-	if service_account_key.IsUnknown() {
-		m.ServiceAccountKey = types.StringNull()
+	if service_account_key_wo_version.IsUnknown() {
+		m.ServiceAccountKeyWoVersion = types.Int64Null()
 	}
 	return m
 }

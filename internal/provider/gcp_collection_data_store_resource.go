@@ -31,6 +31,8 @@ func (r *gcpCollectionDataStoreResource) Metadata(_ context.Context, req resourc
 
 func (r *gcpCollectionDataStoreResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_gcp_collection_data_store.GcpCollectionDataStoreResourceSchema(ctx)
+	// Secrets: Terraform passes them to the provider on apply and never stores them.
+	writeOnly(s.Attributes, "gcp_collection_data_store.service_account_key_wo", &resp.Diagnostics)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "gcp_collection_data_store.created_time", &resp.Diagnostics)
@@ -55,10 +57,13 @@ func (r *gcpCollectionDataStoreResource) Configure(_ context.Context, req resour
 func (r *gcpCollectionDataStoreResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan resource_gcp_collection_data_store.GcpCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_gcp_collection_data_store.GcpCollectionDataStoreModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewGcpCollectionDataStoreIn(plan.DeploymentId.ValueString(), plan.BucketName.ValueString(), plan.ServiceAccountKey.ValueString())
+	body := sdk.NewGcpCollectionDataStoreIn(plan.DeploymentId.ValueString(), plan.BucketName.ValueString(), config.ServiceAccountKeyWo.ValueString())
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
@@ -70,7 +75,7 @@ func (r *gcpCollectionDataStoreResource) Create(ctx context.Context, req resourc
 		resp.Diagnostics.AddError("Create gcp_collection_data_store failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, gcpCollectionDataStoreToModel(out, plan.ServiceAccountKey))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, gcpCollectionDataStoreToModel(out, plan.ServiceAccountKeyWoVersion))...)
 }
 
 func (r *gcpCollectionDataStoreResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -88,13 +93,16 @@ func (r *gcpCollectionDataStoreResource) Read(ctx context.Context, req resource.
 		resp.Diagnostics.AddError("Read gcp_collection_data_store failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, gcpCollectionDataStoreToModel(out, state.ServiceAccountKey))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, gcpCollectionDataStoreToModel(out, state.ServiceAccountKeyWoVersion))...)
 }
 
 func (r *gcpCollectionDataStoreResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state resource_gcp_collection_data_store.GcpCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_gcp_collection_data_store.GcpCollectionDataStoreModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -105,8 +113,8 @@ func (r *gcpCollectionDataStoreResource) Update(ctx context.Context, req resourc
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
-	if !plan.ServiceAccountKey.IsNull() && !plan.ServiceAccountKey.IsUnknown() {
-		body.SetServiceAccountKey(plan.ServiceAccountKey.ValueString())
+	if !config.ServiceAccountKeyWo.IsNull() && !config.ServiceAccountKeyWo.IsUnknown() {
+		body.SetServiceAccountKey(config.ServiceAccountKeyWo.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpCollectionDataStoreOut, *http.Response, error) {
@@ -116,7 +124,7 @@ func (r *gcpCollectionDataStoreResource) Update(ctx context.Context, req resourc
 		resp.Diagnostics.AddError("Update gcp_collection_data_store failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, gcpCollectionDataStoreToModel(out, plan.ServiceAccountKey))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, gcpCollectionDataStoreToModel(out, plan.ServiceAccountKeyWoVersion))...)
 }
 
 func (r *gcpCollectionDataStoreResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -134,15 +142,15 @@ func (r *gcpCollectionDataStoreResource) ImportState(ctx context.Context, req re
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func gcpCollectionDataStoreToModel(o *sdk.GcpCollectionDataStoreOut, service_account_key types.String) resource_gcp_collection_data_store.GcpCollectionDataStoreModel {
+func gcpCollectionDataStoreToModel(o *sdk.GcpCollectionDataStoreOut, service_account_key_wo_version types.Int64) resource_gcp_collection_data_store.GcpCollectionDataStoreModel {
 	m := resource_gcp_collection_data_store.GcpCollectionDataStoreModel{
-		AuthenticationType: types.StringValue(string(o.GetAuthenticationType())),
-		BucketName:         types.StringValue(o.GetBucketName()),
-		DeploymentId:       types.StringValue(o.GetDeploymentId()),
-		Enabled:            types.BoolValue(o.GetEnabled()),
-		Id:                 types.StringValue(o.GetId()),
-		StorageType:        types.StringValue(string(o.GetStorageType())),
-		ServiceAccountKey:  service_account_key,
+		AuthenticationType:         types.StringValue(string(o.GetAuthenticationType())),
+		BucketName:                 types.StringValue(o.GetBucketName()),
+		DeploymentId:               types.StringValue(o.GetDeploymentId()),
+		Enabled:                    types.BoolValue(o.GetEnabled()),
+		Id:                         types.StringValue(o.GetId()),
+		StorageType:                types.StringValue(string(o.GetStorageType())),
+		ServiceAccountKeyWoVersion: service_account_key_wo_version,
 	}
 	if v, ok := o.GetCreatedTimeOk(); ok && v != nil {
 		m.CreatedTime = types.StringValue(v.Format(time.RFC3339))
@@ -159,10 +167,10 @@ func gcpCollectionDataStoreToModel(o *sdk.GcpCollectionDataStoreOut, service_acc
 	} else {
 		m.Name = types.StringNull()
 	}
-	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
-	if service_account_key.IsUnknown() {
-		m.ServiceAccountKey = types.StringNull()
+	if service_account_key_wo_version.IsUnknown() {
+		m.ServiceAccountKeyWoVersion = types.Int64Null()
 	}
 	return m
 }

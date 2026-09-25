@@ -62,7 +62,7 @@ func GcpCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.LengthAtMost(200),
 				},
 			},
-			"service_account_key": schema.StringAttribute{
+			"service_account_key_wo": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
 				Description:         "Service account key Monte Carlo reaches the bucket with, as the contents of the JSON key file Google issued for it. It replaces the stored key rather than merging into it.",
@@ -70,6 +70,11 @@ func GcpCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(16384),
 				},
+			},
+			"service_account_key_wo_version": schema.Int64Attribute{
+				Required:            true,
+				Description:         "Bump to send `service_account_key_wo` again. Terraform stores this, never the secret.",
+				MarkdownDescription: "Bump to send `service_account_key_wo` again. Terraform stores this, never the secret.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -81,14 +86,15 @@ func GcpCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type GcpCollectionDataStoreModel struct {
-	AuthenticationType types.String `tfsdk:"authentication_type"`
-	BucketName         types.String `tfsdk:"bucket_name"`
-	CreatedTime        types.String `tfsdk:"created_time"`
-	DeploymentId       types.String `tfsdk:"deployment_id"`
-	Enabled            types.Bool   `tfsdk:"enabled"`
-	Id                 types.String `tfsdk:"id"`
-	LastUpdatedTime    types.String `tfsdk:"last_updated_time"`
-	Name               types.String `tfsdk:"name"`
-	ServiceAccountKey  types.String `tfsdk:"service_account_key"`
-	StorageType        types.String `tfsdk:"storage_type"`
+	AuthenticationType         types.String `tfsdk:"authentication_type"`
+	BucketName                 types.String `tfsdk:"bucket_name"`
+	CreatedTime                types.String `tfsdk:"created_time"`
+	DeploymentId               types.String `tfsdk:"deployment_id"`
+	Enabled                    types.Bool   `tfsdk:"enabled"`
+	Id                         types.String `tfsdk:"id"`
+	LastUpdatedTime            types.String `tfsdk:"last_updated_time"`
+	Name                       types.String `tfsdk:"name"`
+	ServiceAccountKeyWo        types.String `tfsdk:"service_account_key_wo"`
+	ServiceAccountKeyWoVersion types.Int64  `tfsdk:"service_account_key_wo_version"`
+	StorageType                types.String `tfsdk:"storage_type"`
 }

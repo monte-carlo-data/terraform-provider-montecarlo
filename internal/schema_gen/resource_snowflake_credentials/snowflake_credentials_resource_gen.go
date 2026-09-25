@@ -4,7 +4,9 @@ package resource_snowflake_credentials
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -37,7 +39,25 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				Description:         "Unique identifier of the credentials.",
 				MarkdownDescription: "Unique identifier of the credentials.",
 			},
-			"private_key": schema.StringAttribute{
+			"private_key_passphrase_wo": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				Description:         "Passphrase the private key is encrypted with. Omit it for an unencrypted key. Never returned.",
+				MarkdownDescription: "Passphrase the private key is encrypted with. Omit it for an unencrypted key. Never returned.",
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 32768),
+					stringvalidator.AlsoRequires(path.MatchRelative().AtParent().AtName("private_key_passphrase_wo_version")),
+				},
+			},
+			"private_key_passphrase_wo_version": schema.Int64Attribute{
+				Optional:            true,
+				Description:         "Bump to send `private_key_passphrase_wo` again. Terraform stores this, never the secret.",
+				MarkdownDescription: "Bump to send `private_key_passphrase_wo` again. Terraform stores this, never the secret.",
+				Validators: []validator.Int64{
+					int64validator.AlsoRequires(path.MatchRelative().AtParent().AtName("private_key_passphrase_wo")),
+				},
+			},
+			"private_key_wo": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
 				Description:         "The private key of the pair, as PEM text including its BEGIN and END lines. Stored by Monte Carlo and never returned.",
@@ -46,14 +66,10 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.LengthBetween(1, 32768),
 				},
 			},
-			"private_key_passphrase": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Passphrase the private key is encrypted with. Omit it for an unencrypted key. Never returned.",
-				MarkdownDescription: "Passphrase the private key is encrypted with. Omit it for an unencrypted key. Never returned.",
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 32768),
-				},
+			"private_key_wo_version": schema.Int64Attribute{
+				Required:            true,
+				Description:         "Bump to send `private_key_wo` again. Terraform stores this, never the secret.",
+				MarkdownDescription: "Bump to send `private_key_wo` again. Terraform stores this, never the secret.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -82,13 +98,15 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type SnowflakeCredentialsModel struct {
-	Account              types.String `tfsdk:"account"`
-	ConnectionType       types.String `tfsdk:"connection_type"`
-	CreatedTime          types.String `tfsdk:"created_time"`
-	Id                   types.String `tfsdk:"id"`
-	PrivateKey           types.String `tfsdk:"private_key"`
-	PrivateKeyPassphrase types.String `tfsdk:"private_key_passphrase"`
-	StorageType          types.String `tfsdk:"storage_type"`
-	User                 types.String `tfsdk:"user"`
-	Warehouse            types.String `tfsdk:"warehouse"`
+	Account                       types.String `tfsdk:"account"`
+	ConnectionType                types.String `tfsdk:"connection_type"`
+	CreatedTime                   types.String `tfsdk:"created_time"`
+	Id                            types.String `tfsdk:"id"`
+	PrivateKeyPassphraseWo        types.String `tfsdk:"private_key_passphrase_wo"`
+	PrivateKeyPassphraseWoVersion types.Int64  `tfsdk:"private_key_passphrase_wo_version"`
+	PrivateKeyWo                  types.String `tfsdk:"private_key_wo"`
+	PrivateKeyWoVersion           types.Int64  `tfsdk:"private_key_wo_version"`
+	StorageType                   types.String `tfsdk:"storage_type"`
+	User                          types.String `tfsdk:"user"`
+	Warehouse                     types.String `tfsdk:"warehouse"`
 }

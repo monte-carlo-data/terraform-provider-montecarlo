@@ -31,6 +31,9 @@ func (r *snowflakeCredentialsResource) Metadata(_ context.Context, req resource.
 
 func (r *snowflakeCredentialsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_snowflake_credentials.SnowflakeCredentialsResourceSchema(ctx)
+	// Secrets: Terraform passes them to the provider on apply and never stores them.
+	writeOnly(s.Attributes, "snowflake_credentials.private_key_wo", &resp.Diagnostics)
+	writeOnly(s.Attributes, "snowflake_credentials.private_key_passphrase_wo", &resp.Diagnostics)
 	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "snowflake_credentials.connection_type", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "snowflake_credentials.created_time", &resp.Diagnostics)
@@ -54,12 +57,15 @@ func (r *snowflakeCredentialsResource) Configure(_ context.Context, req resource
 func (r *snowflakeCredentialsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan resource_snowflake_credentials.SnowflakeCredentialsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_snowflake_credentials.SnowflakeCredentialsModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewSnowflakeCredentialsIn(plan.Account.ValueString(), plan.User.ValueString(), plan.PrivateKey.ValueString())
-	if !plan.PrivateKeyPassphrase.IsNull() && !plan.PrivateKeyPassphrase.IsUnknown() {
-		body.SetPrivateKeyPassphrase(plan.PrivateKeyPassphrase.ValueString())
+	body := sdk.NewSnowflakeCredentialsIn(plan.Account.ValueString(), plan.User.ValueString(), config.PrivateKeyWo.ValueString())
+	if !config.PrivateKeyPassphraseWo.IsNull() && !config.PrivateKeyPassphraseWo.IsUnknown() {
+		body.SetPrivateKeyPassphrase(config.PrivateKeyPassphraseWo.ValueString())
 	}
 	if !plan.Warehouse.IsNull() && !plan.Warehouse.IsUnknown() {
 		body.SetWarehouse(plan.Warehouse.ValueString())
@@ -72,7 +78,7 @@ func (r *snowflakeCredentialsResource) Create(ctx context.Context, req resource.
 		resp.Diagnostics.AddError("Create snowflake_credentials failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, snowflakeCredentialsToModel(out, plan.PrivateKey, plan.PrivateKeyPassphrase))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, snowflakeCredentialsToModel(out, plan.PrivateKeyWoVersion, plan.PrivateKeyPassphraseWoVersion))...)
 }
 
 func (r *snowflakeCredentialsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -90,13 +96,16 @@ func (r *snowflakeCredentialsResource) Read(ctx context.Context, req resource.Re
 		resp.Diagnostics.AddError("Read snowflake_credentials failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, snowflakeCredentialsToModel(out, state.PrivateKey, state.PrivateKeyPassphrase))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, snowflakeCredentialsToModel(out, state.PrivateKeyWoVersion, state.PrivateKeyPassphraseWoVersion))...)
 }
 
 func (r *snowflakeCredentialsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state resource_snowflake_credentials.SnowflakeCredentialsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_snowflake_credentials.SnowflakeCredentialsModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -104,11 +113,11 @@ func (r *snowflakeCredentialsResource) Update(ctx context.Context, req resource.
 	if !plan.Account.IsNull() && !plan.Account.IsUnknown() {
 		body.SetAccount(plan.Account.ValueString())
 	}
-	if !plan.PrivateKey.IsNull() && !plan.PrivateKey.IsUnknown() {
-		body.SetPrivateKey(plan.PrivateKey.ValueString())
+	if !config.PrivateKeyWo.IsNull() && !config.PrivateKeyWo.IsUnknown() {
+		body.SetPrivateKey(config.PrivateKeyWo.ValueString())
 	}
-	if !plan.PrivateKeyPassphrase.IsNull() && !plan.PrivateKeyPassphrase.IsUnknown() {
-		body.SetPrivateKeyPassphrase(plan.PrivateKeyPassphrase.ValueString())
+	if !config.PrivateKeyPassphraseWo.IsNull() && !config.PrivateKeyPassphraseWo.IsUnknown() {
+		body.SetPrivateKeyPassphrase(config.PrivateKeyPassphraseWo.ValueString())
 	}
 	if !plan.User.IsNull() && !plan.User.IsUnknown() {
 		body.SetUser(plan.User.ValueString())
@@ -124,7 +133,7 @@ func (r *snowflakeCredentialsResource) Update(ctx context.Context, req resource.
 		resp.Diagnostics.AddError("Update snowflake_credentials failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, snowflakeCredentialsToModel(out, plan.PrivateKey, plan.PrivateKeyPassphrase))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, snowflakeCredentialsToModel(out, plan.PrivateKeyWoVersion, plan.PrivateKeyPassphraseWoVersion))...)
 }
 
 func (r *snowflakeCredentialsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -142,29 +151,29 @@ func (r *snowflakeCredentialsResource) ImportState(ctx context.Context, req reso
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func snowflakeCredentialsToModel(o *sdk.SnowflakeCredentialsOut, private_key types.String, private_key_passphrase types.String) resource_snowflake_credentials.SnowflakeCredentialsModel {
+func snowflakeCredentialsToModel(o *sdk.SnowflakeCredentialsOut, private_key_wo_version types.Int64, private_key_passphrase_wo_version types.Int64) resource_snowflake_credentials.SnowflakeCredentialsModel {
 	m := resource_snowflake_credentials.SnowflakeCredentialsModel{
-		Account:              types.StringValue(o.GetAccount()),
-		ConnectionType:       types.StringValue(o.GetConnectionType()),
-		CreatedTime:          types.StringValue(o.GetCreatedTime().Format(time.RFC3339)),
-		Id:                   types.StringValue(o.GetId()),
-		StorageType:          types.StringValue(string(o.GetStorageType())),
-		User:                 types.StringValue(o.GetUser()),
-		PrivateKey:           private_key,
-		PrivateKeyPassphrase: private_key_passphrase,
+		Account:                       types.StringValue(o.GetAccount()),
+		ConnectionType:                types.StringValue(o.GetConnectionType()),
+		CreatedTime:                   types.StringValue(o.GetCreatedTime().Format(time.RFC3339)),
+		Id:                            types.StringValue(o.GetId()),
+		StorageType:                   types.StringValue(string(o.GetStorageType())),
+		User:                          types.StringValue(o.GetUser()),
+		PrivateKeyWoVersion:           private_key_wo_version,
+		PrivateKeyPassphraseWoVersion: private_key_passphrase_wo_version,
 	}
 	if v, ok := o.GetWarehouseOk(); ok && v != nil {
 		m.Warehouse = types.StringValue(*v)
 	} else {
 		m.Warehouse = types.StringNull()
 	}
-	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
-	if private_key.IsUnknown() {
-		m.PrivateKey = types.StringNull()
+	if private_key_wo_version.IsUnknown() {
+		m.PrivateKeyWoVersion = types.Int64Null()
 	}
-	if private_key_passphrase.IsUnknown() {
-		m.PrivateKeyPassphrase = types.StringNull()
+	if private_key_passphrase_wo_version.IsUnknown() {
+		m.PrivateKeyPassphraseWoVersion = types.Int64Null()
 	}
 	return m
 }
