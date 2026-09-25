@@ -49,11 +49,16 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"function_app_key": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
-					"app_key": schema.StringAttribute{
+					"app_key_wo": schema.StringAttribute{
 						Required:            true,
 						Sensitive:           true,
 						Description:         "Function app key Monte Carlo presents when it calls the agent.",
 						MarkdownDescription: "Function app key Monte Carlo presents when it calls the agent.",
+					},
+					"app_key_wo_version": schema.Int64Attribute{
+						Required:            true,
+						Description:         "Bump to send `app_key_wo` again. Terraform stores this, never the secret.",
+						MarkdownDescription: "Bump to send `app_key_wo` again. Terraform stores this, never the secret.",
 					},
 				},
 				CustomType: FunctionAppKeyType{
@@ -62,7 +67,6 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Computed:            true,
 				Description:         "Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both.",
 				MarkdownDescription: "Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both.",
 			},
@@ -120,11 +124,16 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 						Description:         "Application (client) id of the service principal.",
 						MarkdownDescription: "Application (client) id of the service principal.",
 					},
-					"client_secret": schema.StringAttribute{
+					"client_secret_wo": schema.StringAttribute{
 						Required:            true,
 						Sensitive:           true,
 						Description:         "Client secret of the service principal.",
 						MarkdownDescription: "Client secret of the service principal.",
+					},
+					"client_secret_wo_version": schema.Int64Attribute{
+						Required:            true,
+						Description:         "Bump to send `client_secret_wo` again. Terraform stores this, never the secret.",
+						MarkdownDescription: "Bump to send `client_secret_wo` again. Terraform stores this, never the secret.",
 					},
 					"tenant_id": schema.StringAttribute{
 						Required:            true,
@@ -138,7 +147,6 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Computed:            true,
 				Description:         "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both.",
 				MarkdownDescription: "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both.",
 			},
@@ -187,22 +195,40 @@ func (t FunctionAppKeyType) ValueFromObject(ctx context.Context, in basetypes.Ob
 
 	attributes := in.Attributes()
 
-	appKeyAttribute, ok := attributes["app_key"]
+	appKeyWoAttribute, ok := attributes["app_key_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`app_key is missing from object`)
+			`app_key_wo is missing from object`)
 
 		return nil, diags
 	}
 
-	appKeyVal, ok := appKeyAttribute.(basetypes.StringValue)
+	appKeyWoVal, ok := appKeyWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`app_key expected to be basetypes.StringValue, was: %T`, appKeyAttribute))
+			fmt.Sprintf(`app_key_wo expected to be basetypes.StringValue, was: %T`, appKeyWoAttribute))
+	}
+
+	appKeyWoVersionAttribute, ok := attributes["app_key_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`app_key_wo_version is missing from object`)
+
+		return nil, diags
+	}
+
+	appKeyWoVersionVal, ok := appKeyWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`app_key_wo_version expected to be basetypes.Int64Value, was: %T`, appKeyWoVersionAttribute))
 	}
 
 	if diags.HasError() {
@@ -210,8 +236,9 @@ func (t FunctionAppKeyType) ValueFromObject(ctx context.Context, in basetypes.Ob
 	}
 
 	return FunctionAppKeyValue{
-		AppKey: appKeyVal,
-		state:  attr.ValueStateKnown,
+		AppKeyWo:        appKeyWoVal,
+		AppKeyWoVersion: appKeyWoVersionVal,
+		state:           attr.ValueStateKnown,
 	}, diags
 }
 
@@ -278,22 +305,40 @@ func NewFunctionAppKeyValue(attributeTypes map[string]attr.Type, attributes map[
 		return NewFunctionAppKeyValueUnknown(), diags
 	}
 
-	appKeyAttribute, ok := attributes["app_key"]
+	appKeyWoAttribute, ok := attributes["app_key_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`app_key is missing from object`)
+			`app_key_wo is missing from object`)
 
 		return NewFunctionAppKeyValueUnknown(), diags
 	}
 
-	appKeyVal, ok := appKeyAttribute.(basetypes.StringValue)
+	appKeyWoVal, ok := appKeyWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`app_key expected to be basetypes.StringValue, was: %T`, appKeyAttribute))
+			fmt.Sprintf(`app_key_wo expected to be basetypes.StringValue, was: %T`, appKeyWoAttribute))
+	}
+
+	appKeyWoVersionAttribute, ok := attributes["app_key_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`app_key_wo_version is missing from object`)
+
+		return NewFunctionAppKeyValueUnknown(), diags
+	}
+
+	appKeyWoVersionVal, ok := appKeyWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`app_key_wo_version expected to be basetypes.Int64Value, was: %T`, appKeyWoVersionAttribute))
 	}
 
 	if diags.HasError() {
@@ -301,8 +346,9 @@ func NewFunctionAppKeyValue(attributeTypes map[string]attr.Type, attributes map[
 	}
 
 	return FunctionAppKeyValue{
-		AppKey: appKeyVal,
-		state:  attr.ValueStateKnown,
+		AppKeyWo:        appKeyWoVal,
+		AppKeyWoVersion: appKeyWoVersionVal,
+		state:           attr.ValueStateKnown,
 	}, diags
 }
 
@@ -374,31 +420,41 @@ func (t FunctionAppKeyType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = FunctionAppKeyValue{}
 
 type FunctionAppKeyValue struct {
-	AppKey basetypes.StringValue `tfsdk:"app_key"`
-	state  attr.ValueState
+	AppKeyWo        basetypes.StringValue `tfsdk:"app_key_wo"`
+	AppKeyWoVersion basetypes.Int64Value  `tfsdk:"app_key_wo_version"`
+	state           attr.ValueState
 }
 
 func (v FunctionAppKeyValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 1)
+	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["app_key"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["app_key_wo"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["app_key_wo_version"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 1)
+		vals := make(map[string]tftypes.Value, 2)
 
-		val, err = v.AppKey.ToTerraformValue(ctx)
+		val, err = v.AppKeyWo.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["app_key"] = val
+		vals["app_key_wo"] = val
+
+		val, err = v.AppKeyWoVersion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["app_key_wo_version"] = val
 
 		if err := tftypes.ValidateValue(objectType, vals); err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
@@ -430,7 +486,8 @@ func (v FunctionAppKeyValue) ToObjectValue(ctx context.Context) (basetypes.Objec
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"app_key": basetypes.StringType{},
+		"app_key_wo":         basetypes.StringType{},
+		"app_key_wo_version": basetypes.Int64Type{},
 	}
 
 	if v.IsNull() {
@@ -444,7 +501,8 @@ func (v FunctionAppKeyValue) ToObjectValue(ctx context.Context) (basetypes.Objec
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"app_key": v.AppKey,
+			"app_key_wo":         v.AppKeyWo,
+			"app_key_wo_version": v.AppKeyWoVersion,
 		})
 
 	return objVal, diags
@@ -465,7 +523,11 @@ func (v FunctionAppKeyValue) Equal(o attr.Value) bool {
 		return true
 	}
 
-	if !v.AppKey.Equal(other.AppKey) {
+	if !v.AppKeyWo.Equal(other.AppKeyWo) {
+		return false
+	}
+
+	if !v.AppKeyWoVersion.Equal(other.AppKeyWoVersion) {
 		return false
 	}
 
@@ -482,7 +544,8 @@ func (v FunctionAppKeyValue) Type(ctx context.Context) attr.Type {
 
 func (v FunctionAppKeyValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"app_key": basetypes.StringType{},
+		"app_key_wo":         basetypes.StringType{},
+		"app_key_wo_version": basetypes.Int64Type{},
 	}
 }
 
@@ -547,22 +610,40 @@ func (t ServicePrincipalType) ValueFromObject(ctx context.Context, in basetypes.
 			fmt.Sprintf(`client_id expected to be basetypes.StringValue, was: %T`, clientIdAttribute))
 	}
 
-	clientSecretAttribute, ok := attributes["client_secret"]
+	clientSecretWoAttribute, ok := attributes["client_secret_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`client_secret is missing from object`)
+			`client_secret_wo is missing from object`)
 
 		return nil, diags
 	}
 
-	clientSecretVal, ok := clientSecretAttribute.(basetypes.StringValue)
+	clientSecretWoVal, ok := clientSecretWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`client_secret expected to be basetypes.StringValue, was: %T`, clientSecretAttribute))
+			fmt.Sprintf(`client_secret_wo expected to be basetypes.StringValue, was: %T`, clientSecretWoAttribute))
+	}
+
+	clientSecretWoVersionAttribute, ok := attributes["client_secret_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`client_secret_wo_version is missing from object`)
+
+		return nil, diags
+	}
+
+	clientSecretWoVersionVal, ok := clientSecretWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`client_secret_wo_version expected to be basetypes.Int64Value, was: %T`, clientSecretWoVersionAttribute))
 	}
 
 	tenantIdAttribute, ok := attributes["tenant_id"]
@@ -588,11 +669,12 @@ func (t ServicePrincipalType) ValueFromObject(ctx context.Context, in basetypes.
 	}
 
 	return ServicePrincipalValue{
-		Audience:     audienceVal,
-		ClientId:     clientIdVal,
-		ClientSecret: clientSecretVal,
-		TenantId:     tenantIdVal,
-		state:        attr.ValueStateKnown,
+		Audience:              audienceVal,
+		ClientId:              clientIdVal,
+		ClientSecretWo:        clientSecretWoVal,
+		ClientSecretWoVersion: clientSecretWoVersionVal,
+		TenantId:              tenantIdVal,
+		state:                 attr.ValueStateKnown,
 	}, diags
 }
 
@@ -695,22 +777,40 @@ func NewServicePrincipalValue(attributeTypes map[string]attr.Type, attributes ma
 			fmt.Sprintf(`client_id expected to be basetypes.StringValue, was: %T`, clientIdAttribute))
 	}
 
-	clientSecretAttribute, ok := attributes["client_secret"]
+	clientSecretWoAttribute, ok := attributes["client_secret_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`client_secret is missing from object`)
+			`client_secret_wo is missing from object`)
 
 		return NewServicePrincipalValueUnknown(), diags
 	}
 
-	clientSecretVal, ok := clientSecretAttribute.(basetypes.StringValue)
+	clientSecretWoVal, ok := clientSecretWoAttribute.(basetypes.StringValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`client_secret expected to be basetypes.StringValue, was: %T`, clientSecretAttribute))
+			fmt.Sprintf(`client_secret_wo expected to be basetypes.StringValue, was: %T`, clientSecretWoAttribute))
+	}
+
+	clientSecretWoVersionAttribute, ok := attributes["client_secret_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`client_secret_wo_version is missing from object`)
+
+		return NewServicePrincipalValueUnknown(), diags
+	}
+
+	clientSecretWoVersionVal, ok := clientSecretWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`client_secret_wo_version expected to be basetypes.Int64Value, was: %T`, clientSecretWoVersionAttribute))
 	}
 
 	tenantIdAttribute, ok := attributes["tenant_id"]
@@ -736,11 +836,12 @@ func NewServicePrincipalValue(attributeTypes map[string]attr.Type, attributes ma
 	}
 
 	return ServicePrincipalValue{
-		Audience:     audienceVal,
-		ClientId:     clientIdVal,
-		ClientSecret: clientSecretVal,
-		TenantId:     tenantIdVal,
-		state:        attr.ValueStateKnown,
+		Audience:              audienceVal,
+		ClientId:              clientIdVal,
+		ClientSecretWo:        clientSecretWoVal,
+		ClientSecretWoVersion: clientSecretWoVersionVal,
+		TenantId:              tenantIdVal,
+		state:                 attr.ValueStateKnown,
 	}, diags
 }
 
@@ -812,29 +913,31 @@ func (t ServicePrincipalType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = ServicePrincipalValue{}
 
 type ServicePrincipalValue struct {
-	Audience     basetypes.StringValue `tfsdk:"audience"`
-	ClientId     basetypes.StringValue `tfsdk:"client_id"`
-	ClientSecret basetypes.StringValue `tfsdk:"client_secret"`
-	TenantId     basetypes.StringValue `tfsdk:"tenant_id"`
-	state        attr.ValueState
+	Audience              basetypes.StringValue `tfsdk:"audience"`
+	ClientId              basetypes.StringValue `tfsdk:"client_id"`
+	ClientSecretWo        basetypes.StringValue `tfsdk:"client_secret_wo"`
+	ClientSecretWoVersion basetypes.Int64Value  `tfsdk:"client_secret_wo_version"`
+	TenantId              basetypes.StringValue `tfsdk:"tenant_id"`
+	state                 attr.ValueState
 }
 
 func (v ServicePrincipalValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 4)
+	attrTypes := make(map[string]tftypes.Type, 5)
 
 	var val tftypes.Value
 	var err error
 
 	attrTypes["audience"] = basetypes.StringType{}.TerraformType(ctx)
 	attrTypes["client_id"] = basetypes.StringType{}.TerraformType(ctx)
-	attrTypes["client_secret"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["client_secret_wo"] = basetypes.StringType{}.TerraformType(ctx)
+	attrTypes["client_secret_wo_version"] = basetypes.Int64Type{}.TerraformType(ctx)
 	attrTypes["tenant_id"] = basetypes.StringType{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 4)
+		vals := make(map[string]tftypes.Value, 5)
 
 		val, err = v.Audience.ToTerraformValue(ctx)
 
@@ -852,13 +955,21 @@ func (v ServicePrincipalValue) ToTerraformValue(ctx context.Context) (tftypes.Va
 
 		vals["client_id"] = val
 
-		val, err = v.ClientSecret.ToTerraformValue(ctx)
+		val, err = v.ClientSecretWo.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["client_secret"] = val
+		vals["client_secret_wo"] = val
+
+		val, err = v.ClientSecretWoVersion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["client_secret_wo_version"] = val
 
 		val, err = v.TenantId.ToTerraformValue(ctx)
 
@@ -898,10 +1009,11 @@ func (v ServicePrincipalValue) ToObjectValue(ctx context.Context) (basetypes.Obj
 	var diags diag.Diagnostics
 
 	attributeTypes := map[string]attr.Type{
-		"audience":      basetypes.StringType{},
-		"client_id":     basetypes.StringType{},
-		"client_secret": basetypes.StringType{},
-		"tenant_id":     basetypes.StringType{},
+		"audience":                 basetypes.StringType{},
+		"client_id":                basetypes.StringType{},
+		"client_secret_wo":         basetypes.StringType{},
+		"client_secret_wo_version": basetypes.Int64Type{},
+		"tenant_id":                basetypes.StringType{},
 	}
 
 	if v.IsNull() {
@@ -915,10 +1027,11 @@ func (v ServicePrincipalValue) ToObjectValue(ctx context.Context) (basetypes.Obj
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"audience":      v.Audience,
-			"client_id":     v.ClientId,
-			"client_secret": v.ClientSecret,
-			"tenant_id":     v.TenantId,
+			"audience":                 v.Audience,
+			"client_id":                v.ClientId,
+			"client_secret_wo":         v.ClientSecretWo,
+			"client_secret_wo_version": v.ClientSecretWoVersion,
+			"tenant_id":                v.TenantId,
 		})
 
 	return objVal, diags
@@ -947,7 +1060,11 @@ func (v ServicePrincipalValue) Equal(o attr.Value) bool {
 		return false
 	}
 
-	if !v.ClientSecret.Equal(other.ClientSecret) {
+	if !v.ClientSecretWo.Equal(other.ClientSecretWo) {
+		return false
+	}
+
+	if !v.ClientSecretWoVersion.Equal(other.ClientSecretWoVersion) {
 		return false
 	}
 
@@ -968,9 +1085,10 @@ func (v ServicePrincipalValue) Type(ctx context.Context) attr.Type {
 
 func (v ServicePrincipalValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"audience":      basetypes.StringType{},
-		"client_id":     basetypes.StringType{},
-		"client_secret": basetypes.StringType{},
-		"tenant_id":     basetypes.StringType{},
+		"audience":                 basetypes.StringType{},
+		"client_id":                basetypes.StringType{},
+		"client_secret_wo":         basetypes.StringType{},
+		"client_secret_wo_version": basetypes.Int64Type{},
+		"tenant_id":                basetypes.StringType{},
 	}
 }

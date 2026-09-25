@@ -33,6 +33,9 @@ func (r *azureCollectionDataStoreResource) Metadata(_ context.Context, req resou
 
 func (r *azureCollectionDataStoreResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_azure_collection_data_store.AzureCollectionDataStoreResourceSchema(ctx)
+	// Secrets: Terraform passes them to the provider on apply and never stores them.
+	writeOnly(s.Attributes, "azure_collection_data_store.service_principal.client_secret_wo", &resp.Diagnostics)
+	writeOnly(s.Attributes, "azure_collection_data_store.storage_account_keys.connection_string_wo", &resp.Diagnostics)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds.
 	useNonNullStateForUnknown(s.Attributes, "azure_collection_data_store.created_time", &resp.Diagnostics)
@@ -57,6 +60,9 @@ func (r *azureCollectionDataStoreResource) Configure(_ context.Context, req reso
 func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan resource_azure_collection_data_store.AzureCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_azure_collection_data_store.AzureCollectionDataStoreModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -65,14 +71,14 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 		body.SetName(plan.Name.ValueString())
 	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
-		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.AccountUrl.ValueString())
+		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), config.ServicePrincipal.ClientSecretWo.ValueString(), plan.ServicePrincipal.AccountUrl.ValueString())
 		if !plan.ServicePrincipal.AccountName.IsNull() && !plan.ServicePrincipal.AccountName.IsUnknown() {
 			nested.SetAccountName(plan.ServicePrincipal.AccountName.ValueString())
 		}
 		body.SetServicePrincipal(*nested)
 	}
 	if !plan.StorageAccountKeys.IsNull() && !plan.StorageAccountKeys.IsUnknown() {
-		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
+		nested := sdk.NewStorageAccountKeysCredentialsIn(config.StorageAccountKeys.ConnectionStringWo.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
@@ -112,6 +118,9 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 	var plan, state resource_azure_collection_data_store.AzureCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	// Terraform plans a write-only secret as null and passes it only in the configuration.
+	var config resource_azure_collection_data_store.AzureCollectionDataStoreModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -126,14 +135,14 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 		body.SetName(plan.Name.ValueString())
 	}
 	if !plan.ServicePrincipal.IsNull() && !plan.ServicePrincipal.IsUnknown() {
-		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), plan.ServicePrincipal.ClientSecret.ValueString(), plan.ServicePrincipal.AccountUrl.ValueString())
+		nested := sdk.NewStorageServicePrincipalCredentialsIn(plan.ServicePrincipal.TenantId.ValueString(), plan.ServicePrincipal.ClientId.ValueString(), config.ServicePrincipal.ClientSecretWo.ValueString(), plan.ServicePrincipal.AccountUrl.ValueString())
 		if !plan.ServicePrincipal.AccountName.IsNull() && !plan.ServicePrincipal.AccountName.IsUnknown() {
 			nested.SetAccountName(plan.ServicePrincipal.AccountName.ValueString())
 		}
 		body.SetServicePrincipal(*nested)
 	}
 	if !plan.StorageAccountKeys.IsNull() && !plan.StorageAccountKeys.IsUnknown() {
-		nested := sdk.NewStorageAccountKeysCredentialsIn(plan.StorageAccountKeys.ConnectionString.ValueString())
+		nested := sdk.NewStorageAccountKeysCredentialsIn(config.StorageAccountKeys.ConnectionStringWo.ValueString())
 		body.SetStorageAccountKeys(*nested)
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
@@ -164,7 +173,7 @@ func (r *azureCollectionDataStoreResource) ImportState(ctx context.Context, req 
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// applyAzureCollectionDataStoreNested copies the write-only nested credential blocks from src into m,
+// applyAzureCollectionDataStoreNested copies the unreturned nested credential blocks from src into m,
 // resolving an omitted block or sub-field to null. src is the plan on create, state on read.
 func applyAzureCollectionDataStoreNested(m *resource_azure_collection_data_store.AzureCollectionDataStoreModel, src resource_azure_collection_data_store.AzureCollectionDataStoreModel) {
 	if src.ServicePrincipal.IsNull() || src.ServicePrincipal.IsUnknown() {
@@ -180,8 +189,8 @@ func applyAzureCollectionDataStoreNested(m *resource_azure_collection_data_store
 		if v.ClientId.IsUnknown() {
 			v.ClientId = types.StringNull()
 		}
-		if v.ClientSecret.IsUnknown() {
-			v.ClientSecret = types.StringNull()
+		if v.ClientSecretWo.IsUnknown() {
+			v.ClientSecretWo = types.StringNull()
 		}
 		if v.TenantId.IsUnknown() {
 			v.TenantId = types.StringNull()
@@ -192,8 +201,8 @@ func applyAzureCollectionDataStoreNested(m *resource_azure_collection_data_store
 		m.StorageAccountKeys = resource_azure_collection_data_store.NewStorageAccountKeysValueNull()
 	} else {
 		v := src.StorageAccountKeys
-		if v.ConnectionString.IsUnknown() {
-			v.ConnectionString = types.StringNull()
+		if v.ConnectionStringWo.IsUnknown() {
+			v.ConnectionStringWo = types.StringNull()
 		}
 		m.StorageAccountKeys = v
 	}

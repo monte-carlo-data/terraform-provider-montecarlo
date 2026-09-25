@@ -148,7 +148,7 @@ func genericCollectionAgentOauthClientToModel(o *sdk.GenericCollectionAgentOAuth
 	} else {
 		m.ExpirationTime = types.StringNull()
 	}
-	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
 	if expiration_days.IsUnknown() {
 		m.ExpirationDays = types.Int64Null()
@@ -182,7 +182,7 @@ func genericCollectionAgentOauthClientCreatedToModel(o *sdk.GenericCollectionAge
 	} else {
 		m.ExpirationTime = types.StringNull()
 	}
-	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
 	if expiration_days.IsUnknown() {
 		m.ExpirationDays = types.Int64Null()

@@ -164,7 +164,7 @@ func awsCollectionDataStoreToModel(o *sdk.AwsCollectionDataStoreOut, role_arn ty
 	} else {
 		m.Name = types.StringNull()
 	}
-	// A write-only field the config omits arrives unknown and no response fills it, so it
+	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
 	if role_arn.IsUnknown() {
 		m.RoleArn = types.StringNull()

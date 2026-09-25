@@ -5,9 +5,11 @@ package resource_gcp_collection_agent
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -23,11 +25,17 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"auth_headers": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
-					"headers": schema.MapAttribute{
+					"headers_wo": schema.MapAttribute{
 						ElementType:         types.StringType,
 						Required:            true,
+						Sensitive:           true,
 						Description:         "Header names, each mapped to the value to send for it. Names have to be valid HTTP header names. At most 20 headers, each value up to 8192 characters.",
 						MarkdownDescription: "Header names, each mapped to the value to send for it. Names have to be valid HTTP header names. At most 20 headers, each value up to 8192 characters.",
+					},
+					"headers_wo_version": schema.Int64Attribute{
+						Required:            true,
+						Description:         "Bump to send `headers_wo` again. Terraform stores this, never the secret.",
+						MarkdownDescription: "Bump to send `headers_wo` again. Terraform stores this, never the secret.",
 					},
 				},
 				CustomType: AuthHeadersType{
@@ -36,7 +44,6 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Computed:            true,
 				Description:         "Credentials for `CUSTOM_AUTH_HEADERS`. Send this or `service_account_key`, never both. It replaces the stored credentials rather than merging into them.",
 				MarkdownDescription: "Credentials for `CUSTOM_AUTH_HEADERS`. Send this or `service_account_key`, never both. It replaces the stored credentials rather than merging into them.",
 			},
@@ -108,13 +115,22 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.LengthAtMost(200),
 				},
 			},
-			"service_account_key": schema.StringAttribute{
+			"service_account_key_wo": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
+				Sensitive:           true,
 				Description:         "Credentials for `GCP_JSON_SERVICE_ACCOUNT_KEY`, as the contents of the JSON key file Google issued for the service account. Send this or `auth_headers`, never both. It replaces the stored credentials rather than merging into them.",
 				MarkdownDescription: "Credentials for `GCP_JSON_SERVICE_ACCOUNT_KEY`, as the contents of the JSON key file Google issued for the service account. Send this or `auth_headers`, never both. It replaces the stored credentials rather than merging into them.",
 				Validators: []validator.String{
 					stringvalidator.LengthAtMost(16384),
+					stringvalidator.AlsoRequires(path.MatchRelative().AtParent().AtName("service_account_key_wo_version")),
+				},
+			},
+			"service_account_key_wo_version": schema.Int64Attribute{
+				Optional:            true,
+				Description:         "Bump to send `service_account_key_wo` again. Terraform stores this, never the secret.",
+				MarkdownDescription: "Bump to send `service_account_key_wo` again. Terraform stores this, never the secret.",
+				Validators: []validator.Int64{
+					int64validator.AlsoRequires(path.MatchRelative().AtParent().AtName("service_account_key_wo")),
 				},
 			},
 		},
@@ -122,19 +138,20 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type GcpCollectionAgentModel struct {
-	AuthHeaders         AuthHeadersValue `tfsdk:"auth_headers"`
-	AuthenticationType  types.String     `tfsdk:"authentication_type"`
-	CloudRunUrl         types.String     `tfsdk:"cloud_run_url"`
-	CreatedTime         types.String     `tfsdk:"created_time"`
-	DeploymentId        types.String     `tfsdk:"deployment_id"`
-	Enabled             types.Bool       `tfsdk:"enabled"`
-	Id                  types.String     `tfsdk:"id"`
-	ImageBuild          types.String     `tfsdk:"image_build"`
-	ImageVersion        types.String     `tfsdk:"image_version"`
-	IsRemoteUpgradeable types.Bool       `tfsdk:"is_remote_upgradeable"`
-	LastUpdatedTime     types.String     `tfsdk:"last_updated_time"`
-	Name                types.String     `tfsdk:"name"`
-	ServiceAccountKey   types.String     `tfsdk:"service_account_key"`
+	AuthHeaders                AuthHeadersValue `tfsdk:"auth_headers"`
+	AuthenticationType         types.String     `tfsdk:"authentication_type"`
+	CloudRunUrl                types.String     `tfsdk:"cloud_run_url"`
+	CreatedTime                types.String     `tfsdk:"created_time"`
+	DeploymentId               types.String     `tfsdk:"deployment_id"`
+	Enabled                    types.Bool       `tfsdk:"enabled"`
+	Id                         types.String     `tfsdk:"id"`
+	ImageBuild                 types.String     `tfsdk:"image_build"`
+	ImageVersion               types.String     `tfsdk:"image_version"`
+	IsRemoteUpgradeable        types.Bool       `tfsdk:"is_remote_upgradeable"`
+	LastUpdatedTime            types.String     `tfsdk:"last_updated_time"`
+	Name                       types.String     `tfsdk:"name"`
+	ServiceAccountKeyWo        types.String     `tfsdk:"service_account_key_wo"`
+	ServiceAccountKeyWoVersion types.Int64      `tfsdk:"service_account_key_wo_version"`
 }
 
 var _ basetypes.ObjectTypable = AuthHeadersType{}
@@ -162,22 +179,40 @@ func (t AuthHeadersType) ValueFromObject(ctx context.Context, in basetypes.Objec
 
 	attributes := in.Attributes()
 
-	headersAttribute, ok := attributes["headers"]
+	headersWoAttribute, ok := attributes["headers_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`headers is missing from object`)
+			`headers_wo is missing from object`)
 
 		return nil, diags
 	}
 
-	headersVal, ok := headersAttribute.(basetypes.MapValue)
+	headersWoVal, ok := headersWoAttribute.(basetypes.MapValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`headers expected to be basetypes.MapValue, was: %T`, headersAttribute))
+			fmt.Sprintf(`headers_wo expected to be basetypes.MapValue, was: %T`, headersWoAttribute))
+	}
+
+	headersWoVersionAttribute, ok := attributes["headers_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`headers_wo_version is missing from object`)
+
+		return nil, diags
+	}
+
+	headersWoVersionVal, ok := headersWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`headers_wo_version expected to be basetypes.Int64Value, was: %T`, headersWoVersionAttribute))
 	}
 
 	if diags.HasError() {
@@ -185,8 +220,9 @@ func (t AuthHeadersType) ValueFromObject(ctx context.Context, in basetypes.Objec
 	}
 
 	return AuthHeadersValue{
-		Headers: headersVal,
-		state:   attr.ValueStateKnown,
+		HeadersWo:        headersWoVal,
+		HeadersWoVersion: headersWoVersionVal,
+		state:            attr.ValueStateKnown,
 	}, diags
 }
 
@@ -253,22 +289,40 @@ func NewAuthHeadersValue(attributeTypes map[string]attr.Type, attributes map[str
 		return NewAuthHeadersValueUnknown(), diags
 	}
 
-	headersAttribute, ok := attributes["headers"]
+	headersWoAttribute, ok := attributes["headers_wo"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`headers is missing from object`)
+			`headers_wo is missing from object`)
 
 		return NewAuthHeadersValueUnknown(), diags
 	}
 
-	headersVal, ok := headersAttribute.(basetypes.MapValue)
+	headersWoVal, ok := headersWoAttribute.(basetypes.MapValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`headers expected to be basetypes.MapValue, was: %T`, headersAttribute))
+			fmt.Sprintf(`headers_wo expected to be basetypes.MapValue, was: %T`, headersWoAttribute))
+	}
+
+	headersWoVersionAttribute, ok := attributes["headers_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`headers_wo_version is missing from object`)
+
+		return NewAuthHeadersValueUnknown(), diags
+	}
+
+	headersWoVersionVal, ok := headersWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`headers_wo_version expected to be basetypes.Int64Value, was: %T`, headersWoVersionAttribute))
 	}
 
 	if diags.HasError() {
@@ -276,8 +330,9 @@ func NewAuthHeadersValue(attributeTypes map[string]attr.Type, attributes map[str
 	}
 
 	return AuthHeadersValue{
-		Headers: headersVal,
-		state:   attr.ValueStateKnown,
+		HeadersWo:        headersWoVal,
+		HeadersWoVersion: headersWoVersionVal,
+		state:            attr.ValueStateKnown,
 	}, diags
 }
 
@@ -349,33 +404,43 @@ func (t AuthHeadersType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = AuthHeadersValue{}
 
 type AuthHeadersValue struct {
-	Headers basetypes.MapValue `tfsdk:"headers"`
-	state   attr.ValueState
+	HeadersWo        basetypes.MapValue   `tfsdk:"headers_wo"`
+	HeadersWoVersion basetypes.Int64Value `tfsdk:"headers_wo_version"`
+	state            attr.ValueState
 }
 
 func (v AuthHeadersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 1)
+	attrTypes := make(map[string]tftypes.Type, 2)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["headers"] = basetypes.MapType{
+	attrTypes["headers_wo"] = basetypes.MapType{
 		ElemType: types.StringType,
 	}.TerraformType(ctx)
+	attrTypes["headers_wo_version"] = basetypes.Int64Type{}.TerraformType(ctx)
 
 	objectType := tftypes.Object{AttributeTypes: attrTypes}
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 1)
+		vals := make(map[string]tftypes.Value, 2)
 
-		val, err = v.Headers.ToTerraformValue(ctx)
+		val, err = v.HeadersWo.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["headers"] = val
+		vals["headers_wo"] = val
+
+		val, err = v.HeadersWoVersion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["headers_wo_version"] = val
 
 		if err := tftypes.ValidateValue(objectType, vals); err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
@@ -406,30 +471,32 @@ func (v AuthHeadersValue) String() string {
 func (v AuthHeadersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var headersVal basetypes.MapValue
+	var headersWoVal basetypes.MapValue
 	switch {
-	case v.Headers.IsUnknown():
-		headersVal = types.MapUnknown(types.StringType)
-	case v.Headers.IsNull():
-		headersVal = types.MapNull(types.StringType)
+	case v.HeadersWo.IsUnknown():
+		headersWoVal = types.MapUnknown(types.StringType)
+	case v.HeadersWo.IsNull():
+		headersWoVal = types.MapNull(types.StringType)
 	default:
 		var d diag.Diagnostics
-		headersVal, d = types.MapValue(types.StringType, v.Headers.Elements())
+		headersWoVal, d = types.MapValue(types.StringType, v.HeadersWo.Elements())
 		diags.Append(d...)
 	}
 
 	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
-			"headers": basetypes.MapType{
+			"headers_wo": basetypes.MapType{
 				ElemType: types.StringType,
 			},
+			"headers_wo_version": basetypes.Int64Type{},
 		}), diags
 	}
 
 	attributeTypes := map[string]attr.Type{
-		"headers": basetypes.MapType{
+		"headers_wo": basetypes.MapType{
 			ElemType: types.StringType,
 		},
+		"headers_wo_version": basetypes.Int64Type{},
 	}
 
 	if v.IsNull() {
@@ -443,7 +510,8 @@ func (v AuthHeadersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectVa
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"headers": headersVal,
+			"headers_wo":         headersWoVal,
+			"headers_wo_version": v.HeadersWoVersion,
 		})
 
 	return objVal, diags
@@ -464,7 +532,11 @@ func (v AuthHeadersValue) Equal(o attr.Value) bool {
 		return true
 	}
 
-	if !v.Headers.Equal(other.Headers) {
+	if !v.HeadersWo.Equal(other.HeadersWo) {
+		return false
+	}
+
+	if !v.HeadersWoVersion.Equal(other.HeadersWoVersion) {
 		return false
 	}
 
@@ -481,8 +553,9 @@ func (v AuthHeadersValue) Type(ctx context.Context) attr.Type {
 
 func (v AuthHeadersValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"headers": basetypes.MapType{
+		"headers_wo": basetypes.MapType{
 			ElemType: types.StringType,
 		},
+		"headers_wo_version": basetypes.Int64Type{},
 	}
 }
