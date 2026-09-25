@@ -387,12 +387,12 @@ func TestRequiresReplaceReplacesOnlyOnAnUpdateThatChangesTheValue(t *testing.T) 
 	}
 }
 
-// A write-only input is null in state once the config omits it, and the framework re-plans it
+// An unreturned input is null in state once the config omits it, and the framework re-plans it
 // unknown whenever the resource changes at all. requiresReplace reads that unknown as a change,
 // so before the null was held a warehouse rename destroyed the warehouse and every connection on
 // it. Both modifiers are attached here in the order the generated schema attaches them, and run
 // the way the framework runs them: each one handed the value the one before it planned.
-func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
+func TestAnUnreturnedAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 	const attribute = "connection_type"
 	for name, tc := range map[string]struct {
 		state       tftypes.Value
@@ -404,7 +404,7 @@ func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 		wantReplace bool
 	}{
 		// The rename: the config changes another attribute and leaves this one out.
-		"an omitted write-only attribute keeps its null": {
+		"an omitted unreturned attribute keeps its null": {
 			state:       resourceRaw(attribute, nil),
 			plan:        resourceRaw(attribute, tftypes.UnknownValue),
 			stateValue:  types.StringNull(),
@@ -414,7 +414,7 @@ func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 		},
 		// Held or not, a value the customer actually changes has to replace: the API will not
 		// accept it on an update.
-		"a configured write-only attribute that changes still replaces": {
+		"a configured unreturned attribute that changes still replaces": {
 			state:       resourceRaw(attribute, "presto"),
 			plan:        resourceRaw(attribute, "trino"),
 			stateValue:  types.StringValue("presto"),
@@ -456,7 +456,7 @@ func TestAWriteOnlyAttributeThatIsNullInStateIsPlannedInPlace(t *testing.T) {
 // The order the two modifiers are attached in is load-bearing, and it is decided in api-codegen's
 // template rather than here. Attached after the replacement, the hold runs too late: the
 // replacement has already compared an unknown plan value against the null in state.
-func TestHoldingAWriteOnlyValueAfterTheReplacementComesTooLate(t *testing.T) {
+func TestHoldingAnUnreturnedValueAfterTheReplacementComesTooLate(t *testing.T) {
 	const attribute = "connection_type"
 	attrs := map[string]schema.Attribute{
 		attribute: schema.StringAttribute{Optional: true, Computed: true},
@@ -510,7 +510,10 @@ func chainStringModifiers(t *testing.T, a schema.Attribute, req planmodifier.Str
 // derived in another repo, so a renamed attribute compiles here and surfaces first as a
 // "provider bug" diagnostic on a practitioner's plan. Reading the registration list means new
 // resources are covered without touching this test.
-func TestEveryGeneratedResourceSchemaResolvesTheNamesTheHelpersAreGiven(t *testing.T) {
+//
+// It also runs the framework's schema validation, which otherwise runs only in a provider server:
+// that is what rejects a write-only attribute under a Computed nested attribute.
+func TestEveryGeneratedResourceSchemaIsValidAndResolvesTheNamesTheHelpersAreGiven(t *testing.T) {
 	ctx := t.Context()
 	resources := (&mcProvider{}).Resources(ctx)
 	if len(resources) == 0 {
@@ -525,12 +528,214 @@ func TestEveryGeneratedResourceSchemaResolvesTheNamesTheHelpersAreGiven(t *testi
 		t.Run(meta.TypeName, func(t *testing.T) {
 			var resp resource.SchemaResponse
 			r.Schema(ctx, resource.SchemaRequest{}, &resp)
+			resp.Diagnostics.Append(resp.Schema.ValidateImplementation(ctx)...)
 
 			if resp.Diagnostics.HasError() {
 				t.Fatalf("reported %v", resp.Diagnostics.Errors())
 			}
 			if len(resp.Schema.Attributes) == 0 {
 				t.Fatal("the schema has no attributes, so no name was resolved against it")
+			}
+		})
+	}
+}
+
+// credentialAttributes is shaped like a generated resource with secrets: top-level and nested,
+// string and map. Fresh per call, since writeOnly edits in place.
+func credentialAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"private_key_wo": schema.StringAttribute{Required: true, Sensitive: true},
+		"name":           schema.StringAttribute{Required: true},
+		"credentials": schema.SingleNestedAttribute{
+			Optional: true,
+			Attributes: map[string]schema.Attribute{
+				"client_secret_wo": schema.StringAttribute{Required: true, Sensitive: true},
+				"headers_wo":       schema.MapAttribute{Required: true, Sensitive: true, ElementType: types.StringType},
+				"client_id":        schema.StringAttribute{Required: true},
+			},
+		},
+	}
+}
+
+// attributeAt reads a dotted path back through the original map, which catches a leaf flag set on
+// a copy and never written back.
+func attributeAt(t *testing.T, attrs map[string]schema.Attribute, path string) schema.Attribute {
+	t.Helper()
+	segments := strings.Split(path, ".")
+	for _, segment := range segments[:len(segments)-1] {
+		attrs = attrs[segment].(schema.SingleNestedAttribute).Attributes
+	}
+	return attrs[segments[len(segments)-1]]
+}
+
+// Marking anything beyond the secret would hide a value Terraform needs to diff.
+func TestWriteOnlyMarksTheNamedSecretAtAnyDepthAndNothingElse(t *testing.T) {
+	everyPath := []string{
+		"private_key_wo", "name", "credentials",
+		"credentials.client_secret_wo", "credentials.headers_wo", "credentials.client_id",
+	}
+	for _, target := range []string{"private_key_wo", "credentials.client_secret_wo", "credentials.headers_wo"} {
+		t.Run(target, func(t *testing.T) {
+			attrs := credentialAttributes()
+			var diags diag.Diagnostics
+
+			writeOnly(attrs, "resource."+target, &diags)
+
+			if diags.HasError() {
+				t.Fatalf("reported %v", diags.Errors())
+			}
+			for _, path := range everyPath {
+				got := attributeAt(t, attrs, path).IsWriteOnly()
+				if want := path == target; got != want {
+					t.Errorf("%s: WriteOnly = %t, want %t", path, got, want)
+				}
+			}
+			block := attrs["credentials"].(schema.SingleNestedAttribute)
+			if !block.Optional || block.Computed {
+				t.Errorf("the credential block's flags changed: Optional = %t, Computed = %t", block.Optional, block.Computed)
+			}
+			if !attributeAt(t, attrs, target).IsSensitive() {
+				t.Error("the secret lost Sensitive")
+			}
+		})
+	}
+}
+
+// An unresolved secret would stay an ordinary attribute, stored in state.
+func TestWriteOnlyReportsAPathItCannotResolve(t *testing.T) {
+	for name, path := range map[string]string{
+		"no resource prefix":                 "private_key_wo",
+		"an absent top-level attribute":      "resource.renamed_wo",
+		"an absent nested attribute":         "resource.credentials.renamed_wo",
+		"an absent block":                    "resource.renamed.client_secret_wo",
+		"a path through a non-nested string": "resource.name.client_secret_wo",
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := credentialAttributes()
+			var diags diag.Diagnostics
+
+			writeOnly(attrs, path, &diags)
+
+			if !diags.HasError() {
+				t.Fatal("an unresolved path must not pass in silence")
+			}
+			detail := diags.Errors()[0].Detail()
+			for _, want := range []string{path, "store the secret in state"} {
+				if !strings.Contains(detail, want) {
+					t.Errorf("the error must mention %q, got %q", want, detail)
+				}
+			}
+		})
+	}
+}
+
+// Every secret the spec declares is a string or a map; anything else is a generator change.
+func TestWriteOnlyMarksOnlyStringAndMapAttributes(t *testing.T) {
+	attrTypes := everyAttributeType()
+	attrTypes["unhandled"] = unhandledAttribute{}
+
+	for name, a := range attrTypes {
+		t.Run(name, func(t *testing.T) {
+			wantOK := name == "string" || name == "map"
+			attrs := map[string]schema.Attribute{"secret_wo": a}
+			var diags diag.Diagnostics
+
+			writeOnly(attrs, "resource.secret_wo", &diags)
+
+			if diags.HasError() == wantOK {
+				t.Fatalf("HasError() = %t, want %t", diags.HasError(), !wantOK)
+			}
+			if got := attrs["secret_wo"].IsWriteOnly(); got != wantOK {
+				t.Errorf("IsWriteOnly() = %t, want %t", got, wantOK)
+			}
+			if !wantOK {
+				detail := diags.Errors()[0].Detail()
+				for _, want := range []string{"resource.secret_wo", "store the secret in state"} {
+					if !strings.Contains(detail, want) {
+						t.Errorf("the error must mention %q, got %q", want, detail)
+					}
+				}
+			}
+		})
+	}
+}
+
+// This is what TestWriteOnlyMarksTheNamedSecretAtAnyDepthAndNothingElse leans on: a Computed leaf
+// passes schema validation, so writeOnly itself has to catch it.
+func TestSchemaValidationRejectsAWriteOnlySecretUnderAComputedBlock(t *testing.T) {
+	attrs := map[string]schema.Attribute{
+		"credentials": schema.SingleNestedAttribute{
+			Optional: true,
+			Computed: true,
+			Attributes: map[string]schema.Attribute{
+				"secret_wo": schema.StringAttribute{Optional: true},
+			},
+		},
+	}
+	var diags diag.Diagnostics
+
+	writeOnly(attrs, "resource.credentials.secret_wo", &diags)
+
+	if diags.HasError() {
+		t.Fatalf("reported %v", diags.Errors())
+	}
+	d := (schema.Schema{Attributes: attrs}).ValidateImplementation(context.Background())
+	if !d.HasError() {
+		t.Fatal("a write-only attribute under a Computed nested attribute must fail schema validation")
+	}
+}
+
+// A Computed leaf paired with WriteOnly passes ValidateImplementation but fails at plan time on
+// the practitioner's machine, so writeOnly must reject it instead of shipping an unusable resource.
+func TestWriteOnlyReportsAComputedSecret(t *testing.T) {
+	for name, tc := range map[string]struct {
+		attrs map[string]schema.Attribute
+		path  string
+	}{
+		"top-level string": {
+			attrs: map[string]schema.Attribute{"secret_wo": schema.StringAttribute{Optional: true, Computed: true}},
+			path:  "resource.secret_wo",
+		},
+		"nested string": {
+			attrs: map[string]schema.Attribute{
+				"credentials": schema.SingleNestedAttribute{
+					Optional: true,
+					Attributes: map[string]schema.Attribute{
+						"secret_wo": schema.StringAttribute{Optional: true, Computed: true},
+					},
+				},
+			},
+			path: "resource.credentials.secret_wo",
+		},
+		"nested map": {
+			attrs: map[string]schema.Attribute{
+				"credentials": schema.SingleNestedAttribute{
+					Optional: true,
+					Attributes: map[string]schema.Attribute{
+						"secret_wo": schema.MapAttribute{Optional: true, Computed: true, ElementType: types.StringType},
+					},
+				},
+			},
+			path: "resource.credentials.secret_wo",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var diags diag.Diagnostics
+
+			writeOnly(tc.attrs, tc.path, &diags)
+
+			if !diags.HasError() {
+				t.Fatal("a Computed secret must not pass in silence")
+			}
+			detail := diags.Errors()[0].Detail()
+			for _, want := range []string{tc.path, "store the secret in state"} {
+				if !strings.Contains(detail, want) {
+					t.Errorf("the error must mention %q, got %q", want, detail)
+				}
+			}
+			_, resolved, _ := strings.Cut(tc.path, ".")
+			if attributeAt(t, tc.attrs, resolved).IsWriteOnly() {
+				t.Error("the Computed attribute was marked anyway")
 			}
 		})
 	}
