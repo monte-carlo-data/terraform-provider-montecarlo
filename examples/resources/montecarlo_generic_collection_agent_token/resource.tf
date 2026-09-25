@@ -46,13 +46,13 @@ resource "montecarlo_generic_collection_agent_token" "agent" {
   description   = "production agent"
 }
 
-# What the agent reads from its token file: `mcd_id` is the same value as `id`.
 resource "aws_secretsmanager_secret" "agent_token" {
   name = "mcd/agent/token"
 }
 
 resource "aws_secretsmanager_secret_version" "agent_token" {
   secret_id = aws_secretsmanager_secret.agent_token.id
+  # What the agent reads from its token file: `mcd_id` is the same value as `id`.
   secret_string_wo = jsonencode({
     mcd_id    = montecarlo_generic_collection_agent_token.agent.mcd_id
     mcd_token = montecarlo_generic_collection_agent_token.agent.mcd_token

@@ -54,7 +54,8 @@ module "mcd_agent" {
 # key file's contents. The key is write-only here, but the module still holds it in state.
 # A new key alone plans nothing: bump the version with it.
 #
-# Under CUSTOM_AUTH_HEADERS, replace the two `service_account_key_wo` arguments with:
+# Under CUSTOM_AUTH_HEADERS, replace `service_account_key_wo` and `service_account_key_wo_version`
+# with:
 #
 #   auth_headers = {
 #     headers_wo         = { "x-api-key" = var.agent_api_key }

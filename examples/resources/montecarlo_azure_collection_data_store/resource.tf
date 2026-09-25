@@ -129,9 +129,9 @@ resource "azurerm_storage_container" "store" {
 }
 
 # `authentication_type` is the discriminator, and exactly one matching credential block is
-# accepted. The connection string is the whole account's key. It is write-only here, so this
-# resource never stores it, but azurerm_storage_account still holds it in state, so use a backend
-# that encrypts state. A rotated key alone plans nothing: bump the version with it.
+# accepted. The connection string is the whole account's key. It is write-only here, but
+# azurerm_storage_account still holds it in state, so use a backend that encrypts state.
+# A rotated key alone plans nothing: bump the version with it.
 #
 # The alternative is AZURE_STORAGE_SERVICE_PRINCIPAL, which authenticates as an Entra ID
 # application granted `Storage Blob Data Contributor` on the account rather than sharing the

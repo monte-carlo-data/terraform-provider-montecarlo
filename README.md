@@ -176,7 +176,10 @@ The secrets Monte Carlo generates are different. `mcd_token` on
 resource holds them in state, and anyone who can read the state can read them. Keep state in a
 backend that encrypts it and limits who can read it. To pass one on, use a write-only argument,
 such as `aws_secretsmanager_secret_version.secret_string_wo`, so it is not stored twice; a
-`sensitive` output is stored in state too. The two examples show how.
+`sensitive` output is stored in state too. The
+[token](examples/resources/montecarlo_generic_collection_agent_token) and
+[OAuth client](examples/resources/montecarlo_generic_collection_agent_oauth_client) examples
+show how.
 
 ## Credentials
 

@@ -50,13 +50,13 @@ resource "montecarlo_generic_collection_agent_oauth_client" "agent" {
   expiration_days = 365
 }
 
-# What the agent reads from its credentials file: `client_id` is the same value as `id`.
 resource "aws_secretsmanager_secret" "agent_oauth" {
   name = "mcd/agent/oauth"
 }
 
 resource "aws_secretsmanager_secret_version" "agent_oauth" {
   secret_id = aws_secretsmanager_secret.agent_oauth.id
+  # What the agent reads from its credentials file: `client_id` is the same value as `id`.
   secret_string_wo = jsonencode({
     client_id     = montecarlo_generic_collection_agent_oauth_client.agent.client_id
     client_secret = montecarlo_generic_collection_agent_oauth_client.agent.client_secret

@@ -103,9 +103,8 @@ resource "google_service_account_key" "store" {
 # contents. The registration waits for the IAM binding, not only the key: the collector
 # validates storage access during registration.
 #
-# The key is write-only here, so this resource never stores it. google_service_account_key
-# still holds it in state, as every generated key does. Replacing that key alone plans nothing
-# here: bump the version with it.
+# The key is write-only here, but google_service_account_key still holds it in state.
+# Replacing that key alone plans nothing here: bump the version with it.
 resource "montecarlo_gcp_collection_data_store" "store" {
   deployment_id                  = montecarlo_deployment.data_store.id
   bucket_name                    = google_storage_bucket.store.name

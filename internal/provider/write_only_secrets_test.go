@@ -110,12 +110,14 @@ func TestASnowflakeKeyIsSentFromTheConfigAndNotKeptInState(t *testing.T) {
 	r, empty := configured(t, NewSnowflakeCredentialsResource, api.client(t))
 	typ := empty.Schema.Type().TerraformType(ctx)
 	inputs := map[string]tftypes.Value{
-		"account":                str("xy12345"),
-		"user":                   str("MONTE_CARLO"),
-		"private_key_wo_version": num(1),
+		"account":                           str("xy12345"),
+		"user":                              str("MONTE_CARLO"),
+		"private_key_wo_version":            num(1),
+		"private_key_passphrase_wo_version": num(1),
 	}
-	withKey := func(key tftypes.Value) map[string]tftypes.Value {
-		m := map[string]tftypes.Value{"private_key_wo": key}
+	// withSecrets sets both write-only secrets; the optional passphrase is null unless given.
+	withSecrets := func(key, passphrase tftypes.Value) map[string]tftypes.Value {
+		m := map[string]tftypes.Value{"private_key_wo": key, "private_key_passphrase_wo": passphrase}
 		for k, v := range inputs {
 			m[k] = v
 		}
@@ -124,8 +126,8 @@ func TestASnowflakeKeyIsSentFromTheConfigAndNotKeptInState(t *testing.T) {
 
 	created := resource.CreateResponse{State: empty}
 	r.Create(ctx, resource.CreateRequest{
-		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: object(typ, withKey(nullString()))},
-		Config: tfsdk.Config{Schema: empty.Schema, Raw: object(typ, withKey(str("first key")))},
+		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: object(typ, withSecrets(nullString(), nullString()))},
+		Config: tfsdk.Config{Schema: empty.Schema, Raw: object(typ, withSecrets(str("first key"), str("the passphrase")))},
 	}, &created)
 	if created.Diagnostics.HasError() {
 		t.Fatalf("create: %v", created.Diagnostics)
@@ -133,19 +135,29 @@ func TestASnowflakeKeyIsSentFromTheConfigAndNotKeptInState(t *testing.T) {
 	if got := api.body["private_key"]; got != "first key" {
 		t.Errorf("create sent private_key %v, want the config's", got)
 	}
+	if got := api.body["private_key_passphrase"]; got != "the passphrase" {
+		t.Errorf("create sent private_key_passphrase %v, want the config's", got)
+	}
 	if key := stateString(t, created.State, path.Root("private_key_wo")); !key.IsNull() {
 		t.Errorf("state holds private_key_wo %s, want null", key)
+	}
+	if pass := stateString(t, created.State, path.Root("private_key_passphrase_wo")); !pass.IsNull() {
+		t.Errorf("state holds private_key_passphrase_wo %s, want null", pass)
 	}
 	if v := stateInt(t, created.State, path.Root("private_key_wo_version")); v.ValueInt64() != 1 {
 		t.Errorf("state holds private_key_wo_version %s, want 1", v)
 	}
+	if v := stateInt(t, created.State, path.Root("private_key_passphrase_wo_version")); v.ValueInt64() != 1 {
+		t.Errorf("state holds private_key_passphrase_wo_version %s, want 1", v)
+	}
 
-	// A bump plans an update; the new key again arrives only in the config.
+	// A bump plans an update; the new key and passphrase again arrive only in the config.
 	inputs["private_key_wo_version"] = num(2)
+	inputs["private_key_passphrase_wo_version"] = num(2)
 	updated := resource.UpdateResponse{State: created.State}
 	r.Update(ctx, resource.UpdateRequest{
-		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: object(typ, withKey(nullString()))},
-		Config: tfsdk.Config{Schema: empty.Schema, Raw: object(typ, withKey(str("second key")))},
+		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: object(typ, withSecrets(nullString(), nullString()))},
+		Config: tfsdk.Config{Schema: empty.Schema, Raw: object(typ, withSecrets(str("second key"), str("a different passphrase")))},
 		State:  created.State,
 	}, &updated)
 	if updated.Diagnostics.HasError() {
@@ -154,11 +166,20 @@ func TestASnowflakeKeyIsSentFromTheConfigAndNotKeptInState(t *testing.T) {
 	if got := api.body["private_key"]; got != "second key" {
 		t.Errorf("update sent private_key %v, want the config's", got)
 	}
+	if got := api.body["private_key_passphrase"]; got != "a different passphrase" {
+		t.Errorf("update sent private_key_passphrase %v, want the config's", got)
+	}
 	if key := stateString(t, updated.State, path.Root("private_key_wo")); !key.IsNull() {
 		t.Errorf("state holds private_key_wo %s, want null", key)
 	}
+	if pass := stateString(t, updated.State, path.Root("private_key_passphrase_wo")); !pass.IsNull() {
+		t.Errorf("state holds private_key_passphrase_wo %s, want null", pass)
+	}
 	if v := stateInt(t, updated.State, path.Root("private_key_wo_version")); v.ValueInt64() != 2 {
 		t.Errorf("state holds private_key_wo_version %s, want 2", v)
+	}
+	if v := stateInt(t, updated.State, path.Root("private_key_passphrase_wo_version")); v.ValueInt64() != 2 {
+		t.Errorf("state holds private_key_passphrase_wo_version %s, want 2", v)
 	}
 }
 
@@ -168,13 +189,14 @@ const azureDataStoreOut = `{"id": "5d2e8f14-7a3b-4c6d-8e9f-0a1b2c3d4e5f",
 	"container_name": "mcd-store"}`
 
 // A nested block is sent whole: its secret from the config, its other fields from the plan.
+// This holds on both Create and Update.
 func TestANestedClientSecretIsSentFromTheConfigBesideItsSiblingsFromThePlan(t *testing.T) {
 	ctx := context.Background()
 	api := &apiRecorder{response: azureDataStoreOut}
 	r, empty := configured(t, NewAzureCollectionDataStoreResource, api.client(t))
 	typ := empty.Schema.Type().TerraformType(ctx)
 	blockType := typ.(tftypes.Object).AttributeTypes["service_principal"]
-	resourceWith := func(clientID string, secret tftypes.Value) tftypes.Value {
+	resourceWith := func(clientID string, secret tftypes.Value, version int) tftypes.Value {
 		return object(typ, map[string]tftypes.Value{
 			"deployment_id":       str("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"),
 			"authentication_type": str("AZURE_STORAGE_SERVICE_PRINCIPAL"),
@@ -183,7 +205,7 @@ func TestANestedClientSecretIsSentFromTheConfigBesideItsSiblingsFromThePlan(t *t
 				"account_url":              str("https://store.blob.core.windows.net"),
 				"client_id":                str(clientID),
 				"client_secret_wo":         secret,
-				"client_secret_wo_version": num(1),
+				"client_secret_wo_version": num(version),
 				"tenant_id":                str("tenant"),
 			}),
 		})
@@ -192,8 +214,8 @@ func TestANestedClientSecretIsSentFromTheConfigBesideItsSiblingsFromThePlan(t *t
 	created := resource.CreateResponse{State: empty}
 	r.Create(ctx, resource.CreateRequest{
 		// Different client ids tell a field read from the plan from one read from the config.
-		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: resourceWith("from-plan", nullString())},
-		Config: tfsdk.Config{Schema: empty.Schema, Raw: resourceWith("from-config", str("the secret"))},
+		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: resourceWith("from-plan", nullString(), 1)},
+		Config: tfsdk.Config{Schema: empty.Schema, Raw: resourceWith("from-config", str("the secret"), 1)},
 	}, &created)
 	if created.Diagnostics.HasError() {
 		t.Fatalf("create: %v", created.Diagnostics)
@@ -211,5 +233,29 @@ func TestANestedClientSecretIsSentFromTheConfigBesideItsSiblingsFromThePlan(t *t
 	}
 	if v := stateInt(t, created.State, block.AtName("client_secret_wo_version")); v.ValueInt64() != 1 {
 		t.Errorf("state holds client_secret_wo_version %s, want 1", v)
+	}
+
+	// A version bump plans an update; the new secret again arrives only in the config.
+	updated := resource.UpdateResponse{State: created.State}
+	r.Update(ctx, resource.UpdateRequest{
+		Plan:   tfsdk.Plan{Schema: empty.Schema, Raw: resourceWith("from-plan-2", nullString(), 2)},
+		Config: tfsdk.Config{Schema: empty.Schema, Raw: resourceWith("from-config-2", str("the new secret"), 2)},
+		State:  created.State,
+	}, &updated)
+	if updated.Diagnostics.HasError() {
+		t.Fatalf("update: %v", updated.Diagnostics)
+	}
+	sent, _ = api.body["service_principal"].(map[string]any)
+	if sent["client_secret"] != "the new secret" {
+		t.Errorf("update sent client_secret %v, want the config's", sent["client_secret"])
+	}
+	if sent["client_id"] != "from-plan-2" {
+		t.Errorf("update sent client_id %v, want the plan's", sent["client_id"])
+	}
+	if s := stateString(t, updated.State, block.AtName("client_secret_wo")); !s.IsNull() {
+		t.Errorf("state holds client_secret_wo %s, want null", s)
+	}
+	if v := stateInt(t, updated.State, block.AtName("client_secret_wo_version")); v.ValueInt64() != 2 {
+		t.Errorf("state holds client_secret_wo_version %s, want 2", v)
 	}
 }

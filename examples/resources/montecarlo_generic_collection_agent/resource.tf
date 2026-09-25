@@ -65,7 +65,7 @@ resource "montecarlo_generic_collection_agent_oauth_client" "agent" {
 # copy and it is not in state. Handing it to the module's `oauth_credentials` instead would
 # store it a second time. The JSON keys are the ones the module's chart reads.
 resource "aws_secretsmanager_secret" "mcd_agent_oauth" {
-  name = "mcd/agent/oauth"
+  name = "mcd/agent/${montecarlo_deployment.agent.name}/oauth"
 }
 
 resource "aws_secretsmanager_secret_version" "mcd_agent_oauth" {
@@ -82,8 +82,8 @@ resource "aws_secretsmanager_secret_version" "mcd_agent_oauth" {
 # A new EKS cluster with the agent installed by Helm, pointed at the secret above.
 #
 # With `create = false` the module grants the agent read access to every secret whose name
-# starts with `name`, rather than to this one secret's ARN, so pick a name no other secret
-# shares as a prefix.
+# starts with `name`, rather than to this one secret's ARN, so the example names it per
+# deployment: no other deployment's secret shares it as a prefix.
 module "mcd_agent" {
   source = "monte-carlo-data/mcd-k8s-agent/aws"
   # 0.1.4 is the first to take an existing secret.

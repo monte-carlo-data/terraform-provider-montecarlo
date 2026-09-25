@@ -40,9 +40,8 @@ resource "montecarlo_snowflake_credentials" "snowflake" {
   # `file("${path.module}/snowflake_key.p8")`, rather than pasting it into a .tf file that
   # gets committed.
   #
-  # Write-only: Terraform sends the key to Monte Carlo and never stores it in state or in a plan.
-  # Changing it alone plans nothing, so bump the version with it. Bumping either version sends
-  # the key and the passphrase together.
+  # Write-only, so never stored in state or a plan. Changing it alone plans nothing: bump the
+  # version with it. Bumping either version sends the key and the passphrase together.
   private_key_wo         = <<-EOT
     -----BEGIN PRIVATE KEY-----
     MII...
