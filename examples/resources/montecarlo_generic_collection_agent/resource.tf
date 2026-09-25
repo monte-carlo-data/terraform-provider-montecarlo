@@ -95,6 +95,11 @@ module "mcd_agent" {
     create = false
     name   = aws_secretsmanager_secret.mcd_agent_oauth.name
   }
+  # Required alongside `oauth_secret`: otherwise the module asks for token credentials. The
+  # agent authenticates with the OAuth client, so no token secret is created or read.
+  token_secret = {
+    create = false
+  }
 
   helm = {
     # https://hub.docker.com/r/montecarlodata/generic-agent-helm/tags
