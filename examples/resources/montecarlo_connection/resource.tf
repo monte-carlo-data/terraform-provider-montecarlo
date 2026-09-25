@@ -17,6 +17,9 @@
 # and nothing else in this file changes.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
@@ -71,12 +74,13 @@ resource "montecarlo_snowflake_credentials" "snowflake" {
   # PEM text, BEGIN and END lines included. The placeholder below shows the shape; in a real
   # configuration read the key from a file kept out of version control, with
   # `file("${path.module}/snowflake_key.p8")`, rather than pasting it into a .tf file that
-  # gets committed.
-  private_key = <<-EOT
+  # gets committed. Write-only, so it is never stored in state; bump the version to rotate it.
+  private_key_wo         = <<-EOT
     -----BEGIN PRIVATE KEY-----
     MII...
     -----END PRIVATE KEY-----
   EOT
+  private_key_wo_version = 1
 
   warehouse = "MONTE_CARLO_WH"
 }

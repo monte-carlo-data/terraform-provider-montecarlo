@@ -9,6 +9,9 @@
 # on the deployment.
 
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
@@ -99,10 +102,14 @@ resource "google_service_account_key" "store" {
 # The key arrives base64-encoded from the google provider; the API takes the key file's
 # contents. The registration waits for the IAM binding, not only the key: the collector
 # validates storage access during registration.
+#
+# The key is write-only here, but google_service_account_key still holds it in state.
+# Replacing that key alone plans nothing here: bump the version with it.
 resource "montecarlo_gcp_collection_data_store" "store" {
-  deployment_id       = montecarlo_deployment.data_store.id
-  bucket_name         = google_storage_bucket.store.name
-  service_account_key = base64decode(google_service_account_key.store.private_key)
+  deployment_id                  = montecarlo_deployment.data_store.id
+  bucket_name                    = google_storage_bucket.store.name
+  service_account_key_wo         = base64decode(google_service_account_key.store.private_key)
+  service_account_key_wo_version = 1
 
   depends_on = [google_storage_bucket_iam_binding.store]
 }
