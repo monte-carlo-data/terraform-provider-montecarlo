@@ -57,6 +57,7 @@ func (r *selfHostedAwsCredentialsResource) Configure(_ context.Context, req reso
 }
 
 func (r *selfHostedAwsCredentialsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_aws_credentials create")
 	var plan resource_self_hosted_aws_credentials.SelfHostedAwsCredentialsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -90,6 +91,7 @@ func (r *selfHostedAwsCredentialsResource) Create(ctx context.Context, req resou
 }
 
 func (r *selfHostedAwsCredentialsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_aws_credentials read")
 	var state resource_self_hosted_aws_credentials.SelfHostedAwsCredentialsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -108,6 +110,7 @@ func (r *selfHostedAwsCredentialsResource) Read(ctx context.Context, req resourc
 }
 
 func (r *selfHostedAwsCredentialsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_aws_credentials update")
 	var plan, state resource_self_hosted_aws_credentials.SelfHostedAwsCredentialsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -145,6 +148,7 @@ func (r *selfHostedAwsCredentialsResource) Update(ctx context.Context, req resou
 }
 
 func (r *selfHostedAwsCredentialsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_aws_credentials delete")
 	var state resource_self_hosted_aws_credentials.SelfHostedAwsCredentialsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

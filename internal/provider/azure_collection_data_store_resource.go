@@ -58,6 +58,7 @@ func (r *azureCollectionDataStoreResource) Configure(_ context.Context, req reso
 }
 
 func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_azure_collection_data_store create")
 	var plan resource_azure_collection_data_store.AzureCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	// Terraform plans a write-only secret as null and passes it only in the configuration.
@@ -95,6 +96,7 @@ func (r *azureCollectionDataStoreResource) Create(ctx context.Context, req resou
 }
 
 func (r *azureCollectionDataStoreResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_azure_collection_data_store read")
 	var state resource_azure_collection_data_store.AzureCollectionDataStoreModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -115,6 +117,7 @@ func (r *azureCollectionDataStoreResource) Read(ctx context.Context, req resourc
 }
 
 func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_azure_collection_data_store update")
 	var plan, state resource_azure_collection_data_store.AzureCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -159,6 +162,7 @@ func (r *azureCollectionDataStoreResource) Update(ctx context.Context, req resou
 }
 
 func (r *azureCollectionDataStoreResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_azure_collection_data_store delete")
 	var state resource_azure_collection_data_store.AzureCollectionDataStoreModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

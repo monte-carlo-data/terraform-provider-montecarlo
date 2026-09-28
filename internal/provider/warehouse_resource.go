@@ -59,6 +59,7 @@ func (r *warehouseResource) Configure(_ context.Context, req resource.ConfigureR
 }
 
 func (r *warehouseResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_warehouse create")
 	var plan resource_warehouse.WarehouseModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -83,6 +84,7 @@ func (r *warehouseResource) Create(ctx context.Context, req resource.CreateReque
 }
 
 func (r *warehouseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_warehouse read")
 	var state resource_warehouse.WarehouseModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -101,6 +103,7 @@ func (r *warehouseResource) Read(ctx context.Context, req resource.ReadRequest, 
 }
 
 func (r *warehouseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_warehouse update")
 	var plan, state resource_warehouse.WarehouseModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -123,6 +126,7 @@ func (r *warehouseResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 func (r *warehouseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_warehouse delete")
 	var state resource_warehouse.WarehouseModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
