@@ -57,6 +57,7 @@ func (r *selfHostedFileCredentialsResource) Configure(_ context.Context, req res
 }
 
 func (r *selfHostedFileCredentialsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_file_credentials create")
 	var plan resource_self_hosted_file_credentials.SelfHostedFileCredentialsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -81,6 +82,7 @@ func (r *selfHostedFileCredentialsResource) Create(ctx context.Context, req reso
 }
 
 func (r *selfHostedFileCredentialsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_file_credentials read")
 	var state resource_self_hosted_file_credentials.SelfHostedFileCredentialsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -99,6 +101,7 @@ func (r *selfHostedFileCredentialsResource) Read(ctx context.Context, req resour
 }
 
 func (r *selfHostedFileCredentialsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_file_credentials update")
 	var plan, state resource_self_hosted_file_credentials.SelfHostedFileCredentialsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -127,6 +130,7 @@ func (r *selfHostedFileCredentialsResource) Update(ctx context.Context, req reso
 }
 
 func (r *selfHostedFileCredentialsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_self_hosted_file_credentials delete")
 	var state resource_self_hosted_file_credentials.SelfHostedFileCredentialsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

@@ -53,6 +53,7 @@ func (r *awsCollectionDataStoreResource) Configure(_ context.Context, req resour
 }
 
 func (r *awsCollectionDataStoreResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_aws_collection_data_store create")
 	var plan resource_aws_collection_data_store.AwsCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -74,6 +75,7 @@ func (r *awsCollectionDataStoreResource) Create(ctx context.Context, req resourc
 }
 
 func (r *awsCollectionDataStoreResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_aws_collection_data_store read")
 	var state resource_aws_collection_data_store.AwsCollectionDataStoreModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -92,6 +94,7 @@ func (r *awsCollectionDataStoreResource) Read(ctx context.Context, req resource.
 }
 
 func (r *awsCollectionDataStoreResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_aws_collection_data_store update")
 	var plan, state resource_aws_collection_data_store.AwsCollectionDataStoreModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -120,6 +123,7 @@ func (r *awsCollectionDataStoreResource) Update(ctx context.Context, req resourc
 }
 
 func (r *awsCollectionDataStoreResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_aws_collection_data_store delete")
 	var state resource_aws_collection_data_store.AwsCollectionDataStoreModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

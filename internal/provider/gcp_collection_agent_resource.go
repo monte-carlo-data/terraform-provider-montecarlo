@@ -56,6 +56,7 @@ func (r *gcpCollectionAgentResource) Configure(_ context.Context, req resource.C
 }
 
 func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_gcp_collection_agent create")
 	var plan resource_gcp_collection_agent.GcpCollectionAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	// Terraform plans a write-only secret as null and passes it only in the configuration.
@@ -89,6 +90,7 @@ func (r *gcpCollectionAgentResource) Create(ctx context.Context, req resource.Cr
 }
 
 func (r *gcpCollectionAgentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_gcp_collection_agent read")
 	var state resource_gcp_collection_agent.GcpCollectionAgentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -109,6 +111,7 @@ func (r *gcpCollectionAgentResource) Read(ctx context.Context, req resource.Read
 }
 
 func (r *gcpCollectionAgentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_gcp_collection_agent update")
 	var plan, state resource_gcp_collection_agent.GcpCollectionAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -149,6 +152,7 @@ func (r *gcpCollectionAgentResource) Update(ctx context.Context, req resource.Up
 }
 
 func (r *gcpCollectionAgentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_gcp_collection_agent delete")
 	var state resource_gcp_collection_agent.GcpCollectionAgentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

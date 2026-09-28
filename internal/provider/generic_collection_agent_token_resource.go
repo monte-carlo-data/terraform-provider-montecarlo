@@ -60,6 +60,7 @@ func (r *genericCollectionAgentTokenResource) Configure(_ context.Context, req r
 }
 
 func (r *genericCollectionAgentTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent_token create")
 	var plan resource_generic_collection_agent_token.GenericCollectionAgentTokenModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -81,6 +82,7 @@ func (r *genericCollectionAgentTokenResource) Create(ctx context.Context, req re
 }
 
 func (r *genericCollectionAgentTokenResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent_token read")
 	var state resource_generic_collection_agent_token.GenericCollectionAgentTokenModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -109,6 +111,7 @@ func (r *genericCollectionAgentTokenResource) Update(ctx context.Context, req re
 }
 
 func (r *genericCollectionAgentTokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent_token delete")
 	var state resource_generic_collection_agent_token.GenericCollectionAgentTokenModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

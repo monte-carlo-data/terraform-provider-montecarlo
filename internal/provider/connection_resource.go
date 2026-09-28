@@ -58,6 +58,7 @@ func (r *connectionResource) Configure(_ context.Context, req resource.Configure
 }
 
 func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_connection create")
 	var plan resource_connection.ConnectionModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -79,6 +80,7 @@ func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequ
 }
 
 func (r *connectionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_connection read")
 	var state resource_connection.ConnectionModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -97,6 +99,7 @@ func (r *connectionResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_connection update")
 	var plan, state resource_connection.ConnectionModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -119,6 +122,7 @@ func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 func (r *connectionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_connection delete")
 	var state resource_connection.ConnectionModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

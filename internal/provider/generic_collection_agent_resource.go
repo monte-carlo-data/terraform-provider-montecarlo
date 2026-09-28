@@ -53,6 +53,7 @@ func (r *genericCollectionAgentResource) Configure(_ context.Context, req resour
 }
 
 func (r *genericCollectionAgentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent create")
 	var plan resource_generic_collection_agent.GenericCollectionAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -74,6 +75,7 @@ func (r *genericCollectionAgentResource) Create(ctx context.Context, req resourc
 }
 
 func (r *genericCollectionAgentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent read")
 	var state resource_generic_collection_agent.GenericCollectionAgentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -92,6 +94,7 @@ func (r *genericCollectionAgentResource) Read(ctx context.Context, req resource.
 }
 
 func (r *genericCollectionAgentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent update")
 	var plan, state resource_generic_collection_agent.GenericCollectionAgentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -114,6 +117,7 @@ func (r *genericCollectionAgentResource) Update(ctx context.Context, req resourc
 }
 
 func (r *genericCollectionAgentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent delete")
 	var state resource_generic_collection_agent.GenericCollectionAgentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

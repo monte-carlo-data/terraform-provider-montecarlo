@@ -54,6 +54,7 @@ func (r *deploymentResource) Configure(_ context.Context, req resource.Configure
 }
 
 func (r *deploymentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_deployment create")
 	var plan resource_deployment.DeploymentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -75,6 +76,7 @@ func (r *deploymentResource) Create(ctx context.Context, req resource.CreateRequ
 }
 
 func (r *deploymentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_deployment read")
 	var state resource_deployment.DeploymentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -93,6 +95,7 @@ func (r *deploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_deployment update")
 	var plan, state resource_deployment.DeploymentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -115,6 +118,7 @@ func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 func (r *deploymentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_deployment delete")
 	var state resource_deployment.DeploymentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

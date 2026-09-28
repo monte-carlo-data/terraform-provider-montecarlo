@@ -118,6 +118,10 @@ func (p *mcProvider) Configure(ctx context.Context, req provider.ConfigureReques
 		Instance:     cfg.Instance.ValueString(),
 		TokenURL:     cfg.TokenURL.ValueString(),
 		Profile:      cfg.Profile.ValueString(),
+		// The gateway drops User-Agent, so these identify the provider to usage telemetry.
+		// Each resource and data source operation adds its own command.
+		TelemetryReason:  "terraform",
+		TelemetryService: "terraform-provider-montecarlo",
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Monte Carlo credentials", err.Error())

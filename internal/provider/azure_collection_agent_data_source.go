@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"time"
 
+	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/schema_gen/datasource_azure_collection_agent"
 )
 
@@ -44,6 +45,7 @@ func (d *azureCollectionAgentDataSource) Configure(_ context.Context, req dataso
 }
 
 func (d *azureCollectionAgentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "data.montecarlo_azure_collection_agent read")
 	var cfg datasource_azure_collection_agent.AzureCollectionAgentModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if resp.Diagnostics.HasError() {

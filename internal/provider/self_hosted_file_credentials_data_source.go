@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"time"
 
+	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/schema_gen/datasource_self_hosted_file_credentials"
 )
 
@@ -44,6 +45,7 @@ func (d *selfHostedFileCredentialsDataSource) Configure(_ context.Context, req d
 }
 
 func (d *selfHostedFileCredentialsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "data.montecarlo_self_hosted_file_credentials read")
 	var cfg datasource_self_hosted_file_credentials.SelfHostedFileCredentialsModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if resp.Diagnostics.HasError() {

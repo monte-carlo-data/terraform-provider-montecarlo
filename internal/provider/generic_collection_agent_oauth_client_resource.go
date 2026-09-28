@@ -64,6 +64,7 @@ func (r *genericCollectionAgentOauthClientResource) Configure(_ context.Context,
 }
 
 func (r *genericCollectionAgentOauthClientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent_oauth_client create")
 	var plan resource_generic_collection_agent_oauth_client.GenericCollectionAgentOauthClientModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -88,6 +89,7 @@ func (r *genericCollectionAgentOauthClientResource) Create(ctx context.Context, 
 }
 
 func (r *genericCollectionAgentOauthClientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent_oauth_client read")
 	var state resource_generic_collection_agent_oauth_client.GenericCollectionAgentOauthClientModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -116,6 +118,7 @@ func (r *genericCollectionAgentOauthClientResource) Update(ctx context.Context, 
 }
 
 func (r *genericCollectionAgentOauthClientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx = sdk.WithTelemetryCommand(ctx, "montecarlo_generic_collection_agent_oauth_client delete")
 	var state resource_generic_collection_agent_oauth_client.GenericCollectionAgentOauthClientModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
