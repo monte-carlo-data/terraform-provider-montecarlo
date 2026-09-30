@@ -95,6 +95,10 @@ joins a warehouse to the credentials it reads with, and takes its type from them
 | `montecarlo_warehouse` | A warehouse: the container its connections belong to, and the deployment they run through. |
 | `montecarlo_connection` | A connection on a warehouse, reading with a given set of credentials. |
 | `montecarlo_snowflake_credentials` | Snowflake key pair credentials stored by Monte Carlo. |
+| `montecarlo_bigquery_credentials` | BigQuery service account key credentials stored by Monte Carlo. |
+| `montecarlo_redshift_credentials` | Redshift user and password credentials stored by Monte Carlo. |
+| `montecarlo_databricks_metastore_sql_warehouse_credentials` | Databricks credentials stored by Monte Carlo, for a metadata connection. |
+| `montecarlo_databricks_sql_warehouse_credentials` | Databricks credentials stored by Monte Carlo, for a query connection. |
 | `montecarlo_self_hosted_aws_credentials` | Credentials your agent reads from AWS Secrets Manager. Monte Carlo stores only where to find them. |
 | `montecarlo_self_hosted_azure_credentials` | The same, from Azure Key Vault. |
 | `montecarlo_self_hosted_gcp_credentials` | The same, from GCP Secret Manager. |
@@ -123,6 +127,10 @@ not by `id`, which is computed:
 | `montecarlo_warehouse` | `warehouse_id` |
 | `montecarlo_connection` | `connection_id` |
 | `montecarlo_snowflake_credentials` | `credentials_id` |
+| `montecarlo_bigquery_credentials` | `credentials_id` |
+| `montecarlo_redshift_credentials` | `credentials_id` |
+| `montecarlo_databricks_metastore_sql_warehouse_credentials` | `credentials_id` |
+| `montecarlo_databricks_sql_warehouse_credentials` | `credentials_id` |
 | `montecarlo_self_hosted_aws_credentials` | `credentials_id` |
 | `montecarlo_self_hosted_azure_credentials` | `credentials_id` |
 | `montecarlo_self_hosted_gcp_credentials` | `credentials_id` |
@@ -234,4 +242,7 @@ lives, Monte Carlo managed
 your own store
 ([`montecarlo_self_hosted_aws_credentials`](examples/resources/montecarlo_self_hosted_aws_credentials)).
 The self-hosted credentials resources differ only in where the secret is read from, so the AWS
-one reads across to the others. A resource with no directory here has no example yet.
+one reads across to the others. Databricks takes a metadata and a query connection on the same
+warehouse, so one example covers both of its credentials resources
+([`montecarlo_databricks_metastore_sql_warehouse_credentials`](examples/resources/montecarlo_databricks_metastore_sql_warehouse_credentials)).
+A resource with no directory here has no example yet.

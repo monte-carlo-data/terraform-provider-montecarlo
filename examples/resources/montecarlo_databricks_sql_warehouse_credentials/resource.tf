@@ -1,0 +1,1 @@
+../montecarlo_databricks_metastore_sql_warehouse_credentials/resource.tf
