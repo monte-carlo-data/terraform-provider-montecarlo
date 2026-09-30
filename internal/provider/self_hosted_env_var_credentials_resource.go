@@ -67,11 +67,11 @@ func (r *selfHostedEnvVarCredentialsResource) Create(ctx context.Context, req re
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
-	}
 	if !plan.KmsKeyId.IsNull() && !plan.KmsKeyId.IsUnknown() {
 		body.SetKmsKeyId(plan.KmsKeyId.ValueString())
+	}
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.EnvVarCredentialsOut, *http.Response, error) {
@@ -115,14 +115,14 @@ func (r *selfHostedEnvVarCredentialsResource) Update(ctx context.Context, req re
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
-	}
 	if !plan.EnvVarName.IsNull() && !plan.EnvVarName.IsUnknown() {
 		body.SetEnvVarName(plan.EnvVarName.ValueString())
 	}
 	if !plan.KmsKeyId.IsNull() && !plan.KmsKeyId.IsUnknown() {
 		body.SetKmsKeyId(plan.KmsKeyId.ValueString())
+	}
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.EnvVarCredentialsOut, *http.Response, error) {
@@ -164,15 +164,15 @@ func selfHostedEnvVarCredentialsToModel(o *sdk.EnvVarCredentialsOut) resource_se
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := o.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
-	} else {
-		m.DatabricksWarehouseId = types.StringNull()
-	}
 	if v, ok := o.GetKmsKeyIdOk(); ok && v != nil {
 		m.KmsKeyId = types.StringValue(*v)
 	} else {
 		m.KmsKeyId = types.StringNull()
+	}
+	if v, ok := o.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
+	} else {
+		m.SqlWarehouseId = types.StringNull()
 	}
 	return m
 }

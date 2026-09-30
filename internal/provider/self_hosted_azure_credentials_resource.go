@@ -73,8 +73,8 @@ func (r *selfHostedAzureCredentialsResource) Create(ctx context.Context, req res
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureKeyVaultCredentialsOut, *http.Response, error) {
@@ -127,8 +127,8 @@ func (r *selfHostedAzureCredentialsResource) Update(ctx context.Context, req res
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AzureKeyVaultCredentialsOut, *http.Response, error) {
@@ -180,10 +180,10 @@ func selfHostedAzureCredentialsToModel(o *sdk.AzureKeyVaultCredentialsOut) resou
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := o.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
+	if v, ok := o.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
 	} else {
-		m.DatabricksWarehouseId = types.StringNull()
+		m.SqlWarehouseId = types.StringNull()
 	}
 	return m
 }

@@ -79,15 +79,15 @@ func (d *selfHostedAwsCredentialsDataSource) Read(ctx context.Context, req datas
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := out.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
-	} else {
-		m.DatabricksWarehouseId = types.StringNull()
-	}
 	if v, ok := out.GetExternalIdOk(); ok && v != nil {
 		m.ExternalId = types.StringValue(*v)
 	} else {
 		m.ExternalId = types.StringNull()
+	}
+	if v, ok := out.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
+	} else {
+		m.SqlWarehouseId = types.StringNull()
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }

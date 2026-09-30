@@ -67,8 +67,8 @@ func (r *selfHostedGcpCredentialsResource) Create(ctx context.Context, req resou
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpSecretManagerCredentialsOut, *http.Response, error) {
@@ -112,11 +112,11 @@ func (r *selfHostedGcpCredentialsResource) Update(ctx context.Context, req resou
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
-	}
 	if !plan.GcpSecret.IsNull() && !plan.GcpSecret.IsUnknown() {
 		body.SetGcpSecret(plan.GcpSecret.ValueString())
+	}
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.GcpSecretManagerCredentialsOut, *http.Response, error) {
@@ -158,10 +158,10 @@ func selfHostedGcpCredentialsToModel(o *sdk.GcpSecretManagerCredentialsOut) reso
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := o.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
+	if v, ok := o.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
 	} else {
-		m.DatabricksWarehouseId = types.StringNull()
+		m.SqlWarehouseId = types.StringNull()
 	}
 	return m
 }

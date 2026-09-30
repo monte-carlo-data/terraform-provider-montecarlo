@@ -73,11 +73,11 @@ func (r *selfHostedAwsCredentialsResource) Create(ctx context.Context, req resou
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
-	}
 	if !plan.ExternalId.IsNull() && !plan.ExternalId.IsUnknown() {
 		body.SetExternalId(plan.ExternalId.ValueString())
+	}
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsSecretsManagerCredentialsOut, *http.Response, error) {
@@ -130,11 +130,11 @@ func (r *selfHostedAwsCredentialsResource) Update(ctx context.Context, req resou
 	if !plan.BqProjectId.IsNull() && !plan.BqProjectId.IsUnknown() {
 		body.SetBqProjectId(plan.BqProjectId.ValueString())
 	}
-	if !plan.DatabricksWarehouseId.IsNull() && !plan.DatabricksWarehouseId.IsUnknown() {
-		body.SetDatabricksWarehouseId(plan.DatabricksWarehouseId.ValueString())
-	}
 	if !plan.ExternalId.IsNull() && !plan.ExternalId.IsUnknown() {
 		body.SetExternalId(plan.ExternalId.ValueString())
+	}
+	if !plan.SqlWarehouseId.IsNull() && !plan.SqlWarehouseId.IsUnknown() {
+		body.SetSqlWarehouseId(plan.SqlWarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.AwsSecretsManagerCredentialsOut, *http.Response, error) {
@@ -186,15 +186,15 @@ func selfHostedAwsCredentialsToModel(o *sdk.AwsSecretsManagerCredentialsOut) res
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := o.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
-	} else {
-		m.DatabricksWarehouseId = types.StringNull()
-	}
 	if v, ok := o.GetExternalIdOk(); ok && v != nil {
 		m.ExternalId = types.StringValue(*v)
 	} else {
 		m.ExternalId = types.StringNull()
+	}
+	if v, ok := o.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
+	} else {
+		m.SqlWarehouseId = types.StringNull()
 	}
 	return m
 }

@@ -30,11 +30,6 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 			"credentials_id": schema.StringAttribute{
 				Required: true,
 			},
-			"databricks_warehouse_id": schema.StringAttribute{
-				Computed:            true,
-				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-			},
 			"file_path": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Path of the file on the deployment that holds the connection's credentials.",
@@ -44,6 +39,11 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 				Computed:            true,
 				Description:         "Unique identifier of the credentials.",
 				MarkdownDescription: "Unique identifier of the credentials.",
+			},
+			"sql_warehouse_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -55,12 +55,12 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 }
 
 type SelfHostedFileCredentialsModel struct {
-	BqProjectId           types.String `tfsdk:"bq_project_id"`
-	ConnectionType        types.String `tfsdk:"connection_type"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	CredentialsId         types.String `tfsdk:"credentials_id"`
-	DatabricksWarehouseId types.String `tfsdk:"databricks_warehouse_id"`
-	FilePath              types.String `tfsdk:"file_path"`
-	Id                    types.String `tfsdk:"id"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	BqProjectId    types.String `tfsdk:"bq_project_id"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	CredentialsId  types.String `tfsdk:"credentials_id"`
+	FilePath       types.String `tfsdk:"file_path"`
+	Id             types.String `tfsdk:"id"`
+	SqlWarehouseId types.String `tfsdk:"sql_warehouse_id"`
+	StorageType    types.String `tfsdk:"storage_type"`
 }
