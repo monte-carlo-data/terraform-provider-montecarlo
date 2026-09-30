@@ -1,9 +1,5 @@
-# Snowflake credentials stored by Monte Carlo.
-#
-# Credentials are a resource of their own, and they do nothing until a connection reads with
-# them — see ../montecarlo_connection/resource.tf for the whole flow. They are also independent
-# of any deployment: the same credentials can back a connection on any warehouse whose type
-# fits them.
+# A Snowflake connection with credentials Monte Carlo stores: the warehouse, the credentials,
+# and the connection that joins them.
 #
 # This is the Monte Carlo managed option, where Monte Carlo holds the key pair. To keep the
 # secret in your own store instead, use one of the self-hosted credentials resources —
@@ -28,6 +24,13 @@ provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
   # ../../provider/provider.tf for the alternatives.
+}
+
+# ../montecarlo_warehouse/resource.tf shows the deployment and agent behind `deployment_id`.
+resource "montecarlo_warehouse" "snowflake" {
+  name          = "production-snowflake"
+  type          = "snowflake"
+  deployment_id = "<deployment id, from the Monte Carlo app>"
 }
 
 resource "montecarlo_snowflake_credentials" "snowflake" {
@@ -57,12 +60,24 @@ resource "montecarlo_snowflake_credentials" "snowflake" {
   warehouse = "MONTE_CARLO_WH"
 }
 
-output "credentials_id" {
-  description = "Id to give a connection's `credentials_id`."
-  value       = montecarlo_snowflake_credentials.snowflake.id
+# The connection's type comes from the credentials, and has to fit the warehouse's type.
+resource "montecarlo_connection" "snowflake" {
+  name           = "production-snowflake"
+  warehouse_id   = montecarlo_warehouse.snowflake.id
+  credentials_id = montecarlo_snowflake_credentials.snowflake.id
 }
 
 output "storage_type" {
   description = "Where the secret lives. mc_managed for these, since Monte Carlo stores them."
   value       = montecarlo_snowflake_credentials.snowflake.storage_type
+}
+
+output "connection_id" {
+  description = "Id of the connection."
+  value       = montecarlo_connection.snowflake.id
+}
+
+output "connection_type" {
+  description = "What the connection reaches, taken from the credentials."
+  value       = montecarlo_connection.snowflake.connection_type
 }
