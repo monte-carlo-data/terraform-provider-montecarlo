@@ -30,11 +30,6 @@ func SelfHostedGcpCredentialsDataSourceSchema(ctx context.Context) schema.Schema
 			"credentials_id": schema.StringAttribute{
 				Required: true,
 			},
-			"databricks_warehouse_id": schema.StringAttribute{
-				Computed:            true,
-				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-			},
 			"gcp_secret": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Name of the GCP Secret Manager secret holding the connection's credentials.",
@@ -44,6 +39,11 @@ func SelfHostedGcpCredentialsDataSourceSchema(ctx context.Context) schema.Schema
 				Computed:            true,
 				Description:         "Unique identifier of the credentials.",
 				MarkdownDescription: "Unique identifier of the credentials.",
+			},
+			"sql_warehouse_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -55,12 +55,12 @@ func SelfHostedGcpCredentialsDataSourceSchema(ctx context.Context) schema.Schema
 }
 
 type SelfHostedGcpCredentialsModel struct {
-	BqProjectId           types.String `tfsdk:"bq_project_id"`
-	ConnectionType        types.String `tfsdk:"connection_type"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	CredentialsId         types.String `tfsdk:"credentials_id"`
-	DatabricksWarehouseId types.String `tfsdk:"databricks_warehouse_id"`
-	GcpSecret             types.String `tfsdk:"gcp_secret"`
-	Id                    types.String `tfsdk:"id"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	BqProjectId    types.String `tfsdk:"bq_project_id"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	CredentialsId  types.String `tfsdk:"credentials_id"`
+	GcpSecret      types.String `tfsdk:"gcp_secret"`
+	Id             types.String `tfsdk:"id"`
+	SqlWarehouseId types.String `tfsdk:"sql_warehouse_id"`
+	StorageType    types.String `tfsdk:"storage_type"`
 }

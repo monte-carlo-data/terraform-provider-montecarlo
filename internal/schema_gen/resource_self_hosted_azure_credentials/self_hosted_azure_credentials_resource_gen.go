@@ -62,7 +62,12 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 				Description:         "When the credentials were created.",
 				MarkdownDescription: "When the credentials were created.",
 			},
-			"databricks_warehouse_id": schema.StringAttribute{
+			"id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Unique identifier of the credentials.",
+				MarkdownDescription: "Unique identifier of the credentials.",
+			},
+			"sql_warehouse_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
@@ -70,11 +75,6 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
-			},
-			"id": schema.StringAttribute{
-				Computed:            true,
-				Description:         "Unique identifier of the credentials.",
-				MarkdownDescription: "Unique identifier of the credentials.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -86,13 +86,13 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 }
 
 type SelfHostedAzureCredentialsModel struct {
-	AkvSecret             types.String `tfsdk:"akv_secret"`
-	AkvVaultName          types.String `tfsdk:"akv_vault_name"`
-	AkvVaultUrl           types.String `tfsdk:"akv_vault_url"`
-	BqProjectId           types.String `tfsdk:"bq_project_id"`
-	ConnectionType        types.String `tfsdk:"connection_type"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	DatabricksWarehouseId types.String `tfsdk:"databricks_warehouse_id"`
-	Id                    types.String `tfsdk:"id"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	AkvSecret      types.String `tfsdk:"akv_secret"`
+	AkvVaultName   types.String `tfsdk:"akv_vault_name"`
+	AkvVaultUrl    types.String `tfsdk:"akv_vault_url"`
+	BqProjectId    types.String `tfsdk:"bq_project_id"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	Id             types.String `tfsdk:"id"`
+	SqlWarehouseId types.String `tfsdk:"sql_warehouse_id"`
+	StorageType    types.String `tfsdk:"storage_type"`
 }

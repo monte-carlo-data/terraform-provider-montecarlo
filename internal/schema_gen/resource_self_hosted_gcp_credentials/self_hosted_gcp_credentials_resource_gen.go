@@ -36,15 +36,6 @@ func SelfHostedGcpCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				Description:         "When the credentials were created.",
 				MarkdownDescription: "When the credentials were created.",
 			},
-			"databricks_warehouse_id": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
-				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 200),
-				},
-			},
 			"gcp_secret": schema.StringAttribute{
 				Required:            true,
 				Description:         "Name of the GCP Secret Manager secret holding the connection's credentials.",
@@ -58,6 +49,15 @@ func SelfHostedGcpCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				Description:         "Unique identifier of the credentials.",
 				MarkdownDescription: "Unique identifier of the credentials.",
 			},
+			"sql_warehouse_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Required for a `databricks-sql-warehouse` or `databricks-metastore-sql-warehouse` connection.",
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 200),
+				},
+			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Where the secret lives. Fixed once created.",
@@ -68,11 +68,11 @@ func SelfHostedGcpCredentialsResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type SelfHostedGcpCredentialsModel struct {
-	BqProjectId           types.String `tfsdk:"bq_project_id"`
-	ConnectionType        types.String `tfsdk:"connection_type"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	DatabricksWarehouseId types.String `tfsdk:"databricks_warehouse_id"`
-	GcpSecret             types.String `tfsdk:"gcp_secret"`
-	Id                    types.String `tfsdk:"id"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	BqProjectId    types.String `tfsdk:"bq_project_id"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	GcpSecret      types.String `tfsdk:"gcp_secret"`
+	Id             types.String `tfsdk:"id"`
+	SqlWarehouseId types.String `tfsdk:"sql_warehouse_id"`
+	StorageType    types.String `tfsdk:"storage_type"`
 }

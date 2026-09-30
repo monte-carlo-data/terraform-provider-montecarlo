@@ -69,15 +69,15 @@ func (d *selfHostedEnvVarCredentialsDataSource) Read(ctx context.Context, req da
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := out.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
-	} else {
-		m.DatabricksWarehouseId = types.StringNull()
-	}
 	if v, ok := out.GetKmsKeyIdOk(); ok && v != nil {
 		m.KmsKeyId = types.StringValue(*v)
 	} else {
 		m.KmsKeyId = types.StringNull()
+	}
+	if v, ok := out.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
+	} else {
+		m.SqlWarehouseId = types.StringNull()
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }

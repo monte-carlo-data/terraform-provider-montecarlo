@@ -45,15 +45,15 @@ func SelfHostedAzureCredentialsDataSourceSchema(ctx context.Context) schema.Sche
 			"credentials_id": schema.StringAttribute{
 				Required: true,
 			},
-			"databricks_warehouse_id": schema.StringAttribute{
-				Computed:            true,
-				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-			},
 			"id": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Unique identifier of the credentials.",
 				MarkdownDescription: "Unique identifier of the credentials.",
+			},
+			"sql_warehouse_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
 			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -65,14 +65,14 @@ func SelfHostedAzureCredentialsDataSourceSchema(ctx context.Context) schema.Sche
 }
 
 type SelfHostedAzureCredentialsModel struct {
-	AkvSecret             types.String `tfsdk:"akv_secret"`
-	AkvVaultName          types.String `tfsdk:"akv_vault_name"`
-	AkvVaultUrl           types.String `tfsdk:"akv_vault_url"`
-	BqProjectId           types.String `tfsdk:"bq_project_id"`
-	ConnectionType        types.String `tfsdk:"connection_type"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	CredentialsId         types.String `tfsdk:"credentials_id"`
-	DatabricksWarehouseId types.String `tfsdk:"databricks_warehouse_id"`
-	Id                    types.String `tfsdk:"id"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	AkvSecret      types.String `tfsdk:"akv_secret"`
+	AkvVaultName   types.String `tfsdk:"akv_vault_name"`
+	AkvVaultUrl    types.String `tfsdk:"akv_vault_url"`
+	BqProjectId    types.String `tfsdk:"bq_project_id"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	CredentialsId  types.String `tfsdk:"credentials_id"`
+	Id             types.String `tfsdk:"id"`
+	SqlWarehouseId types.String `tfsdk:"sql_warehouse_id"`
+	StorageType    types.String `tfsdk:"storage_type"`
 }

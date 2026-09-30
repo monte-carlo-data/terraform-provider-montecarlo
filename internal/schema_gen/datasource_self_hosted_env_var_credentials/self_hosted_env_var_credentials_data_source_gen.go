@@ -30,11 +30,6 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 			"credentials_id": schema.StringAttribute{
 				Required: true,
 			},
-			"databricks_warehouse_id": schema.StringAttribute{
-				Computed:            true,
-				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
-			},
 			"env_var_name": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Name of the environment variable on the deployment that holds the connection's credentials. Must start with `MCD_`.",
@@ -50,6 +45,11 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				Description:         "AWS KMS key the value is encrypted with. Null for a value in the clear.",
 				MarkdownDescription: "AWS KMS key the value is encrypted with. Null for a value in the clear.",
 			},
+			"sql_warehouse_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+				MarkdownDescription: "Databricks SQL warehouse the connection runs queries on. Null unless set.",
+			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Where the secret lives. Fixed once created.",
@@ -60,13 +60,13 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 }
 
 type SelfHostedEnvVarCredentialsModel struct {
-	BqProjectId           types.String `tfsdk:"bq_project_id"`
-	ConnectionType        types.String `tfsdk:"connection_type"`
-	CreatedTime           types.String `tfsdk:"created_time"`
-	CredentialsId         types.String `tfsdk:"credentials_id"`
-	DatabricksWarehouseId types.String `tfsdk:"databricks_warehouse_id"`
-	EnvVarName            types.String `tfsdk:"env_var_name"`
-	Id                    types.String `tfsdk:"id"`
-	KmsKeyId              types.String `tfsdk:"kms_key_id"`
-	StorageType           types.String `tfsdk:"storage_type"`
+	BqProjectId    types.String `tfsdk:"bq_project_id"`
+	ConnectionType types.String `tfsdk:"connection_type"`
+	CreatedTime    types.String `tfsdk:"created_time"`
+	CredentialsId  types.String `tfsdk:"credentials_id"`
+	EnvVarName     types.String `tfsdk:"env_var_name"`
+	Id             types.String `tfsdk:"id"`
+	KmsKeyId       types.String `tfsdk:"kms_key_id"`
+	SqlWarehouseId types.String `tfsdk:"sql_warehouse_id"`
+	StorageType    types.String `tfsdk:"storage_type"`
 }

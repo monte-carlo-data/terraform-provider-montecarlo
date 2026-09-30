@@ -69,10 +69,10 @@ func (d *selfHostedFileCredentialsDataSource) Read(ctx context.Context, req data
 	} else {
 		m.BqProjectId = types.StringNull()
 	}
-	if v, ok := out.GetDatabricksWarehouseIdOk(); ok && v != nil {
-		m.DatabricksWarehouseId = types.StringValue(*v)
+	if v, ok := out.GetSqlWarehouseIdOk(); ok && v != nil {
+		m.SqlWarehouseId = types.StringValue(*v)
 	} else {
-		m.DatabricksWarehouseId = types.StringNull()
+		m.SqlWarehouseId = types.StringNull()
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }
