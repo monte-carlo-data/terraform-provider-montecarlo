@@ -12,14 +12,18 @@ source below does not resolve yet. Until it is published the provider has to be 
 locally, which takes two commands — see
 [AGENTS.md](AGENTS.md#running-a-locally-built-provider).
 
-The provider is in **beta** and versioned `0.x`. Patch releases are frequent, one for each
-update to the API it is generated from. A new minor version can carry breaking changes, so pin
-the minor version:
+The provider is in **beta** and versioned `0.x`. Once published, patch releases will be frequent,
+one for each update to the API it is generated from. A new minor version can carry breaking
+changes, so pin the minor version:
 
 ```hcl
-montecarlo = {
-  source  = "monte-carlo-data/montecarlo"
-  version = "~> 0.1.0"
+terraform {
+  required_providers {
+    montecarlo = {
+      source  = "monte-carlo-data/montecarlo"
+      version = "~> 0.1.0"
+    }
+  }
 }
 ```
 

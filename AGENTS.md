@@ -144,12 +144,15 @@ cross-compiles every platform, zips each one, writes the `SHA256SUMS` file with
 GitHub release. The registry picks the release up from there.
 
 The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
-`GPG_PASSPHRASE`, so no other workflow can read it. The registry checks each release against the
-public half of the same key.
+`GPG_PASSPHRASE`, which only jobs running on a `v*` tag can use. The registry checks each release
+against the public half of the same key.
 
-CI's `release-snapshot` job runs the same build with signing and publishing skipped, so a
-change that breaks a release fails before it merges. Tags are immutable, so a release that fails
-after tagging burns its version. To reproduce the job locally:
+The release refuses a tag whose commit is not on `main`, since that commit skipped review.
+
+CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
+so a change that breaks a release fails before it merges. Tags are immutable, so a release that
+fails after tagging burns its version. To reproduce it locally, without signing, using the
+GoReleaser version pinned in `.github/actions/goreleaser/action.yml`:
 
 ```bash
 go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
@@ -163,7 +166,8 @@ Releases stay `0.x` while the provider is in beta.
   pseudo-version because it has no tags. If it is still private when this repository goes
   public, `go build ./...` fails for every outside contributor and for any registry build from
   source — so this is a hard precondition, not a nice-to-have. Publish it, tag it, and replace
-  the pseudo-version with the tag. Until then the pin is only as durable as the commit it names:
+  the pseudo-version with the tag. Then delete `.github/actions/private-sdk` and every step that
+  uses it. Until then the pin is only as durable as the commit it names:
   an upstream squash merge or history rewrite orphans that commit, and because the module
   resolves directly from git rather than through a proxy, every clean clone and every CI run
   then fails at module download. A green local build does not disprove it — the module cache

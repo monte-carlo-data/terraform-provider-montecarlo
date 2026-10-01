@@ -14,8 +14,7 @@ inputs:
 runs:
   using: composite
   steps:
-    # Minted from the org-wide CI App rather than a credential of our own, scoped to the one
-    # repository and to `contents: read`, and expiring within the hour.
+    # Minted from the org-wide CI App rather than a credential of our own; expires within the hour.
     - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
       id: sdk-token
       with:

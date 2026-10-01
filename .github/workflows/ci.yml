@@ -14,10 +14,10 @@ jobs:
     name: Build, vet, format and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       # The Go version comes from go.mod's `go` directive, so it cannot drift from the module.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: go.mod
 
@@ -51,11 +51,11 @@ jobs:
     # breaks cross-compiling or packaging has to fail here, before the merge.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: go.mod
 
@@ -64,11 +64,16 @@ jobs:
           app-id: ${{ secrets.MC_GITHUB_APP_ID }}
           private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
 
-      # Everything a release does except signing and publishing.
-      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+      # A throwaway key, so the snapshot exercises the signing config the release uses.
+      - name: Throwaway signing key
+        run: |
+          gpg --batch --pinentry-mode loopback --passphrase '' --quick-gen-key ci-snapshot@example.invalid default default never
+          echo "GPG_FINGERPRINT=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')" >> "$GITHUB_ENV"
+
+      # Everything a release does except publishing.
+      - uses: ./.github/actions/goreleaser
         with:
-          version: v2.18.2
-          args: release --snapshot --clean --skip=sign
+          args: release --snapshot --clean
 
   bot-dependency-diff:
     name: The bot's dependency change stays narrow
@@ -78,7 +83,7 @@ jobs:
     if: github.head_ref == 'api-codegen/spec-update'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 

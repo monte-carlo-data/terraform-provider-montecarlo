@@ -12,13 +12,17 @@ jobs:
   goreleaser:
     name: Build, sign and publish the release
     runs-on: ubuntu-latest
-    # The signing key is held in this environment's secrets, so only this job can read it.
+    # The signing key lives in this environment, which only `v*` tags can deploy to.
     environment: release
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      # A tag on a commit that never reached main would skip its review, so refuse to release it.
+      - name: The tagged commit is on main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
       # No build cache: a release is built from a clean module download, never from a cache that
       # another workflow could have written.
@@ -38,9 +42,8 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+      - uses: ./.github/actions/goreleaser
         with:
-          version: v2.18.2
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
