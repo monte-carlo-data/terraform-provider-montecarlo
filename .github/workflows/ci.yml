@@ -55,9 +55,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      # setup-go's cache key is shared with the build job, whose cache holds only linux/amd64
+      # objects, so this job keeps its cross-compiled ones under a key of its own.
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: go.mod
+          cache: false
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: release-snapshot-${{ runner.os }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: release-snapshot-${{ runner.os }}-
 
       - uses: ./.github/actions/private-sdk
         with:
