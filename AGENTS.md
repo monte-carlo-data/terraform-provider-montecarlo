@@ -133,11 +133,31 @@ and permitted here, per the carve-out above. Never commit directly to `main`.
 
 ## Releasing
 
-**Not yet — the provider is unpublished, and every item below is still outstanding.** Two
-properties make this a one-way door: the provider address is permanent once published, and a
-published provider cannot be unpublished.
+**Not yet — the provider is unpublished.** Two properties make this a one-way door: the
+provider address is permanent once published, and a published provider cannot be unpublished.
 
-Before the first release:
+### How a release is built
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. GoReleaser (`.goreleaser.yml`)
+cross-compiles every platform, zips each one, writes the `SHA256SUMS` file with
+`terraform-registry-manifest.json` in it, signs that file with GPG and attaches it all to a
+GitHub release. The registry picks the release up from there.
+
+The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
+`GPG_PASSPHRASE`, so no other workflow can read it. The registry checks each release against the
+public half of the same key.
+
+CI's `release-snapshot` job runs the same build with signing and publishing skipped, so a
+change that breaks a release fails before it merges. Tags are immutable, so a release that fails
+after tagging burns its version. To reproduce the job locally:
+
+```bash
+go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
+```
+
+Releases stay `0.x` while the provider is in beta.
+
+### Still outstanding before the first release
 
 - **The Go SDK this provider depends on must be public and tagged.** `go.mod` pins it to a
   pseudo-version because it has no tags. If it is still private when this repository goes
@@ -156,13 +176,9 @@ Before the first release:
   changes signatures with no schema change. Two same-typed parameters swapping is invisible to
   the compiler, so a pin moved on its own can compile and pass the tests while sending a bucket
   name as a deployment id.
-- **A GPG key**, with the private half held as a repository or organisation secret and the
-  public half uploaded to the registry. The registry verifies the signature on every release.
-- **`.goreleaser.yml`**, which builds the per-platform archives, the `SHA256SUMS` file and its
-  detached signature in the layout the registry requires.
-- **`terraform-registry-manifest.json`**, declaring the protocol version.
-- **A tag-triggered release workflow** that runs GoReleaser and attaches the artefacts to the
-  GitHub release. Nothing produces a release today.
+- **The signing key's public half, uploaded to the registry** when the provider is published.
+  The private half and its passphrase are already in the `release` environment, which only `v*`
+  tags can deploy to.
 - **`docs/`**. The registry renders provider documentation from markdown under `docs/` — it
   does **not** derive it from the schema, so publishing without it yields a page with attribute
   descriptions and no resource documentation. `tfplugindocs` generates it from the schemas plus

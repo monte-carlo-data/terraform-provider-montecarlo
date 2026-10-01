@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Creating the GitHub release and uploading its assets needs write access to contents.
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    name: Build, sign and publish the release
+    runs-on: ubuntu-latest
+    # The signing key is held in this environment's secrets, so only this job can read it.
+    environment: release
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # No build cache: a release is built from a clean module download, never from a cache that
+      # another workflow could have written.
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: ./.github/actions/private-sdk
+        with:
+          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
+          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
+
+      - uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        id: gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: v2.18.2
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
