@@ -14,41 +14,17 @@ jobs:
     name: Build, vet, format and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       # The Go version comes from go.mod's `go` directive, so it cannot drift from the module.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: go.mod
 
-      # This module depends on github.com/monte-carlo-data/mc-sdk-go, which is still a private
-      # repository, so a runner cannot resolve it: `git ls-remote` exits 128 and the build fails
-      # before it compiles anything. The org's mc-ci-cd-app is installed org-wide, so mint a token
-      # from it rather than adding a credential of our own. Scoped down to one repository and to
-      # `contents: read` — the App holds write, which nothing here needs — and it expires in an
-      # hour. Note the org's convention reserves this App for CI *writes* and points read-only
-      # checkouts at deploy keys; a read-scoped token was preferred here over managing another
-      # keypair. Both steps are deletable the day mc-sdk-go becomes public.
-      - uses: actions/create-github-app-token@v2
-        id: sdk-token
+      - uses: ./.github/actions/private-sdk
         with:
           app-id: ${{ secrets.MC_GITHUB_APP_ID }}
           private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
-          owner: monte-carlo-data
-          repositories: mc-sdk-go
-          permission-contents: read
-
-      # GOPRIVATE keeps the module off the public proxy and checksum database, neither of which can
-      # serve a private repository. go.sum still verifies the hash locally.
-      # The credential goes in an http header rather than the remote URL, so it stays out of
-      # .git/config and out of any process's command line.
-      - name: Let the build resolve the private SDK module
-        env:
-          TOKEN: ${{ steps.sdk-token.outputs.token }}
-        run: |
-          go env -w GOPRIVATE='github.com/monte-carlo-data/*'
-          header="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
-          git config --global http.https://github.com/.extraheader "Authorization: Basic $header"
 
       - name: Build
         run: go build ./...
@@ -69,6 +45,47 @@ jobs:
       - name: Test
         run: go test -race ./...
 
+  release-snapshot:
+    name: The release builds for every platform
+    # Tags are immutable, so a release that fails after tagging burns that version. A change that
+    # breaks cross-compiling or packaging has to fail here, before the merge.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      # setup-go's cache key is shared with the build job, whose cache holds only linux/amd64
+      # objects, so this job keeps its cross-compiled ones under a key of its own.
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: release-snapshot-${{ runner.os }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: release-snapshot-${{ runner.os }}-
+
+      - uses: ./.github/actions/private-sdk
+        with:
+          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
+          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
+
+      # A throwaway key, so the snapshot exercises the signing config the release uses.
+      - name: Throwaway signing key
+        run: |
+          gpg --batch --pinentry-mode loopback --passphrase '' --quick-gen-key ci-snapshot@example.invalid default default never
+          echo "GPG_FINGERPRINT=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')" >> "$GITHUB_ENV"
+
+      # Everything a release does except publishing.
+      - uses: ./.github/actions/goreleaser
+        with:
+          args: release --snapshot --clean
+
   bot-dependency-diff:
     name: The bot's dependency change stays narrow
     # go.mod and go.sum carry no code owner, so that a generated pull request requests no review.
@@ -77,7 +94,7 @@ jobs:
     if: github.head_ref == 'api-codegen/spec-update'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 

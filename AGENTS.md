@@ -133,17 +133,41 @@ and permitted here, per the carve-out above. Never commit directly to `main`.
 
 ## Releasing
 
-**Not yet — the provider is unpublished, and every item below is still outstanding.** Two
-properties make this a one-way door: the provider address is permanent once published, and a
-published provider cannot be unpublished.
+**Not yet — the provider is unpublished.** Two properties make this a one-way door: the
+provider address is permanent once published, and a published provider cannot be unpublished.
 
-Before the first release:
+### How a release is built
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. GoReleaser (`.goreleaser.yml`)
+cross-compiles every platform, zips each one, writes the `SHA256SUMS` file with
+`terraform-registry-manifest.json` in it, signs that file with GPG and attaches it all to a
+GitHub release. The registry picks the release up from there.
+
+The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
+`GPG_PASSPHRASE`, which only jobs running on a `v*` tag can use. The registry checks each release
+against the public half of the same key.
+
+The release refuses a tag whose commit is not on `main`, since that commit skipped review.
+
+CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
+so a change that breaks a release fails before it merges. Tags are immutable, so a release that
+fails after tagging burns its version. To reproduce it locally, without signing, using the
+GoReleaser version pinned in `.github/actions/goreleaser/action.yml`:
+
+```bash
+go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
+```
+
+Releases stay `0.x` while the provider is in beta.
+
+### Still outstanding before the first release
 
 - **The Go SDK this provider depends on must be public and tagged.** `go.mod` pins it to a
   pseudo-version because it has no tags. If it is still private when this repository goes
   public, `go build ./...` fails for every outside contributor and for any registry build from
   source — so this is a hard precondition, not a nice-to-have. Publish it, tag it, and replace
-  the pseudo-version with the tag. Until then the pin is only as durable as the commit it names:
+  the pseudo-version with the tag. Then delete `.github/actions/private-sdk` and every step that
+  uses it. Until then the pin is only as durable as the commit it names:
   an upstream squash merge or history rewrite orphans that commit, and because the module
   resolves directly from git rather than through a proxy, every clean clone and every CI run
   then fails at module download. A green local build does not disprove it — the module cache
@@ -156,13 +180,9 @@ Before the first release:
   changes signatures with no schema change. Two same-typed parameters swapping is invisible to
   the compiler, so a pin moved on its own can compile and pass the tests while sending a bucket
   name as a deployment id.
-- **A GPG key**, with the private half held as a repository or organisation secret and the
-  public half uploaded to the registry. The registry verifies the signature on every release.
-- **`.goreleaser.yml`**, which builds the per-platform archives, the `SHA256SUMS` file and its
-  detached signature in the layout the registry requires.
-- **`terraform-registry-manifest.json`**, declaring the protocol version.
-- **A tag-triggered release workflow** that runs GoReleaser and attaches the artefacts to the
-  GitHub release. Nothing produces a release today.
+- **The signing key's public half, uploaded to the registry** when the provider is published.
+  The private half and its passphrase are already in the `release` environment, which only `v*`
+  tags can deploy to.
 - **`docs/`**. The registry renders provider documentation from markdown under `docs/` — it
   does **not** derive it from the schema, so publishing without it yields a page with attribute
   descriptions and no resource documentation. `tfplugindocs` generates it from the schemas plus
