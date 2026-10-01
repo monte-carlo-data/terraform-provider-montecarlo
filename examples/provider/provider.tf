@@ -1,7 +1,8 @@
 terraform {
   required_providers {
     montecarlo = {
-      source = "monte-carlo-data/montecarlo"
+      source  = "monte-carlo-data/montecarlo"
+      version = "~> 0.1.0"
     }
   }
 }

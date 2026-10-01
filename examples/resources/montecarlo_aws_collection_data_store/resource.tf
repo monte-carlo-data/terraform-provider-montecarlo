@@ -28,7 +28,7 @@ provider "aws" {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
 # The Monte Carlo account that assumes the role, which differs per Monte Carlo deployment. The

@@ -4,7 +4,7 @@
 # `deployment_id` decides which collection agent those connections run through, so the agent
 # has to be registered and working before a connection added here can reach anything. For the
 # rest of the flow — credentials, and the connection itself — see
-# ../montecarlo_connection/resource.tf.
+# the `montecarlo_connection` example.
 #
 # `type` and `connection_type` are alternatives and the API refuses both together. `type` names
 # the warehouse type outright, as below. `connection_type` instead names the type of the first
@@ -21,7 +21,7 @@ terraform {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "agent" {
