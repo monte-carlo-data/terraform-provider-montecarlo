@@ -33,12 +33,14 @@ func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaReques
 	s := resource_connection.ConnectionResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds.
+	useNonNullStateForUnknown(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.connection_type", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.created_time", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.job_types", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
+	requiresReplace(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.job_types", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
@@ -64,9 +66,15 @@ func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewConnectionIn(plan.Name.ValueString(), plan.WarehouseId.ValueString(), plan.CredentialsId.ValueString())
+	body := sdk.NewConnectionIn(plan.Name.ValueString(), plan.CredentialsId.ValueString())
+	if !plan.BiContainerId.IsNull() && !plan.BiContainerId.IsUnknown() {
+		body.SetBiContainerId(plan.BiContainerId.ValueString())
+	}
 	if !plan.JobTypes.IsNull() && !plan.JobTypes.IsUnknown() {
 		body.SetJobTypes(listOfStrings(ctx, plan.JobTypes))
+	}
+	if !plan.WarehouseId.IsNull() && !plan.WarehouseId.IsUnknown() {
+		body.SetWarehouseId(plan.WarehouseId.ValueString())
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.ConnectionOut, *http.Response, error) {
@@ -143,7 +151,16 @@ func connectionToModel(o *sdk.ConnectionOut) resource_connection.ConnectionModel
 		CreatedTime:    types.StringValue(o.GetCreatedTime().Format(time.RFC3339)),
 		Id:             types.StringValue(o.GetId()),
 		JobTypes:       stringList(o.GetJobTypes()),
-		WarehouseId:    types.StringValue(o.GetWarehouseId()),
+	}
+	if v, ok := o.GetBiContainerIdOk(); ok && v != nil {
+		m.BiContainerId = types.StringValue(*v)
+	} else {
+		m.BiContainerId = types.StringNull()
+	}
+	if v, ok := o.GetBiContainerNameOk(); ok && v != nil {
+		m.BiContainerName = types.StringValue(*v)
+	} else {
+		m.BiContainerName = types.StringNull()
 	}
 	if v, ok := o.GetCredentialsIdOk(); ok && v != nil {
 		m.CredentialsId = types.StringValue(*v)
@@ -169,6 +186,11 @@ func connectionToModel(o *sdk.ConnectionOut) resource_connection.ConnectionModel
 		m.Name = types.StringValue(*v)
 	} else {
 		m.Name = types.StringNull()
+	}
+	if v, ok := o.GetWarehouseIdOk(); ok && v != nil {
+		m.WarehouseId = types.StringValue(*v)
+	} else {
+		m.WarehouseId = types.StringNull()
 	}
 	if v, ok := o.GetWarehouseNameOk(); ok && v != nil {
 		m.WarehouseName = types.StringValue(*v)

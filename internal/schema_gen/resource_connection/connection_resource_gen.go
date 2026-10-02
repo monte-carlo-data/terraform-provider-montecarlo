@@ -15,6 +15,17 @@ import (
 func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"bi_container_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send this or `warehouse_id`, not both.",
+				MarkdownDescription: "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send this or `warehouse_id`, not both.",
+			},
+			"bi_container_name": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
+				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
+			},
 			"connection_type": schema.StringAttribute{
 				Computed:            true,
 				Description:         "What the connection reaches, such as `snowflake`. Taken from the credentials the connection was created with, and fixed once created.",
@@ -37,8 +48,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
-				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				Description:         "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
@@ -62,27 +73,30 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				Description:         "Display name for the connection. Unique among the warehouse's connections.",
-				MarkdownDescription: "Display name for the connection. Unique among the warehouse's connections.",
+				Description:         "Display name for the connection. Unique among the connections of its warehouse or BI container.",
+				MarkdownDescription: "Display name for the connection. Unique among the connections of its warehouse or BI container.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
 			},
 			"warehouse_id": schema.StringAttribute{
-				Required:            true,
-				Description:         "The warehouse to add the connection to. Its type has to match what the credentials are for.",
-				MarkdownDescription: "The warehouse to add the connection to. Its type has to match what the credentials are for.",
+				Optional:            true,
+				Computed:            true,
+				Description:         "The warehouse to add the connection to. Its type has to match what the credentials are for. Send this or `bi_container_id`, not both.",
+				MarkdownDescription: "The warehouse to add the connection to. Its type has to match what the credentials are for. Send this or `bi_container_id`, not both.",
 			},
 			"warehouse_name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Display name of that warehouse. Null for a warehouse that was never named.",
-				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named.",
+				Description:         "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
+				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
 			},
 		},
 	}
 }
 
 type ConnectionModel struct {
+	BiContainerId          types.String `tfsdk:"bi_container_id"`
+	BiContainerName        types.String `tfsdk:"bi_container_name"`
 	ConnectionType         types.String `tfsdk:"connection_type"`
 	CreatedTime            types.String `tfsdk:"created_time"`
 	CredentialsId          types.String `tfsdk:"credentials_id"`
