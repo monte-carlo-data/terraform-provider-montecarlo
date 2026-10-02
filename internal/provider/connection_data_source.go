@@ -60,7 +60,16 @@ func (d *connectionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		CreatedTime:    types.StringValue(out.GetCreatedTime().Format(time.RFC3339)),
 		Id:             types.StringValue(out.GetId()),
 		JobTypes:       stringList(out.GetJobTypes()),
-		WarehouseId:    types.StringValue(out.GetWarehouseId()),
+	}
+	if v, ok := out.GetBiContainerIdOk(); ok && v != nil {
+		m.BiContainerId = types.StringValue(*v)
+	} else {
+		m.BiContainerId = types.StringNull()
+	}
+	if v, ok := out.GetBiContainerNameOk(); ok && v != nil {
+		m.BiContainerName = types.StringValue(*v)
+	} else {
+		m.BiContainerName = types.StringNull()
 	}
 	if v, ok := out.GetCredentialsIdOk(); ok && v != nil {
 		m.CredentialsId = types.StringValue(*v)
@@ -86,6 +95,11 @@ func (d *connectionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		m.Name = types.StringValue(*v)
 	} else {
 		m.Name = types.StringNull()
+	}
+	if v, ok := out.GetWarehouseIdOk(); ok && v != nil {
+		m.WarehouseId = types.StringValue(*v)
+	} else {
+		m.WarehouseId = types.StringNull()
 	}
 	if v, ok := out.GetWarehouseNameOk(); ok && v != nil {
 		m.WarehouseName = types.StringValue(*v)

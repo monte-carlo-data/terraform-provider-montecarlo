@@ -12,6 +12,16 @@ import (
 func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"bi_container_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "The BI container the connection belongs to. Null for a connection on a warehouse. Fixed once created.",
+				MarkdownDescription: "The BI container the connection belongs to. Null for a connection on a warehouse. Fixed once created.",
+			},
+			"bi_container_name": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
+				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
+			},
 			"connection_id": schema.StringAttribute{
 				Required: true,
 			},
@@ -37,8 +47,8 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
-				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse. Null for a warehouse that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				Description:         "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
@@ -63,19 +73,21 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"warehouse_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The warehouse the connection belongs to. Fixed once created.",
-				MarkdownDescription: "The warehouse the connection belongs to. Fixed once created.",
+				Description:         "The warehouse the connection belongs to. Null for a connection on a BI container. Fixed once created.",
+				MarkdownDescription: "The warehouse the connection belongs to. Null for a connection on a BI container. Fixed once created.",
 			},
 			"warehouse_name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Display name of that warehouse. Null for a warehouse that was never named.",
-				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named.",
+				Description:         "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
+				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
 			},
 		},
 	}
 }
 
 type ConnectionModel struct {
+	BiContainerId          types.String `tfsdk:"bi_container_id"`
+	BiContainerName        types.String `tfsdk:"bi_container_name"`
 	ConnectionId           types.String `tfsdk:"connection_id"`
 	ConnectionType         types.String `tfsdk:"connection_type"`
 	CreatedTime            types.String `tfsdk:"created_time"`
