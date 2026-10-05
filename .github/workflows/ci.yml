@@ -43,12 +43,12 @@ jobs:
         run: go test -race ./...
 
       # The registry renders docs/ as committed, so it has to match the schemas and examples.
-      - name: Check the registry docs are current
+      - name: Check the registry docs and third-party notices are current
         run: |
           go generate ./...
-          stale="$(git status --porcelain -- docs)"
+          stale="$(git status --porcelain -- docs THIRD_PARTY_NOTICES)"
           if [ -n "$stale" ]; then
-            echo "docs/ is out of date. Run go generate ./... and commit the result:"
+            echo "Generated files are out of date. Run go generate ./... and commit the result:"
             echo "$stale"
             exit 1
           fi
