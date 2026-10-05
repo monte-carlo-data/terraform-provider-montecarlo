@@ -13,11 +13,14 @@ Treat everything here as customer-facing, including things that are easy to forg
   documentation.
 - **Generated code**, which ships as-is.
 
-So, **in the contents of any file committed here**: no internal repository names, no internal
-file paths, no ticket identifiers, and no design rationale that only makes sense from the
-inside. That reasoning is valuable and should be written down — in the ticket, or in the
-internal repository that owns generation. What belongs here is what a customer or an outside
-contributor can act on.
+So, **in the contents of any file committed here**: no internal file paths, no ticket
+identifiers, and no design rationale that only makes sense from the inside. That reasoning is
+valuable and should be written down — in the ticket, or in the internal repository that owns
+generation. What belongs here is what a customer or an outside contributor can act on.
+
+Two internal names are the exception: api-codegen, the generator, and monolith, the service
+the API spec is exported from. Every generated file and `.api-codegen-source.json` already name
+them, so naming them in prose adds nothing. Name no other internal repository.
 
 Branch names and pull request metadata are the exception, and they may carry a username and a
 ticket id: `<person>/<ticket-id>-<slug>` is the convention below, it matches the organisation's
