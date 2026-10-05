@@ -175,6 +175,8 @@ The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_K
 against the public half of the same key.
 
 The release refuses a tag whose commit is not on `main`, since that commit skipped review.
+Before it can read the signing key, the `release` environment waits for an approval from the
+`apollo` team, from someone other than whoever pushed the tag, and admins can't bypass it.
 
 CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
 so a change that breaks a release fails before it merges. Tags are immutable, so a release that
