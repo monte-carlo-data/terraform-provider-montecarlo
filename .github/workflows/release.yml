@@ -31,11 +31,6 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - uses: ./.github/actions/private-sdk
-        with:
-          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
-          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
-
       - uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         id: gpg
         with:
