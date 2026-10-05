@@ -1,21 +1,21 @@
-# A generic collection agent, end to end: the deployment, the credential the agent presents,
-# the agent itself on EKS, and the registration that enables it.
+# A generic collection agent, end to end: the deployment, the credential the
+# agent presents, the agent itself on EKS, and the registration that enables it.
 #
 #   https://docs.getmontecarlo.com/docs/generic-agent-platforms
 #
-# Registration succeeds once the agent is running with the deployment's credential. Before that
-# it answers 503, which the provider retries for a bounded time before failing the apply; apply
-# again once the agent is up.
+# Registration succeeds once the agent is running with the deployment's
+# credential. Before that it answers 503, which the provider retries for a
+# bounded time before failing the apply; apply again once the agent is up.
 #
-# The EKS module below is one way to run the agent. The AKS and GKE modules take the same
-# `backend_service_url` and `oauth_secret` inputs, with the secret in Key Vault or Secret Manager
-# instead of Secrets Manager:
+# The EKS module below is one way to run the agent. The AKS and GKE modules take
+# the same `backend_service_url` and `oauth_secret` inputs, with the secret in
+# Key Vault or Secret Manager instead of Secrets Manager:
 #
 #   https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/azurerm
 #   https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/google
 #
-# Or run the agent yourself, on Docker Compose or a cluster you already have, with the same
-# client id and secret; the docs page above covers those.
+# Or run the agent yourself, on Docker Compose or a cluster you already have,
+# with the same client id and secret; the docs page above covers those.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -34,8 +34,8 @@ terraform {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 # The EKS module does not configure the AWS provider; the root module does.
@@ -54,17 +54,19 @@ resource "montecarlo_deployment" "agent" {
   runtime_platform = "GENERIC"
 }
 
-# The credential. An OAuth client here; see the `montecarlo_generic_collection_agent_token`
-# example for the other kind. The secret is returned once, so this resource holds it in state:
-# anyone who can read the state can read it. Keep state in a backend that encrypts it and limits
-# access.
+# The credential. An OAuth client here; see the
+# `montecarlo_generic_collection_agent_token` example for the other kind. The
+# secret is returned once, so this resource holds it in state: anyone who can
+# read the state can read it. Keep state in a backend that encrypts it and
+# limits access.
 resource "montecarlo_generic_collection_agent_oauth_client" "agent" {
   deployment_id = montecarlo_deployment.agent.id
 }
 
-# The secret goes to Secrets Manager through a write-only argument, so this is the only other
-# copy and it is not in state. Handing it to the module's `oauth_credentials` instead would
-# store it a second time. The JSON keys are the ones the module's chart reads.
+# The secret goes to Secrets Manager through a write-only argument, so this is
+# the only other copy and it is not in state. Handing it to the module's
+# `oauth_credentials` instead would store it a second time. The JSON keys are
+# the ones the module's chart reads.
 resource "aws_secretsmanager_secret" "mcd_agent_oauth" {
   name = "mcd/agent/${montecarlo_deployment.agent.name}/oauth"
 }
@@ -80,11 +82,13 @@ resource "aws_secretsmanager_secret_version" "mcd_agent_oauth" {
 }
 
 # https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/aws
-# A new EKS cluster with the agent installed by Helm, pointed at the secret above.
+# A new EKS cluster with the agent installed by Helm, pointed at the secret
+# above.
 #
-# With `create = false` the module grants the agent read access to every secret whose name
-# starts with `name`, rather than to this one secret's ARN, so the example names it per
-# deployment: no other deployment's secret shares it as a prefix.
+# With `create = false` the module grants the agent read access to every secret
+# whose name starts with `name`, rather than to this one secret's ARN, so the
+# example names it per deployment: no other deployment's secret shares it as a
+# prefix.
 module "mcd_agent" {
   source = "monte-carlo-data/mcd-k8s-agent/aws"
   # 0.1.4 is the first to take an existing secret.
@@ -96,8 +100,9 @@ module "mcd_agent" {
     create = false
     name   = aws_secretsmanager_secret.mcd_agent_oauth.name
   }
-  # Required alongside `oauth_secret`: otherwise the module asks for token credentials. The
-  # agent authenticates with the OAuth client, so no token secret is created or read.
+  # Required alongside `oauth_secret`: otherwise the module asks for token
+  # credentials. The agent authenticates with the OAuth client, so no token
+  # secret is created or read.
   token_secret = {
     create = false
   }
@@ -108,8 +113,8 @@ module "mcd_agent" {
   }
 }
 
-# The module is done once Helm has installed the release; the pods can take a little longer to
-# connect, which is the window the provider's retries cover.
+# The module is done once Helm has installed the release; the pods can take a
+# little longer to connect, which is the window the provider's retries cover.
 resource "montecarlo_generic_collection_agent" "agent" {
   deployment_id = montecarlo_deployment.agent.id
 

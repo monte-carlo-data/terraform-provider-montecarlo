@@ -1,14 +1,15 @@
-# Databricks metadata and query connections on one data lake, with credentials Monte Carlo
-# stores.
+# Databricks metadata and query connections on one data lake, with credentials
+# Monte Carlo stores.
 #
-# Databricks takes two connections: `databricks-metastore-sql-warehouse` collects metadata,
-# and `databricks-sql-warehouse` runs queries. Each has its own credentials, because each names
-# the SQL warehouse it runs on. Both go on a `data-lake` warehouse, and the query connection
-# needs the metastore connection there first.
+# Databricks takes two connections: `databricks-metastore-sql-warehouse`
+# collects metadata, and `databricks-sql-warehouse` runs queries. Each has its
+# own credentials, because each names the SQL warehouse it runs on. Both go on a
+# `data-lake` warehouse, and the query connection needs the metastore connection
+# there first.
 #
-# Both credentials authenticate the same way: a token, or an OAuth service principal. See
-# https://docs.getmontecarlo.com/docs/databricks-sql-warehouse for creating the principal and
-# granting it the access Monte Carlo needs.
+# Both credentials authenticate the same way: a token, or an OAuth service
+# principal. See https://docs.getmontecarlo.com/docs/databricks-sql-warehouse
+# for creating the principal and granting it the access Monte Carlo needs.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -23,12 +24,13 @@ terraform {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
-# `connection_type` derives the warehouse type, `data-lake`, from the first connection.
-# The `montecarlo_warehouse` example shows the deployment and agent behind `deployment_id`.
+# `connection_type` derives the warehouse type, `data-lake`, from the first
+# connection. The `montecarlo_warehouse` example shows the deployment and agent
+# behind `deployment_id`.
 resource "montecarlo_warehouse" "databricks" {
   name            = "production-databricks"
   connection_type = "databricks-metastore-sql-warehouse"
@@ -41,11 +43,11 @@ resource "montecarlo_databricks_metastore_sql_warehouse_credentials" "metadata" 
   workspace_id     = "1234567890123456"
   sql_warehouse_id = "a1b2c3d4e5f67890"
 
-  # A token. In a real configuration, pass it from a sensitive variable or a secret store rather
-  # than a literal in a committed file.
+  # A token. In a real configuration, pass it from a sensitive variable or a
+  # secret store rather than a literal in a committed file.
   #
-  # Write-only, so never stored in state or a plan. Changing it alone plans nothing: bump the
-  # version with it.
+  # Write-only, so never stored in state or a plan. Changing it alone plans
+  # nothing: bump the version with it.
   token_wo         = "..."
   token_wo_version = 1
 
@@ -54,7 +56,8 @@ resource "montecarlo_databricks_metastore_sql_warehouse_credentials" "metadata" 
   # oauth_client_secret_wo         = "..."
   # oauth_client_secret_wo_version = 1
   #
-  # For a service principal Azure manages, add both of these to the OAuth client:
+  # For a service principal Azure manages, add both of these to the OAuth
+  # client:
   # azure_tenant_id             = "00000000-0000-0000-0000-000000000000"
   # azure_workspace_resource_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Databricks/workspaces/..."
 }
@@ -65,7 +68,8 @@ resource "montecarlo_connection" "metadata" {
   credentials_id = montecarlo_databricks_metastore_sql_warehouse_credentials.metadata.id
 }
 
-# The same workspace and authentication. The SQL warehouse may differ from the metadata one.
+# The same workspace and authentication. The SQL warehouse may differ from the
+# metadata one.
 resource "montecarlo_databricks_sql_warehouse_credentials" "query" {
   workspace_url    = "adb-1234567890123456.7.azuredatabricks.net"
   workspace_id     = "1234567890123456"

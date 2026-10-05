@@ -13,13 +13,14 @@ BigQuery credentials are a service account key Monte Carlo stores for BigQuery c
 ## Example Usage
 
 ```terraform
-# A BigQuery connection with credentials Monte Carlo stores: the warehouse, a service account's
-# JSON key, and the connection that joins them.
+# A BigQuery connection with credentials Monte Carlo stores: the warehouse, a
+# service account's JSON key, and the connection that joins them.
 #
-# To keep the key in your own store instead, use one of the self-hosted credentials resources.
+# To keep the key in your own store instead, use one of the self-hosted
+# credentials resources.
 #
-# See https://docs.getmontecarlo.com/docs/bigquery for creating the service account and the
-# roles Monte Carlo needs.
+# See https://docs.getmontecarlo.com/docs/bigquery for creating the service
+# account and the roles Monte Carlo needs.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -34,11 +35,12 @@ terraform {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
-# The `montecarlo_warehouse` example shows the deployment and agent behind `deployment_id`.
+# The `montecarlo_warehouse` example shows the deployment and agent behind
+# `deployment_id`.
 resource "montecarlo_warehouse" "bigquery" {
   name          = "production-bigquery"
   type          = "bigquery"
@@ -46,11 +48,12 @@ resource "montecarlo_warehouse" "bigquery" {
 }
 
 resource "montecarlo_bigquery_credentials" "bigquery" {
-  # The key file's text. The placeholder shows the shape; in a real configuration read the
-  # file, kept out of version control, with `file("${path.module}/service_account_key.json")`.
+  # The key file's text. The placeholder shows the shape; in a real
+  # configuration read the file, kept out of version control, with
+  # `file("${path.module}/service_account_key.json")`.
   #
-  # Write-only, so never stored in state or a plan. Changing it alone plans nothing: bump the
-  # version with it.
+  # Write-only, so never stored in state or a plan. Changing it alone plans
+  # nothing: bump the version with it.
   service_account_key_wo         = <<-EOT
     {
       "type": "service_account",
@@ -62,7 +65,8 @@ resource "montecarlo_bigquery_credentials" "bigquery" {
   service_account_key_wo_version = 1
 }
 
-# The connection's type comes from the credentials, and has to fit the warehouse's type.
+# The connection's type comes from the credentials, and has to fit the
+# warehouse's type.
 resource "montecarlo_connection" "bigquery" {
   name           = "production-bigquery"
   warehouse_id   = montecarlo_warehouse.bigquery.id

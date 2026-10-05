@@ -1,12 +1,12 @@
-# A GCP data store, end to end: the deployment, the bucket and service account Monte Carlo
-# reaches, and the registration that ties them together.
+# A GCP data store, end to end: the deployment, the bucket and service account
+# Monte Carlo reaches, and the registration that ties them together.
 #
 #   https://docs.getmontecarlo.com/docs/deployment-and-connecting
 #
-# There is no published module for a data store, so the bucket, role, service account and key are
-# defined here, following Monte Carlo's template in mcd-public-resources
-# (templates/terraform/gcp_data_store). No external id on GCP, so only the registration depends
-# on the deployment.
+# There is no published module for a data store, so the bucket, role, service
+# account and key are defined here, following Monte Carlo's template in
+# mcd-public-resources (templates/terraform/gcp_data_store). No external id on
+# GCP, so only the registration depends on the deployment.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -34,8 +34,8 @@ provider "google" {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "data_store" {
@@ -44,8 +44,8 @@ resource "montecarlo_deployment" "data_store" {
   runtime_platform = "GCP"
 }
 
-# Suffixed rather than fixed: bucket names are globally unique, so a fixed one collides with
-# any other copy of this example.
+# Suffixed rather than fixed: bucket names are globally unique, so a fixed one
+# collides with any other copy of this example.
 resource "random_id" "store" {
   byte_length = 4
 }
@@ -68,8 +68,9 @@ resource "google_storage_bucket" "store" {
   public_access_prevention    = "enforced"
 }
 
-# The bucket-level reads matter as much as the object ones: the collector's storage validation
-# exercises them, so a role missing them registers and then fails validation.
+# The bucket-level reads matter as much as the object ones: the collector's
+# storage validation exercises them, so a role missing them registers and then
+# fails validation.
 resource "google_project_iam_custom_role" "store" {
   role_id = "mcdStoreRole${random_id.store.hex}"
   title   = "MCD Store Role"
@@ -99,12 +100,12 @@ resource "google_service_account_key" "store" {
   service_account_id = google_service_account.store.name
 }
 
-# The key arrives base64-encoded from the google provider; the API takes the key file's
-# contents. The registration waits for the IAM binding, not only the key: the collector
-# validates storage access during registration.
+# The key arrives base64-encoded from the google provider; the API takes the key
+# file's contents. The registration waits for the IAM binding, not only the key:
+# the collector validates storage access during registration.
 #
-# The key is write-only here, but google_service_account_key still holds it in state.
-# Replacing that key alone plans nothing here: bump the version with it.
+# The key is write-only here, but google_service_account_key still holds it in
+# state. Replacing that key alone plans nothing here: bump the version with it.
 resource "montecarlo_gcp_collection_data_store" "store" {
   deployment_id                  = montecarlo_deployment.data_store.id
   bucket_name                    = google_storage_bucket.store.name

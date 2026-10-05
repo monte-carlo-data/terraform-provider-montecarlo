@@ -1,10 +1,11 @@
-# An AWS collection agent, end to end: the deployment, the agent's infrastructure, and the
-# registration that ties them together.
+# An AWS collection agent, end to end: the deployment, the agent's
+# infrastructure, and the registration that ties them together.
 #
-# The ordering is not cosmetic. Creating the deployment generates an external id; the agent's
-# assumable role has to trust that id, so the deployment comes first, the module takes the id as
-# an input, and the registration reads the module's outputs back. Without the provider this is
-# the manual step of copying an external id out of the Monte Carlo UI.
+# The ordering is not cosmetic. Creating the deployment generates an external
+# id; the agent's assumable role has to trust that id, so the deployment comes
+# first, the module takes the id as an input, and the registration reads the
+# module's outputs back. Without the provider this is the manual step of copying
+# an external id out of the Monte Carlo UI.
 
 terraform {
   required_providers {
@@ -16,8 +17,8 @@ terraform {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "agent" {
@@ -34,7 +35,8 @@ module "mcd_agent" {
 
   region = "us-east-1"
 
-  # The external id the deployment generated. This is the dependency that forces the ordering.
+  # The external id the deployment generated. This is the dependency that forces
+  # the ordering.
   external_id = montecarlo_deployment.agent.aws_external_id
 }
 

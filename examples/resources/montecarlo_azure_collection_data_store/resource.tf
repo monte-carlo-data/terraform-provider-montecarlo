@@ -1,11 +1,12 @@
-# An Azure blob data store, end to end: the deployment, the storage account and container
-# Monte Carlo reaches, and the registration that ties them together.
+# An Azure blob data store, end to end: the deployment, the storage account and
+# container Monte Carlo reaches, and the registration that ties them together.
 #
 #   https://docs.getmontecarlo.com/docs/create-and-register-an-azure-blob-data-store
 #
-# The deployment and the storage account are independent, and only the registration depends on
-# both. Nothing has to exist before the Azure resources are built: the credential Monte Carlo
-# reaches the container with comes out of them.
+# The deployment and the storage account are independent, and only the
+# registration depends on both. Nothing has to exist before the Azure resources
+# are built: the credential Monte Carlo reaches the container with comes out of
+# them.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -32,8 +33,8 @@ provider "azurerm" {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "data_store" {
@@ -42,8 +43,9 @@ resource "montecarlo_deployment" "data_store" {
   runtime_platform = "AZURE"
 }
 
-# Storage account names are globally unique and allow no punctuation, so the suffix is random.
-# The resource group takes the same suffix, which keeps everything one apply creates together.
+# Storage account names are globally unique and allow no punctuation, so the
+# suffix is random. The resource group takes the same suffix, which keeps
+# everything one apply creates together.
 resource "random_id" "store" {
   byte_length = 4
 }
@@ -68,8 +70,8 @@ resource "azurerm_storage_account" "store" {
   infrastructure_encryption_enabled = true
 }
 
-# Monte Carlo writes query output, root-cause samples and idempotency markers under their own
-# prefixes. None of it is worth keeping longer than 90 days.
+# Monte Carlo writes query output, root-cause samples and idempotency markers
+# under their own prefixes. None of it is worth keeping longer than 90 days.
 resource "azurerm_storage_management_policy" "store" {
   storage_account_id = azurerm_storage_account.store.id
 
@@ -128,14 +130,16 @@ resource "azurerm_storage_container" "store" {
   container_access_type = "private"
 }
 
-# `authentication_type` is the discriminator, and exactly one matching credential block is
-# accepted. The connection string is the whole account's key. It is write-only here, but
-# azurerm_storage_account still holds it in state, so use a backend that encrypts state.
-# A rotated key alone plans nothing: bump the version with it.
+# `authentication_type` is the discriminator, and exactly one matching
+# credential block is accepted. The connection string is the whole account's
+# key. It is write-only here, but azurerm_storage_account still holds it in
+# state, so use a backend that encrypts state. A rotated key alone plans
+# nothing: bump the version with it.
 #
-# The alternative is AZURE_STORAGE_SERVICE_PRINCIPAL, which authenticates as an Entra ID
-# application granted `Storage Blob Data Contributor` on the account rather than sharing the
-# account key. It replaces the `storage_account_keys` block with:
+# The alternative is AZURE_STORAGE_SERVICE_PRINCIPAL, which authenticates as an
+# Entra ID application granted `Storage Blob Data Contributor` on the account
+# rather than sharing the account key. It replaces the `storage_account_keys`
+# block with:
 #
 #   service_principal = {
 #     account_name             = azurerm_storage_account.store.name
@@ -146,8 +150,9 @@ resource "azurerm_storage_container" "store" {
 #     tenant_id                = <your tenant id>
 #   }
 #
-# Registering validates storage access, so it has to wait for the lifecycle policy too — the
-# container reference alone would let it run as soon as the container existed.
+# Registering validates storage access, so it has to wait for the lifecycle
+# policy too — the container reference alone would let it run as soon as the
+# container existed.
 resource "montecarlo_azure_collection_data_store" "store" {
   deployment_id       = montecarlo_deployment.data_store.id
   authentication_type = "AZURE_STORAGE_ACCOUNT_KEYS"
