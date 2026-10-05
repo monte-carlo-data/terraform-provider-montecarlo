@@ -13,14 +13,15 @@ A GCP collection agent is a Cloud Run service in your Google Cloud project that 
 ## Example Usage
 
 ```terraform
-# A GCP collection agent, end to end: the deployment, the agent's Cloud Run service, and the
-# registration that ties them together.
+# A GCP collection agent, end to end: the deployment, the agent's Cloud Run
+# service, and the registration that ties them together.
 #
 #   https://docs.getmontecarlo.com/docs/create-and-register-a-gcp-agent
 #
-# The deployment and the module are independent, and only the registration depends on both.
-# The credential Monte Carlo authenticates with, a service account key, comes out of the module,
-# so nothing has to exist before the GCP resources are built.
+# The deployment and the module are independent, and only the registration
+# depends on both. The credential Monte Carlo authenticates with, a service
+# account key, comes out of the module, so nothing has to exist before the GCP
+# resources are built.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -44,8 +45,8 @@ provider "google" {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "agent" {
@@ -65,12 +66,13 @@ module "mcd_agent" {
   generate_key = true
 }
 
-# The module returns the key base64-encoded, as the google provider does; the API takes the
-# key file's contents. The key is write-only here, but the module still holds it in state.
-# A new key alone plans nothing: bump the version with it.
+# The module returns the key base64-encoded, as the google provider does; the
+# API takes the key file's contents. The key is write-only here, but the module
+# still holds it in state. A new key alone plans nothing: bump the version with
+# it.
 #
-# Under CUSTOM_AUTH_HEADERS, replace `service_account_key_wo` and `service_account_key_wo_version`
-# with:
+# Under CUSTOM_AUTH_HEADERS, replace `service_account_key_wo` and
+# `service_account_key_wo_version` with:
 #
 #   auth_headers = {
 #     headers_wo         = { "x-api-key" = var.agent_api_key }

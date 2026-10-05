@@ -13,16 +13,18 @@ An AWS collection data store is an S3 bucket in your AWS account where Monte Car
 ## Example Usage
 
 ```terraform
-# An AWS data store, end to end: the deployment, the bucket and role Monte Carlo reaches, and
-# the registration that ties them together.
+# An AWS data store, end to end: the deployment, the bucket and role Monte Carlo
+# reaches, and the registration that ties them together.
 #
-# Same ordering as the collection agent, and for the same reason. Creating the deployment
-# generates an external id; the role Monte Carlo assumes has to trust it, so the deployment
-# comes first and the registration reads the bucket and role back.
+# Same ordering as the collection agent, and for the same reason. Creating the
+# deployment generates an external id; the role Monte Carlo assumes has to trust
+# it, so the deployment comes first and the registration reads the bucket and
+# role back.
 #
 #   https://docs.getmontecarlo.com/docs/direct-connection-with-an-aws-data-store
 #
-# There is no published module for a data store, so the bucket and the role are defined here.
+# There is no published module for a data store, so the bucket and the role are
+# defined here.
 
 terraform {
   required_providers {
@@ -42,14 +44,14 @@ provider "aws" {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
-# The Monte Carlo account that assumes the role, which differs per Monte Carlo deployment. The
-# value below is one deployment's account and may not be yours. Take yours from the Account
-# Information page in the product, under Collection, as "AWS account ID", and substitute it
-# before applying.
+# The Monte Carlo account that assumes the role, which differs per Monte Carlo
+# deployment. The value below is one deployment's account and may not be yours.
+# Take yours from the Account Information page in the product, under Collection,
+# as "AWS account ID", and substitute it before applying.
 locals {
   mcd_account_id = "590183797493"
 }
@@ -60,8 +62,8 @@ resource "montecarlo_deployment" "data_store" {
   runtime_platform = "AWS"
 }
 
-# A prefix rather than a fixed name: bucket names are globally unique, so a fixed one collides
-# with any other copy of this example.
+# A prefix rather than a fixed name: bucket names are globally unique, so a
+# fixed one collides with any other copy of this example.
 resource "aws_s3_bucket" "store" {
   bucket_prefix = "mcd-data-store-"
 }
@@ -85,8 +87,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "store" {
   }
 }
 
-# Monte Carlo writes query output, root-cause samples and idempotency markers under their own
-# prefixes. None of it is worth keeping longer than 90 days.
+# Monte Carlo writes query output, root-cause samples and idempotency markers
+# under their own prefixes. None of it is worth keeping longer than 90 days.
 resource "aws_s3_bucket_lifecycle_configuration" "store" {
   bucket = aws_s3_bucket.store.id
 
@@ -130,7 +132,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "store" {
   }
 }
 
-# The role Monte Carlo assumes, trusting the external id the deployment generated.
+# The role Monte Carlo assumes, trusting the external id the deployment
+# generated.
 resource "aws_iam_role" "store" {
   name_prefix = "mcd-data-store-"
 
@@ -149,9 +152,9 @@ resource "aws_iam_role" "store" {
   })
 }
 
-# The bucket-level reads matter as much as the object ones. Monte Carlo validates storage
-# access when the store is registered, and a policy missing them registers and then fails
-# that validation.
+# The bucket-level reads matter as much as the object ones. Monte Carlo
+# validates storage access when the store is registered, and a policy missing
+# them registers and then fails that validation.
 resource "aws_iam_role_policy" "store" {
   name = "s3-policy"
   role = aws_iam_role.store.id
@@ -177,8 +180,9 @@ resource "aws_iam_role_policy" "store" {
   })
 }
 
-# Registering validates storage access, so it has to wait for the policy and the bucket's own
-# settings. The reference to the role's ARN alone would let it run as soon as the role existed.
+# Registering validates storage access, so it has to wait for the policy and the
+# bucket's own settings. The reference to the role's ARN alone would let it run
+# as soon as the role existed.
 resource "montecarlo_aws_collection_data_store" "store" {
   deployment_id = montecarlo_deployment.data_store.id
   bucket_name   = aws_s3_bucket.store.bucket

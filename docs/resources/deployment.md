@@ -13,11 +13,13 @@ A deployment is where a collection agent or a data store you run in your own clo
 ## Example Usage
 
 ```terraform
-# A deployment is what an agent or a data store registers onto. It comes first in every flow.
+# A deployment is what an agent or a data store registers onto. It comes first
+# in every flow.
 #
-# On AWS, creating it generates an external id that the assumable role has to trust, which is
-# why the deployment cannot be created alongside the AWS resources — they need its output. On
-# Azure there is no external id, so only the registration depends on the deployment.
+# On AWS, creating it generates an external id that the assumable role has to
+# trust, which is why the deployment cannot be created alongside the AWS
+# resources — they need its output. On Azure there is no external id, so only
+# the registration depends on the deployment.
 
 terraform {
   required_providers {
@@ -29,8 +31,8 @@ terraform {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "agent" {

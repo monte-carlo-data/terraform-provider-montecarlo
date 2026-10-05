@@ -1,15 +1,17 @@
-# An OAuth client for a generic collection agent: a client id and secret the agent exchanges for
-# short-lived access tokens on its own.
+# An OAuth client for a generic collection agent: a client id and secret the
+# agent exchanges for short-lived access tokens on its own.
 #
-# The client belongs to the deployment, not to the registered agent, so it can be minted before
-# the agent exists. The secret is returned by the create and never again, so this resource holds
-# it in state: anyone who can read the state can read the secret. Keep state in a backend that
-# encrypts it and limits who can read it. `secret_id` names that initial secret, for when the
-# client's secrets can be rotated in place. Until then, rotate by adding a second client, moving
-# the agent onto it, and removing the first.
+# The client belongs to the deployment, not to the registered agent, so it can
+# be minted before the agent exists. The secret is returned by the create and
+# never again, so this resource holds it in state: anyone who can read the state
+# can read the secret. Keep state in a backend that encrypts it and limits who
+# can read it. `secret_id` names that initial secret, for when the client's
+# secrets can be rotated in place. Until then, rotate by adding a second client,
+# moving the agent onto it, and removing the first.
 #
-# Hand the secret on through a write-only argument, as below, so it is not stored a second time.
-# A plain output, even a sensitive one, is stored in state too.
+# Hand the secret on through a write-only argument, as below, so it is not
+# stored a second time. A plain output, even a sensitive one, is stored in state
+# too.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
@@ -28,8 +30,8 @@ terraform {
 
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
-  # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # the provider documentation for the alternatives.
+  # Credentials come from the environment or from the Monte Carlo CLI's profile.
+  # See the provider documentation for the alternatives.
 }
 
 provider "aws" {
@@ -56,7 +58,8 @@ resource "aws_secretsmanager_secret" "agent_oauth" {
 
 resource "aws_secretsmanager_secret_version" "agent_oauth" {
   secret_id = aws_secretsmanager_secret.agent_oauth.id
-  # What the agent reads from its credentials file: `client_id` is the same value as `id`.
+  # What the agent reads from its credentials file: `client_id` is the same
+  # value as `id`.
   secret_string_wo = jsonencode({
     client_id     = montecarlo_generic_collection_agent_oauth_client.agent.client_id
     client_secret = montecarlo_generic_collection_agent_oauth_client.agent.client_secret
