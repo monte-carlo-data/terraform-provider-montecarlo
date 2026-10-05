@@ -1,5 +1,8 @@
 * @monte-carlo-data/apollo
 
+# Every unowned path below is one the bot may change. The auto-merge workflow
+# (.github/workflows/bot-auto-merge.yml) lists the same paths; keep the two in step.
+
 # Written by api-codegen's propagate workflow. No owner, so a bot pull request requests no
 # review. The hand-written files beside them keep theirs, and the last matching line wins.
 /internal/schema_gen/

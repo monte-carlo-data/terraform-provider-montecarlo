@@ -98,6 +98,15 @@ being pushed. The generated paths carry no code owner, so it asks nobody for rev
 still approves and merges it, and `go.mod` and `go.sum` are checked to make sure the bot changed
 nothing there but the SDK's own lines.
 
+`.github/workflows/bot-auto-merge.yml` can take the person out of that loop. It approves the
+bot's pull request and turns on auto-merge, so the merge waits only for the required checks. It
+acts only when the pull request is the bot's (by author, from a branch in this repository) and
+every changed file is a generated path. It is off until the repository variable
+`BOT_AUTO_MERGE` is `true`, which also needs "Allow auto-merge" enabled in the repository
+settings. It runs on `pull_request_target`, so it always runs as it is on `main`, and it never
+checks out the pull request's code. Keep it that way. Its list of generated paths mirrors the
+unowned paths in `CODEOWNERS`, and the two have to change together.
+
 `.api-codegen-source.json` at the root records what produced the tree: the api-codegen commit
 and run, both `tfplugingen` versions, the `mc-sdk-go` commit pinned, and the monolith export the
 spec came from. The next regeneration reads it to list what has changed since.
