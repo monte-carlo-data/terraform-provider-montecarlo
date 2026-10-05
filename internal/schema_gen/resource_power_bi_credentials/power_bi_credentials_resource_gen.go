@@ -109,6 +109,8 @@ func PowerBiCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "Power BI credentials are a Microsoft Entra ID app Monte Carlo signs in to Power BI with, as itself or as a user. The client secret or password is never returned.",
+		MarkdownDescription: "Power BI credentials are a Microsoft Entra ID app Monte Carlo signs in to Power BI with, as itself or as a user. The client secret or password is never returned.",
 	}
 }
 

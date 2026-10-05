@@ -98,6 +98,8 @@ func StarburstEnterpriseCredentialsResourceSchema(ctx context.Context) schema.Sc
 				},
 			},
 		},
+		Description:         "Starburst Enterprise credentials are the login Monte Carlo stores for Starburst Enterprise connections to use. The password is never returned.",
+		MarkdownDescription: "Starburst Enterprise credentials are the login Monte Carlo stores for Starburst Enterprise connections to use. The password is never returned.",
 	}
 }
 

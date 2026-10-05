@@ -23,7 +23,9 @@ func GenericCollectionAgentOauthClientDataSourceSchema(ctx context.Context) sche
 				MarkdownDescription: "When the credential was created.",
 			},
 			"credential_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the token or OAuth client, as returned when it is created or listed.",
+				MarkdownDescription: "Id of the token or OAuth client, as returned when it is created or listed.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
@@ -57,6 +59,8 @@ func GenericCollectionAgentOauthClientDataSourceSchema(ctx context.Context) sche
 				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
+		Description:         "An OAuth client is an OAuth 2.0 client id and secret a generic collection agent uses to authenticate to Monte Carlo. The secret is returned only when the client is created. A deployment can hold several clients, so create the new one before deleting the old one when rotating.",
+		MarkdownDescription: "An OAuth client is an OAuth 2.0 client id and secret a generic collection agent uses to authenticate to Monte Carlo. The secret is returned only when the client is created. A deployment can hold several clients, so create the new one before deleting the old one when rotating.",
 	}
 }
 

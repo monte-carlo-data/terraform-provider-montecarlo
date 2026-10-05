@@ -116,6 +116,8 @@ func MysqlCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "MySQL credentials are the login Monte Carlo stores for MySQL connections to use. The password is never returned.",
+		MarkdownDescription: "MySQL credentials are the login Monte Carlo stores for MySQL connections to use. The password is never returned.",
 	}
 }
 

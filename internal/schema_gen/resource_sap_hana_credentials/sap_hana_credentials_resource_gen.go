@@ -82,6 +82,8 @@ func SapHanaCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "SAP HANA credentials are the login Monte Carlo stores for SAP HANA connections to use. The password is never returned.",
+		MarkdownDescription: "SAP HANA credentials are the login Monte Carlo stores for SAP HANA connections to use. The password is never returned.",
 	}
 }
 

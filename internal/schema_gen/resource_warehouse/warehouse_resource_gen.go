@@ -78,6 +78,8 @@ func WarehouseResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "A warehouse groups the connections Monte Carlo uses to monitor one data platform, such as a Snowflake account or a Databricks workspace. It runs on a deployment, and every connection added to it goes through that deployment.",
+		MarkdownDescription: "A warehouse groups the connections Monte Carlo uses to monitor one data platform, such as a Snowflake account or a Databricks workspace. It runs on a deployment, and every connection added to it goes through that deployment.",
 	}
 }
 

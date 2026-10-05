@@ -18,7 +18,9 @@ func GenericCollectionAgentTokenDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "When the credential was created.",
 			},
 			"credential_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the token or OAuth client, as returned when it is created or listed.",
+				MarkdownDescription: "Id of the token or OAuth client, as returned when it is created or listed.",
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
@@ -46,6 +48,8 @@ func GenericCollectionAgentTokenDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
+		Description:         "A token is a key and secret a generic collection agent presents to Monte Carlo as `mcd_id` and `mcd_token`. The secret is returned only when the token is created. A deployment can hold several tokens, so create the new one before deleting the old one when rotating.",
+		MarkdownDescription: "A token is a key and secret a generic collection agent presents to Monte Carlo as `mcd_id` and `mcd_token`. The secret is returned only when the token is created. A deployment can hold several tokens, so create the new one before deleting the old one when rotating.",
 	}
 }
 

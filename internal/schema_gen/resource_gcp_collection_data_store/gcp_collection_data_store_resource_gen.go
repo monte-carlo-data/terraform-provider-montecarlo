@@ -82,6 +82,8 @@ func GcpCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
+		Description:         "A GCP collection data store is a Cloud Storage bucket in your Google Cloud project where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a service account key. Registering it completes a deployment provisioned for a GCP data store.",
+		MarkdownDescription: "A GCP collection data store is a Cloud Storage bucket in your Google Cloud project where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a service account key. Registering it completes a deployment provisioned for a GCP data store.",
 	}
 }
 

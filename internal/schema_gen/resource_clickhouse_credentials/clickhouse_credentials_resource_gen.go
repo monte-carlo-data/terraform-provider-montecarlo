@@ -83,6 +83,8 @@ func ClickhouseCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "ClickHouse credentials are the login Monte Carlo stores for ClickHouse connections to use. The password is never returned.",
+		MarkdownDescription: "ClickHouse credentials are the login Monte Carlo stores for ClickHouse connections to use. The password is never returned.",
 	}
 }
 

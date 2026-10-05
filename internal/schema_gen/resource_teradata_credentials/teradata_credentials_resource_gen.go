@@ -130,6 +130,8 @@ func TeradataCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "Teradata credentials are the login Monte Carlo stores for Teradata connections to use. The password is never returned.",
+		MarkdownDescription: "Teradata credentials are the login Monte Carlo stores for Teradata connections to use. The password is never returned.",
 	}
 }
 

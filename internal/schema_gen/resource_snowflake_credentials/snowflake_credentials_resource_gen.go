@@ -94,6 +94,8 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "Snowflake credentials are a key pair Monte Carlo stores for Snowflake connections to use. The private key is never returned.",
+		MarkdownDescription: "Snowflake credentials are a key pair Monte Carlo stores for Snowflake connections to use. The private key is never returned.",
 	}
 }
 

@@ -22,8 +22,8 @@ func BiContainerDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The deployment the container's connections run through. Null for a custom BI connector's container, which has none. The id may name a deployment on Monte Carlo's older collection platform. The deployments endpoints do not list those.",
-				MarkdownDescription: "The deployment the container's connections run through. Null for a custom BI connector's container, which has none. The id may name a deployment on Monte Carlo's older collection platform. The deployments endpoints do not list those.",
+				Description:         "The deployment the container's connections run through. Null for a container with no deployment, such as a push-only custom BI connector's. The id may name a deployment on Monte Carlo's older collection platform. The deployments endpoints do not list those.",
+				MarkdownDescription: "The deployment the container's connections run through. Null for a container with no deployment, such as a push-only custom BI connector's. The id may name a deployment on Monte Carlo's older collection platform. The deployments endpoints do not list those.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
@@ -46,6 +46,8 @@ func BiContainerDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The BI tool the container represents. Fixed once created.",
 			},
 		},
+		Description:         "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.",
+		MarkdownDescription: "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.",
 	}
 }
 

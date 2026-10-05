@@ -28,7 +28,9 @@ func BigqueryCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -46,6 +48,8 @@ func BigqueryCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "BigQuery credentials are a service account key Monte Carlo stores for BigQuery connections to use. The key is never returned.",
+		MarkdownDescription: "BigQuery credentials are a service account key Monte Carlo stores for BigQuery connections to use. The key is never returned.",
 	}
 }
 

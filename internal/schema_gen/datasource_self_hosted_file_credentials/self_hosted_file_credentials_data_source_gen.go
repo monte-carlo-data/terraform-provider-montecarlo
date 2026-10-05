@@ -28,7 +28,9 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"file_path": schema.StringAttribute{
 				Computed:            true,
@@ -51,6 +53,8 @@ func SelfHostedFileCredentialsDataSourceSchema(ctx context.Context) schema.Schem
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "File credentials name the file on your deployment that holds a connection's credentials. Monte Carlo stores the path, not the contents.",
+		MarkdownDescription: "File credentials name the file on your deployment that holds a connection's credentials. Monte Carlo stores the path, not the contents.",
 	}
 }
 

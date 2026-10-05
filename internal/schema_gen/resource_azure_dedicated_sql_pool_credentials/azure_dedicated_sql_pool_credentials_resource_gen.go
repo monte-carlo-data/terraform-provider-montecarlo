@@ -82,6 +82,8 @@ func AzureDedicatedSqlPoolCredentialsResourceSchema(ctx context.Context) schema.
 				},
 			},
 		},
+		Description:         "Azure Dedicated SQL Pool credentials are the login Monte Carlo stores for Azure Dedicated SQL Pool connections to use. The password is never returned.",
+		MarkdownDescription: "Azure Dedicated SQL Pool credentials are the login Monte Carlo stores for Azure Dedicated SQL Pool connections to use. The password is never returned.",
 	}
 }
 

@@ -88,6 +88,8 @@ func AwsCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "An AWS collection agent is a Lambda function in your AWS account that collects from warehouses inside your network. Monte Carlo invokes it by assuming a role you create. Registering it completes a deployment provisioned for an AWS agent.",
+		MarkdownDescription: "An AWS collection agent is a Lambda function in your AWS account that collects from warehouses inside your network. Monte Carlo invokes it by assuming a role you create. Registering it completes a deployment provisioned for an AWS agent.",
 	}
 }
 

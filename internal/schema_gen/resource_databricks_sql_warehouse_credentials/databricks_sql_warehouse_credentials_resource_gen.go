@@ -125,6 +125,8 @@ func DatabricksSqlWarehouseCredentialsResourceSchema(ctx context.Context) schema
 				},
 			},
 		},
+		Description:         "Databricks SQL warehouse credentials are a token or OAuth client Monte Carlo stores to run queries on a SQL warehouse. The token or OAuth secret is never returned.",
+		MarkdownDescription: "Databricks SQL warehouse credentials are a token or OAuth client Monte Carlo stores to run queries on a SQL warehouse. The token or OAuth secret is never returned.",
 	}
 }
 

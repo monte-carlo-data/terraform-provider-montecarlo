@@ -91,6 +91,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
 			},
 		},
+		Description:         "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
+		MarkdownDescription: "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
 	}
 }
 

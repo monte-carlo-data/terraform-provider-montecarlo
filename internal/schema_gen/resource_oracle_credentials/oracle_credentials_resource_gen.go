@@ -115,6 +115,8 @@ func OracleCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "Oracle credentials are the login Monte Carlo stores for Oracle connections to use. The password is never returned.",
+		MarkdownDescription: "Oracle credentials are the login Monte Carlo stores for Oracle connections to use. The password is never returned.",
 	}
 }
 

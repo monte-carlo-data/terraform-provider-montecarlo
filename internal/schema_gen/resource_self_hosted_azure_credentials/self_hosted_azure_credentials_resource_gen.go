@@ -82,6 +82,8 @@ func SelfHostedAzureCredentialsResourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "Azure Key Vault credentials point a connection at a secret in your Azure Key Vault. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
+		MarkdownDescription: "Azure Key Vault credentials point a connection at a secret in your Azure Key Vault. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
 	}
 }
 

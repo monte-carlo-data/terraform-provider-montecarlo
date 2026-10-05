@@ -105,6 +105,8 @@ func LookerGitCloneCredentialsResourceSchema(ctx context.Context) schema.Schema 
 				},
 			},
 		},
+		Description:         "LookML repository credentials are an HTTPS token or an SSH key Monte Carlo stores to clone the repository behind a Looker instance. The token or key is never returned.",
+		MarkdownDescription: "LookML repository credentials are an HTTPS token or an SSH key Monte Carlo stores to clone the repository behind a Looker instance. The token or key is never returned.",
 	}
 }
 

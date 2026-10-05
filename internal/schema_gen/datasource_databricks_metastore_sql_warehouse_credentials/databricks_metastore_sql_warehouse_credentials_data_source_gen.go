@@ -33,7 +33,9 @@ func DatabricksMetastoreSqlWarehouseCredentialsDataSourceSchema(ctx context.Cont
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -66,6 +68,8 @@ func DatabricksMetastoreSqlWarehouseCredentialsDataSourceSchema(ctx context.Cont
 				MarkdownDescription: "URL of the Databricks workspace, or its host name.",
 			},
 		},
+		Description:         "Databricks metastore credentials are a token or OAuth client Monte Carlo stores to collect metadata through a SQL warehouse. A data-lake warehouse needs a connection with these before it can take a Databricks SQL warehouse connection. The token or OAuth secret is never returned.",
+		MarkdownDescription: "Databricks metastore credentials are a token or OAuth client Monte Carlo stores to collect metadata through a SQL warehouse. A data-lake warehouse needs a connection with these before it can take a Databricks SQL warehouse connection. The token or OAuth secret is never returned.",
 	}
 }
 

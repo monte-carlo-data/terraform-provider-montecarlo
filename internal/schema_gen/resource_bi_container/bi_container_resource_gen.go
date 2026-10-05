@@ -55,6 +55,8 @@ func BiContainerResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.",
+		MarkdownDescription: "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.",
 	}
 }
 

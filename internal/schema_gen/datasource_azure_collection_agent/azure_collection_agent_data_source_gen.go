@@ -18,7 +18,9 @@ func AzureCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "How Monte Carlo authenticates when it calls the collection agent. Null for an agent that connects out instead, such as a generic one.",
 			},
 			"collection_agent_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection agent, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection agent, as returned when it is registered or listed.",
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
@@ -71,6 +73,8 @@ func AzureCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of the collection agent. Null when it has no name.",
 			},
 		},
+		Description:         "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.",
+		MarkdownDescription: "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.",
 	}
 }
 

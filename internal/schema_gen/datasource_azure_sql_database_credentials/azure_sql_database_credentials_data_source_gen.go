@@ -23,7 +23,9 @@ func AzureSqlDatabaseCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"db_name": schema.StringAttribute{
 				Computed:            true,
@@ -56,6 +58,8 @@ func AzureSqlDatabaseCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "Database user Monte Carlo logs in as.",
 			},
 		},
+		Description:         "Azure SQL Database credentials are the login Monte Carlo stores for Azure SQL Database connections to use. The password is never returned.",
+		MarkdownDescription: "Azure SQL Database credentials are the login Monte Carlo stores for Azure SQL Database connections to use. The password is never returned.",
 	}
 }
 

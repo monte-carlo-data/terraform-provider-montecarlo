@@ -73,6 +73,8 @@ func SelfHostedEnvVarCredentialsResourceSchema(ctx context.Context) schema.Schem
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "Environment variable credentials name the environment variable on your deployment that holds a connection's credentials. Monte Carlo stores the name, not the value.",
+		MarkdownDescription: "Environment variable credentials name the environment variable on your deployment that holds a connection's credentials. Monte Carlo stores the name, not the value.",
 	}
 }
 

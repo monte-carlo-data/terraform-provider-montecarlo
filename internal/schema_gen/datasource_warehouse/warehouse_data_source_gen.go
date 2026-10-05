@@ -38,9 +38,13 @@ func WarehouseDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "The kind of data platform the warehouse represents. Fixed once created.",
 			},
 			"warehouse_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the warehouse, as returned when it is created or listed.",
+				MarkdownDescription: "Id of the warehouse, as returned when it is created or listed.",
 			},
 		},
+		Description:         "A warehouse groups the connections Monte Carlo uses to monitor one data platform, such as a Snowflake account or a Databricks workspace. It runs on a deployment, and every connection added to it goes through that deployment.",
+		MarkdownDescription: "A warehouse groups the connections Monte Carlo uses to monitor one data platform, such as a Snowflake account or a Databricks workspace. It runs on a deployment, and every connection added to it goes through that deployment.",
 	}
 }
 

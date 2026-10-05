@@ -23,7 +23,9 @@ func GcpCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "URL of the Cloud Run service Monte Carlo calls. Empty until the agent has been registered.",
 			},
 			"collection_agent_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection agent, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection agent, as returned when it is registered or listed.",
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
@@ -71,6 +73,8 @@ func GcpCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of the collection agent. Null when it has no name.",
 			},
 		},
+		Description:         "A GCP collection agent is a Cloud Run service in your Google Cloud project that collects from warehouses inside your network. Monte Carlo calls it with a service account key or auth headers. Registering it completes a deployment provisioned for a GCP agent.",
+		MarkdownDescription: "A GCP collection agent is a Cloud Run service in your Google Cloud project that collects from warehouses inside your network. Monte Carlo calls it with a service account key or auth headers. Registering it completes a deployment provisioned for a GCP agent.",
 	}
 }
 

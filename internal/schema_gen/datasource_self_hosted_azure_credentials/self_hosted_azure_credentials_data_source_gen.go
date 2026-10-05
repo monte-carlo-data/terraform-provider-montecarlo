@@ -43,7 +43,9 @@ func SelfHostedAzureCredentialsDataSourceSchema(ctx context.Context) schema.Sche
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -61,6 +63,8 @@ func SelfHostedAzureCredentialsDataSourceSchema(ctx context.Context) schema.Sche
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "Azure Key Vault credentials point a connection at a secret in your Azure Key Vault. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
+		MarkdownDescription: "Azure Key Vault credentials point a connection at a secret in your Azure Key Vault. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
 	}
 }
 

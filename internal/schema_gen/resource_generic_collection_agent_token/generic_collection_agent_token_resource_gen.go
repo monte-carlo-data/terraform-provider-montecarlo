@@ -55,6 +55,8 @@ func GenericCollectionAgentTokenResourceSchema(ctx context.Context) schema.Schem
 				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
+		Description:         "A token is a key and secret a generic collection agent presents to Monte Carlo as `mcd_id` and `mcd_token`. The secret is returned only when the token is created. A deployment can hold several tokens, so create the new one before deleting the old one when rotating.",
+		MarkdownDescription: "A token is a key and secret a generic collection agent presents to Monte Carlo as `mcd_id` and `mcd_token`. The secret is returned only when the token is created. A deployment can hold several tokens, so create the new one before deleting the old one when rotating.",
 	}
 }
 

@@ -124,6 +124,8 @@ func DatabricksMetastoreSqlWarehouseCredentialsResourceSchema(ctx context.Contex
 				},
 			},
 		},
+		Description:         "Databricks metastore credentials are a token or OAuth client Monte Carlo stores to collect metadata through a SQL warehouse. A data-lake warehouse needs a connection with these before it can take a Databricks SQL warehouse connection. The token or OAuth secret is never returned.",
+		MarkdownDescription: "Databricks metastore credentials are a token or OAuth client Monte Carlo stores to collect metadata through a SQL warehouse. A data-lake warehouse needs a connection with these before it can take a Databricks SQL warehouse connection. The token or OAuth secret is never returned.",
 	}
 }
 

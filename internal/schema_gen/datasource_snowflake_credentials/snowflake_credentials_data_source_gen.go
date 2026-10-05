@@ -28,7 +28,9 @@ func SnowflakeCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -51,6 +53,8 @@ func SnowflakeCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Snowflake virtual warehouse queries run in. Null when none is set.",
 			},
 		},
+		Description:         "Snowflake credentials are a key pair Monte Carlo stores for Snowflake connections to use. The private key is never returned.",
+		MarkdownDescription: "Snowflake credentials are a key pair Monte Carlo stores for Snowflake connections to use. The private key is never returned.",
 	}
 }
 

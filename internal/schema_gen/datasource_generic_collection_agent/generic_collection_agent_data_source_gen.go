@@ -18,7 +18,9 @@ func GenericCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "How Monte Carlo authenticates when it calls the collection agent. Null for an agent that connects out instead, such as a generic one.",
 			},
 			"collection_agent_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection agent, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection agent, as returned when it is registered or listed.",
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
@@ -66,6 +68,8 @@ func GenericCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of the collection agent. Null when it has no name.",
 			},
 		},
+		Description:         "A generic collection agent runs anywhere you choose and connects out to Monte Carlo with a token or an OAuth client. Registering it enables a deployment provisioned for a generic agent, once the agent has connected.",
+		MarkdownDescription: "A generic collection agent runs anywhere you choose and connects out to Monte Carlo with a token or an OAuth client. Registering it enables a deployment provisioned for a generic agent, once the agent has connected.",
 	}
 }
 

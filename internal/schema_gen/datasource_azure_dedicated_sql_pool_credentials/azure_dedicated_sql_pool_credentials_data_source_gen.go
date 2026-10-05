@@ -23,7 +23,9 @@ func AzureDedicatedSqlPoolCredentialsDataSourceSchema(ctx context.Context) schem
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"db_name": schema.StringAttribute{
 				Computed:            true,
@@ -56,6 +58,8 @@ func AzureDedicatedSqlPoolCredentialsDataSourceSchema(ctx context.Context) schem
 				MarkdownDescription: "Database user Monte Carlo logs in as.",
 			},
 		},
+		Description:         "Azure Dedicated SQL Pool credentials are the login Monte Carlo stores for Azure Dedicated SQL Pool connections to use. The password is never returned.",
+		MarkdownDescription: "Azure Dedicated SQL Pool credentials are the login Monte Carlo stores for Azure Dedicated SQL Pool connections to use. The password is never returned.",
 	}
 }
 
