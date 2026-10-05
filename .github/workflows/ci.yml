@@ -23,11 +23,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - uses: ./.github/actions/private-sdk
-        with:
-          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
-          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
-
       - name: Build
         run: go build ./...
 
@@ -83,11 +78,6 @@ jobs:
             ~/go/pkg/mod
           key: release-snapshot-${{ runner.os }}-${{ hashFiles('go.mod', 'go.sum') }}
           restore-keys: release-snapshot-${{ runner.os }}-
-
-      - uses: ./.github/actions/private-sdk
-        with:
-          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
-          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
 
       # A throwaway key, so the snapshot exercises the signing config the release uses.
       - name: Throwaway signing key

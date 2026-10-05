@@ -179,17 +179,11 @@ Releases stay `0.x` while the provider is in beta.
 
 ### Still outstanding before the first release
 
-- **The Go SDK this provider depends on must be public and tagged.** `go.mod` pins it to a
-  pseudo-version because it has no tags. If it is still private when this repository goes
-  public, `go build ./...` fails for every outside contributor and for any registry build from
-  source — so this is a hard precondition, not a nice-to-have. Publish it, tag it, and replace
-  the pseudo-version with the tag. Then delete `.github/actions/private-sdk` and every step that
-  uses it. Until then the pin is only as durable as the commit it names:
-  an upstream squash merge or history rewrite orphans that commit, and because the module
-  resolves directly from git rather than through a proxy, every clean clone and every CI run
-  then fails at module download. A green local build does not disprove it — the module cache
-  still holds the orphaned version — so after any upstream merge, confirm the pinned commit is
-  still reachable from the SDK's default branch and re-pin if it is not.
+- **The Go SDK this provider depends on must be tagged.** It is public, but `go.mod` pins it to
+  a pseudo-version because it has no tags. Tag it and replace the pseudo-version with the tag.
+  Until then the pin is only as durable as the commit it names, though the public module proxy
+  keeps serving any version it has already fetched, so a commit an upstream squash merge or
+  history rewrite orphans still resolves once fetched.
 
   Moving the pin means regenerating, not `go get`. The SDK and the files under
   `internal/provider/` come from one spec export and move together. A constructor's parameters
