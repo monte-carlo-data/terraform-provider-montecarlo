@@ -115,6 +115,8 @@ func RedshiftCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "Redshift credentials are the login Monte Carlo stores for Redshift connections to use. The password is never returned.",
+		MarkdownDescription: "Redshift credentials are the login Monte Carlo stores for Redshift connections to use. The password is never returned.",
 	}
 }
 

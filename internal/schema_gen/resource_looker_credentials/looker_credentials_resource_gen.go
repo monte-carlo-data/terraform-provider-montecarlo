@@ -71,6 +71,8 @@ func LookerCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Whether to verify Looker's TLS certificate. Verified when left out.",
 			},
 		},
+		Description:         "Looker credentials are an API key Monte Carlo stores for Looker connections to use. The client secret is never returned.",
+		MarkdownDescription: "Looker credentials are an API key Monte Carlo stores for Looker connections to use. The client secret is never returned.",
 	}
 }
 

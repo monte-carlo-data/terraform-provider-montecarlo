@@ -28,7 +28,9 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"env_var_name": schema.StringAttribute{
 				Computed:            true,
@@ -56,6 +58,8 @@ func SelfHostedEnvVarCredentialsDataSourceSchema(ctx context.Context) schema.Sch
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "Environment variable credentials name the environment variable on your deployment that holds a connection's credentials. Monte Carlo stores the name, not the value.",
+		MarkdownDescription: "Environment variable credentials name the environment variable on your deployment that holds a connection's credentials. Monte Carlo stores the name, not the value.",
 	}
 }
 

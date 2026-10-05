@@ -150,6 +150,8 @@ func AzureCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
+		Description:         "An Azure collection data store is a Blob Storage container in your Azure subscription where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a connection string or a service principal. Registering it completes a deployment provisioned for an Azure data store.",
+		MarkdownDescription: "An Azure collection data store is a Blob Storage container in your Azure subscription where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a connection string or a service principal. Registering it completes a deployment provisioned for an Azure data store.",
 	}
 }
 

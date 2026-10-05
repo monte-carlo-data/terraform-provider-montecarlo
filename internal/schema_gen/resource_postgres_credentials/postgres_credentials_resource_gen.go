@@ -121,6 +121,8 @@ func PostgresCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "PostgreSQL credentials are the login Monte Carlo stores for PostgreSQL connections to use. The password is never returned.",
+		MarkdownDescription: "PostgreSQL credentials are the login Monte Carlo stores for PostgreSQL connections to use. The password is never returned.",
 	}
 }
 

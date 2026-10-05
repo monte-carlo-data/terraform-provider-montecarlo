@@ -77,6 +77,8 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created.",
+		MarkdownDescription: "A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created.",
 	}
 }
 

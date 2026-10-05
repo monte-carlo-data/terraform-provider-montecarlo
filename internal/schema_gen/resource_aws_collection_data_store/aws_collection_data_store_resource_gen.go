@@ -81,6 +81,8 @@ func AwsCollectionDataStoreResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
+		Description:         "An AWS collection data store is an S3 bucket in your AWS account where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it by assuming a role you create. Registering it completes a deployment provisioned for an AWS data store.",
+		MarkdownDescription: "An AWS collection data store is an S3 bucket in your AWS account where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it by assuming a role you create. Registering it completes a deployment provisioned for an AWS data store.",
 	}
 }
 

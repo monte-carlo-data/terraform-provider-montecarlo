@@ -81,6 +81,8 @@ func GenericCollectionAgentOauthClientResourceSchema(ctx context.Context) schema
 				MarkdownDescription: "Which kind of credential this is.",
 			},
 		},
+		Description:         "An OAuth client is an OAuth 2.0 client id and secret a generic collection agent uses to authenticate to Monte Carlo. The secret is returned only when the client is created. A deployment can hold several clients, so create the new one before deleting the old one when rotating.",
+		MarkdownDescription: "An OAuth client is an OAuth 2.0 client id and secret a generic collection agent uses to authenticate to Monte Carlo. The secret is returned only when the client is created. A deployment can hold several clients, so create the new one before deleting the old one when rotating.",
 	}
 }
 

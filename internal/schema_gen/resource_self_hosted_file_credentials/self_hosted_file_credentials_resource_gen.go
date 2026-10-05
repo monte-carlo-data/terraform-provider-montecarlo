@@ -64,6 +64,8 @@ func SelfHostedFileCredentialsResourceSchema(ctx context.Context) schema.Schema 
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "File credentials name the file on your deployment that holds a connection's credentials. Monte Carlo stores the path, not the contents.",
+		MarkdownDescription: "File credentials name the file on your deployment that holds a connection's credentials. Monte Carlo stores the path, not the contents.",
 	}
 }
 

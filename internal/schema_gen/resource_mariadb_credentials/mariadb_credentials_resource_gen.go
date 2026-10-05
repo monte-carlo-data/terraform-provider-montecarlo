@@ -83,6 +83,8 @@ func MariadbCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "MariaDB credentials are the login Monte Carlo stores for MariaDB connections to use. The password is never returned.",
+		MarkdownDescription: "MariaDB credentials are the login Monte Carlo stores for MariaDB connections to use. The password is never returned.",
 	}
 }
 

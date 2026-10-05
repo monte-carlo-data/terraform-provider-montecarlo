@@ -69,6 +69,8 @@ func GenericCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "A generic collection agent runs anywhere you choose and connects out to Monte Carlo with a token or an OAuth client. Registering it enables a deployment provisioned for a generic agent, once the agent has connected.",
+		MarkdownDescription: "A generic collection agent runs anywhere you choose and connects out to Monte Carlo with a token or an OAuth client. Registering it enables a deployment provisioned for a generic agent, once the agent has connected.",
 	}
 }
 

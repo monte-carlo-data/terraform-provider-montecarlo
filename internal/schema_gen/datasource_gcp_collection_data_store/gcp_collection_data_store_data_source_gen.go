@@ -23,7 +23,9 @@ func GcpCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Name of the Cloud Storage bucket Monte Carlo uses. Empty until it has been registered.",
 			},
 			"collection_data_store_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection data store, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection data store, as returned when it is registered or listed.",
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
@@ -61,6 +63,8 @@ func GcpCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
+		Description:         "A GCP collection data store is a Cloud Storage bucket in your Google Cloud project where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a service account key. Registering it completes a deployment provisioned for a GCP data store.",
+		MarkdownDescription: "A GCP collection data store is a Cloud Storage bucket in your Google Cloud project where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a service account key. Registering it completes a deployment provisioned for a GCP data store.",
 	}
 }
 

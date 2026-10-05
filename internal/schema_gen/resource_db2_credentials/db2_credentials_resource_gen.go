@@ -98,6 +98,8 @@ func Db2CredentialsResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "Db2 credentials are the login Monte Carlo stores for Db2 connections to use. The password is never returned.",
+		MarkdownDescription: "Db2 credentials are the login Monte Carlo stores for Db2 connections to use. The password is never returned.",
 	}
 }
 

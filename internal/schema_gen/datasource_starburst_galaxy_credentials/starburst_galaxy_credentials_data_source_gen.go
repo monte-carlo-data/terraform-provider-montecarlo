@@ -23,7 +23,9 @@ func StarburstGalaxyCredentialsDataSourceSchema(ctx context.Context) schema.Sche
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"db_name": schema.StringAttribute{
 				Computed:            true,
@@ -56,6 +58,8 @@ func StarburstGalaxyCredentialsDataSourceSchema(ctx context.Context) schema.Sche
 				MarkdownDescription: "Database user Monte Carlo logs in as.",
 			},
 		},
+		Description:         "Starburst Galaxy credentials are the login Monte Carlo stores for Starburst Galaxy connections to use. The password is never returned.",
+		MarkdownDescription: "Starburst Galaxy credentials are the login Monte Carlo stores for Starburst Galaxy connections to use. The password is never returned.",
 	}
 }
 

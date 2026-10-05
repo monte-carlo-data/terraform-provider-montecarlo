@@ -71,6 +71,8 @@ func TableauCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Whether to verify the server's TLS certificate. Verified when left out. Null unless set.",
 			},
 		},
+		Description:         "Tableau credentials are a password, a personal access token or a connected app Monte Carlo stores for Tableau connections to use. The secret is never returned.",
+		MarkdownDescription: "Tableau credentials are a password, a personal access token or a connected app Monte Carlo stores for Tableau connections to use. The secret is never returned.",
 	}
 }
 

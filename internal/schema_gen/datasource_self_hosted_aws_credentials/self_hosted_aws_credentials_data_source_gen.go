@@ -43,7 +43,9 @@ func SelfHostedAwsCredentialsDataSourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"external_id": schema.StringAttribute{
 				Computed:            true,
@@ -66,6 +68,8 @@ func SelfHostedAwsCredentialsDataSourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "AWS Secrets Manager credentials point a connection at a secret in your AWS Secrets Manager. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
+		MarkdownDescription: "AWS Secrets Manager credentials point a connection at a secret in your AWS Secrets Manager. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
 	}
 }
 

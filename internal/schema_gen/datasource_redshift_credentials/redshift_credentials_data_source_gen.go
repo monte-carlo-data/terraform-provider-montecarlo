@@ -23,7 +23,9 @@ func RedshiftCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"db_name": schema.StringAttribute{
 				Computed:            true,
@@ -81,6 +83,8 @@ func RedshiftCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Database user Monte Carlo logs in as.",
 			},
 		},
+		Description:         "Redshift credentials are the login Monte Carlo stores for Redshift connections to use. The password is never returned.",
+		MarkdownDescription: "Redshift credentials are the login Monte Carlo stores for Redshift connections to use. The password is never returned.",
 	}
 }
 

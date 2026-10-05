@@ -64,6 +64,8 @@ func SelfHostedGcpCredentialsResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Where the secret lives. Fixed once created.",
 			},
 		},
+		Description:         "GCP Secret Manager credentials point a connection at a secret in your GCP Secret Manager. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
+		MarkdownDescription: "GCP Secret Manager credentials point a connection at a secret in your GCP Secret Manager. Monte Carlo stores the reference, not the secret, and reads the secret each time the connection is used.",
 	}
 }
 

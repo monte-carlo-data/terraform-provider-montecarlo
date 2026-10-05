@@ -56,6 +56,8 @@ func PowerBiCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "User Monte Carlo signs in as. Null unless set.",
 			},
 		},
+		Description:         "Power BI credentials are a Microsoft Entra ID app Monte Carlo signs in to Power BI with, as itself or as a user. The client secret or password is never returned.",
+		MarkdownDescription: "Power BI credentials are a Microsoft Entra ID app Monte Carlo signs in to Power BI with, as itself or as a user. The client secret or password is never returned.",
 	}
 }
 

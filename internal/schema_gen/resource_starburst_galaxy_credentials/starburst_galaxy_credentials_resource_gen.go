@@ -83,6 +83,8 @@ func StarburstGalaxyCredentialsResourceSchema(ctx context.Context) schema.Schema
 				},
 			},
 		},
+		Description:         "Starburst Galaxy credentials are the login Monte Carlo stores for Starburst Galaxy connections to use. The password is never returned.",
+		MarkdownDescription: "Starburst Galaxy credentials are the login Monte Carlo stores for Starburst Galaxy connections to use. The password is never returned.",
 	}
 }
 

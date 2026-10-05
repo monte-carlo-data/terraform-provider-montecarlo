@@ -33,7 +33,9 @@ func DatabricksSqlWarehouseCredentialsDataSourceSchema(ctx context.Context) sche
 				MarkdownDescription: "When the credentials were created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the credentials, as returned when they are created or listed.",
+				MarkdownDescription: "Id of the credentials, as returned when they are created or listed.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -66,6 +68,8 @@ func DatabricksSqlWarehouseCredentialsDataSourceSchema(ctx context.Context) sche
 				MarkdownDescription: "URL of the Databricks workspace, or its host name.",
 			},
 		},
+		Description:         "Databricks SQL warehouse credentials are a token or OAuth client Monte Carlo stores to run queries on a SQL warehouse. The token or OAuth secret is never returned.",
+		MarkdownDescription: "Databricks SQL warehouse credentials are a token or OAuth client Monte Carlo stores to run queries on a SQL warehouse. The token or OAuth secret is never returned.",
 	}
 }
 

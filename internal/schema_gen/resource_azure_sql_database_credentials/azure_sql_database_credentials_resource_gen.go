@@ -82,6 +82,8 @@ func AzureSqlDatabaseCredentialsResourceSchema(ctx context.Context) schema.Schem
 				},
 			},
 		},
+		Description:         "Azure SQL Database credentials are the login Monte Carlo stores for Azure SQL Database connections to use. The password is never returned.",
+		MarkdownDescription: "Azure SQL Database credentials are the login Monte Carlo stores for Azure SQL Database connections to use. The password is never returned.",
 	}
 }
 

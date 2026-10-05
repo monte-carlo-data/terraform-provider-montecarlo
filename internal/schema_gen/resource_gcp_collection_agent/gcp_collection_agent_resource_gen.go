@@ -134,6 +134,8 @@ func GcpCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 		},
+		Description:         "A GCP collection agent is a Cloud Run service in your Google Cloud project that collects from warehouses inside your network. Monte Carlo calls it with a service account key or auth headers. Registering it completes a deployment provisioned for a GCP agent.",
+		MarkdownDescription: "A GCP collection agent is a Cloud Run service in your Google Cloud project that collects from warehouses inside your network. Monte Carlo calls it with a service account key or auth headers. Registering it completes a deployment provisioned for a GCP agent.",
 	}
 }
 

@@ -23,7 +23,9 @@ func AwsCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Name of the S3 bucket Monte Carlo uses. Empty until it has been registered.",
 			},
 			"collection_data_store_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection data store, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection data store, as returned when it is registered or listed.",
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
@@ -66,6 +68,8 @@ func AwsCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
+		Description:         "An AWS collection data store is an S3 bucket in your AWS account where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it by assuming a role you create. Registering it completes a deployment provisioned for an AWS data store.",
+		MarkdownDescription: "An AWS collection data store is an S3 bucket in your AWS account where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it by assuming a role you create. Registering it completes a deployment provisioned for an AWS data store.",
 	}
 }
 

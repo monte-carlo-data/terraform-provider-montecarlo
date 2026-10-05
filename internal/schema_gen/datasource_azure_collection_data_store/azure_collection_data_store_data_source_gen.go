@@ -18,7 +18,9 @@ func AzureCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "How Monte Carlo authenticates when it reaches the data store.",
 			},
 			"collection_data_store_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection data store, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection data store, as returned when it is registered or listed.",
 			},
 			"container_name": schema.StringAttribute{
 				Computed:            true,
@@ -61,6 +63,8 @@ func AzureCollectionDataStoreDataSourceSchema(ctx context.Context) schema.Schema
 				MarkdownDescription: "Which kind of storage the data store keeps its data in.",
 			},
 		},
+		Description:         "An Azure collection data store is a Blob Storage container in your Azure subscription where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a connection string or a service principal. Registering it completes a deployment provisioned for an Azure data store.",
+		MarkdownDescription: "An Azure collection data store is a Blob Storage container in your Azure subscription where Monte Carlo keeps your account's query results, samples and temporary data, so they stay in your storage. Monte Carlo accesses it with a connection string or a service principal. Registering it completes a deployment provisioned for an Azure data store.",
 	}
 }
 

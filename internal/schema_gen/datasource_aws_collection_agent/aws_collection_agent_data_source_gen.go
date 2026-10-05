@@ -18,7 +18,9 @@ func AwsCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "How Monte Carlo authenticates when it calls the collection agent. Null for an agent that connects out instead, such as a generic one.",
 			},
 			"collection_agent_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the collection agent, as returned when it is registered or listed.",
+				MarkdownDescription: "Id of the collection agent, as returned when it is registered or listed.",
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
@@ -76,6 +78,8 @@ func AwsCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of the collection agent. Null when it has no name.",
 			},
 		},
+		Description:         "An AWS collection agent is a Lambda function in your AWS account that collects from warehouses inside your network. Monte Carlo invokes it by assuming a role you create. Registering it completes a deployment provisioned for an AWS agent.",
+		MarkdownDescription: "An AWS collection agent is a Lambda function in your AWS account that collects from warehouses inside your network. Monte Carlo invokes it by assuming a role you create. Registering it completes a deployment provisioned for an AWS agent.",
 	}
 }
 

@@ -23,7 +23,9 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
 			},
 			"connection_id": schema.StringAttribute{
-				Required: true,
+				Required:            true,
+				Description:         "Id of the connection, as returned when it is created or listed.",
+				MarkdownDescription: "Id of the connection, as returned when it is created or listed.",
 			},
 			"connection_type": schema.StringAttribute{
 				Computed:            true,
@@ -82,6 +84,8 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
 			},
 		},
+		Description:         "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
+		MarkdownDescription: "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
 	}
 }
 
