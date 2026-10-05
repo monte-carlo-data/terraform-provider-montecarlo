@@ -44,7 +44,7 @@ go build ./...      # compile check only — it produces no binary, see below
 go test ./...
 go vet ./...
 gofmt -l .          # must be empty
-go generate ./...   # regenerates docs/; builds the provider and runs Terraform
+go generate ./...   # regenerates docs/ and THIRD_PARTY_NOTICES; builds the provider and runs Terraform
 
 go build -o . .     # writes ./terraform-provider-montecarlo, which dev_overrides needs
 
@@ -61,6 +61,7 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `examples/` | Worked configurations, which double as registry documentation |
 | `templates/` | Registry page templates; only the index page has one |
 | `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
+| `tools/notices/` | Generates `THIRD_PARTY_NOTICES` — see [Third-party notices](#third-party-notices) |
 
 ## What is generated
 
@@ -80,7 +81,8 @@ matches those patterns, is therefore lost on the next regeneration, and the loss
 deletion nobody made. Hand-written code in `internal/provider/` has to be named so it falls
 outside the patterns, as `helpers.go` and `helpers_test.go` do.
 
-Hand-written: `main.go`, the helpers the generated code calls, the examples and the templates.
+Hand-written: `main.go`, the helpers the generated code calls, `tools/`, the examples and the
+templates.
 
 ## Registry documentation
 
@@ -89,6 +91,14 @@ The registry renders `docs/` as committed; it does not read the schema. `go gene
 schemas for every attribute description, `examples/` for each page's example, and `templates/`
 for the index page, which adds the beta notice. Never edit `docs/` by hand. Change an input and
 regenerate. CI fails when `docs/` differs from what `go generate` produces.
+
+## Third-party notices
+
+The release binaries compile in third-party modules, and their licenses require passing on
+their license and notice files. `THIRD_PARTY_NOTICES` holds them, and every release zip carries
+it next to `LICENSE` and `README.md`. `go generate ./...` rebuilds it with `tools/notices`, from
+the modules `go list -deps` reports for every release platform. Never edit it by hand. CI fails
+when it differs from what `go generate` produces, so a dependency change has to commit it too.
 
 ## Regeneration is automatic
 
@@ -106,7 +116,7 @@ and run, both `tfplugingen` versions, the `mc-sdk-go` commit pinned, and the mon
 spec came from. The next regeneration reads it to list what has changed since.
 
 The regeneration runs `go generate ./...` last, so `docs/` moves in the same commit as the
-schemas it documents.
+schemas it documents, and `THIRD_PARTY_NOTICES` with the SDK pin.
 
 Two things the bot leaves behind for whoever merges it. README.md's tables of every resource,
 data source and import id are hand-written, so a pull request that adds a resource leaves them
@@ -165,6 +175,8 @@ The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_K
 against the public half of the same key.
 
 The release refuses a tag whose commit is not on `main`, since that commit skipped review.
+Before it can read the signing key, the `release` environment waits for an approval from the
+`apollo` team, from someone other than whoever pushed the tag, and admins can't bypass it.
 
 CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
 so a change that breaks a release fails before it merges. Tags are immutable, so a release that

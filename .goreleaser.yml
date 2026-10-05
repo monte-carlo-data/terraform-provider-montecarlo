@@ -30,6 +30,12 @@ builds:
 archives:
   - formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # Setting files replaces GoReleaser's defaults, so LICENSE and README.md are listed too.
+    # THIRD_PARTY_NOTICES carries the licenses of the modules compiled into the binary.
+    files:
+      - LICENSE
+      - README.md
+      - THIRD_PARTY_NOTICES
 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"

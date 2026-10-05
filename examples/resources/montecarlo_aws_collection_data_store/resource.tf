@@ -32,8 +32,9 @@ provider "montecarlo" {
 }
 
 # The Monte Carlo account that assumes the role, which differs per Monte Carlo deployment. The
-# value below is a placeholder. Take yours from the Account Information page in the product,
-# under Collection, as "AWS account ID", and substitute it before applying.
+# value below is one deployment's account and may not be yours. Take yours from the Account
+# Information page in the product, under Collection, as "AWS account ID", and substitute it
+# before applying.
 locals {
   mcd_account_id = "590183797493"
 }

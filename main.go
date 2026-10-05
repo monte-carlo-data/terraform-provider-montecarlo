@@ -15,6 +15,7 @@ import (
 
 // Regenerates the registry documentation under docs/ from the schemas, examples/ and templates/.
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0 generate --provider-name montecarlo --rendered-provider-name "Monte Carlo"
+//go:generate go run ./tools/notices
 
 func main() {
 	var debug bool

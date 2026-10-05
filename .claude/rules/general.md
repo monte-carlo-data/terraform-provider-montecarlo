@@ -6,9 +6,9 @@ paths: "**/*.go"
 # General Standards
 
 Most of the Go here is generated — the resources, the data sources, the provider registration and
-every attribute schema, each carrying a `DO NOT EDIT` header. The hand-written surface is `main.go`
-and the helpers under `internal/provider/` that the generated code calls. These rules apply to that
-surface. Do not hand-edit a generated file: the next generation run overwrites it, so the fix
+every attribute schema, each carrying a `DO NOT EDIT` header. The hand-written surface is
+`main.go`, `tools/` and the helpers under `internal/provider/` that the generated code calls.
+These rules apply to that surface. Do not hand-edit a generated file: the next generation run overwrites it, so the fix
 belongs in the API or in the generator that reads its spec.
 
 Which side a *new* file falls on is decided by its path and name alone, so know the rule before
