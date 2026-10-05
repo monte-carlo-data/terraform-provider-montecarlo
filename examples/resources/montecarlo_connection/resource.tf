@@ -11,9 +11,9 @@
 # the warehouse's type. Snowflake credentials on a `snowflake` warehouse, as below.
 #
 # For the Monte Carlo managed credentials used here, see
-# ../montecarlo_snowflake_credentials/resource.tf. To keep the secret in your own store
+# the `montecarlo_snowflake_credentials` example. To keep the secret in your own store
 # instead, swap that resource for one of the self-hosted ones and point `credentials_id` at it
-# — ../montecarlo_self_hosted_aws_credentials/resource.tf is the AWS Secrets Manager version,
+# — the `montecarlo_self_hosted_aws_credentials` example is the AWS Secrets Manager version,
 # and nothing else in this file changes.
 
 terraform {
@@ -30,7 +30,7 @@ terraform {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
 resource "montecarlo_deployment" "agent" {

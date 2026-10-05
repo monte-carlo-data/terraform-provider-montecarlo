@@ -35,7 +35,7 @@ terraform {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
 # The EKS module does not configure the AWS provider; the root module does.
@@ -54,9 +54,10 @@ resource "montecarlo_deployment" "agent" {
   runtime_platform = "GENERIC"
 }
 
-# The credential. An OAuth client here; see ../montecarlo_generic_collection_agent_token for
-# the other kind. The secret is returned once, so this resource holds it in state: anyone who
-# can read the state can read it. Keep state in a backend that encrypts it and limits access.
+# The credential. An OAuth client here; see the `montecarlo_generic_collection_agent_token`
+# example for the other kind. The secret is returned once, so this resource holds it in state:
+# anyone who can read the state can read it. Keep state in a backend that encrypts it and limits
+# access.
 resource "montecarlo_generic_collection_agent_oauth_client" "agent" {
   deployment_id = montecarlo_deployment.agent.id
 }

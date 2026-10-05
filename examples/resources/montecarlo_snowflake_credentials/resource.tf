@@ -3,7 +3,7 @@
 #
 # This is the Monte Carlo managed option, where Monte Carlo holds the key pair. To keep the
 # secret in your own store instead, use one of the self-hosted credentials resources —
-# ../montecarlo_self_hosted_aws_credentials/resource.tf is the AWS Secrets Manager one.
+# the `montecarlo_self_hosted_aws_credentials` example is the AWS Secrets Manager one.
 #
 # Authentication is key pair only; there is no password option. See
 # https://docs.getmontecarlo.com/docs/snowflake for provisioning the service user and granting
@@ -23,10 +23,10 @@ terraform {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
-# ../montecarlo_warehouse/resource.tf shows the deployment and agent behind `deployment_id`.
+# The `montecarlo_warehouse` example shows the deployment and agent behind `deployment_id`.
 resource "montecarlo_warehouse" "snowflake" {
   name          = "production-snowflake"
   type          = "snowflake"

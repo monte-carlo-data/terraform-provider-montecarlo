@@ -41,6 +41,7 @@ go build ./...      # compile check only — it produces no binary, see below
 go test ./...
 go vet ./...
 gofmt -l .          # must be empty
+go generate ./...   # regenerates docs/; builds the provider and runs Terraform
 
 go build -o . .     # writes ./terraform-provider-montecarlo, which dev_overrides needs
 
@@ -55,6 +56,8 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `internal/schema_gen/` | Generated attribute schemas, one package per resource and per data source |
 | `main.go` | Provider entry point |
 | `examples/` | Worked configurations, which double as registry documentation |
+| `templates/` | Registry page templates; only the index page has one |
+| `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
 
 ## What is generated
 
@@ -74,7 +77,15 @@ matches those patterns, is therefore lost on the next regeneration, and the loss
 deletion nobody made. Hand-written code in `internal/provider/` has to be named so it falls
 outside the patterns, as `helpers.go` and `helpers_test.go` do.
 
-Hand-written: `main.go`, the helpers the generated code calls, and the examples.
+Hand-written: `main.go`, the helpers the generated code calls, the examples and the templates.
+
+## Registry documentation
+
+The registry renders `docs/` as committed; it does not read the schema. `go generate ./...` runs
+`tfplugindocs`, at the version pinned in `main.go`, and rebuilds `docs/` from three inputs: the
+schemas for every attribute description, `examples/` for each page's example, and `templates/`
+for the index page, which adds the beta notice. Never edit `docs/` by hand. Change an input and
+regenerate. CI fails when `docs/` differs from what `go generate` produces.
 
 ## Regeneration is automatic
 
@@ -91,10 +102,13 @@ nothing there but the SDK's own lines.
 and run, both `tfplugingen` versions, the `mc-sdk-go` commit pinned, and the monolith export the
 spec came from. The next regeneration reads it to list what has changed since.
 
+The regeneration runs `go generate ./...` last, so `docs/` moves in the same commit as the
+schemas it documents.
+
 Two things the bot leaves behind for whoever merges it. README.md's tables of every resource,
 data source and import id are hand-written, so a pull request that adds a resource leaves them
 stale. And a new resource ships with no `examples/` entry; those are written deliberately,
-afterwards, rather than generated.
+afterwards, rather than generated, so until then its registry page has no example.
 
 ## Running a locally built provider
 
@@ -183,7 +197,3 @@ Releases stay `0.x` while the provider is in beta.
 - **The signing key's public half, uploaded to the registry** when the provider is published.
   The private half and its passphrase are already in the `release` environment, which only `v*`
   tags can deploy to.
-- **`docs/`**. The registry renders provider documentation from markdown under `docs/` — it
-  does **not** derive it from the schema, so publishing without it yields a page with attribute
-  descriptions and no resource documentation. `tfplugindocs` generates it from the schemas plus
-  `examples/`, which is the other reason `examples/` exists.

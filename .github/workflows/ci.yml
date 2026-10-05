@@ -45,6 +45,17 @@ jobs:
       - name: Test
         run: go test -race ./...
 
+      # The registry renders docs/ as committed, so it has to match the schemas and examples.
+      - name: Check the registry docs are current
+        run: |
+          go generate ./...
+          stale="$(git status --porcelain -- docs)"
+          if [ -n "$stale" ]; then
+            echo "docs/ is out of date. Run go generate ./... and commit the result:"
+            echo "$stale"
+            exit 1
+          fi
+
   release-snapshot:
     name: The release builds for every platform
     # Tags are immutable, so a release that fails after tagging burns that version. A change that

@@ -10,6 +10,9 @@ import (
 	"github.com/monte-carlo-data/terraform-provider-montecarlo/internal/provider"
 )
 
+// Regenerates the registry documentation under docs/ from the schemas, examples/ and templates/.
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0 generate --provider-name montecarlo --rendered-provider-name "Monte Carlo"
+
 func main() {
 	var debug bool
 	flag.BoolVar(&debug, "debug", false, "run with support for debuggers like delve")

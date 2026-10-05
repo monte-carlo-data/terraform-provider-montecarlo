@@ -24,11 +24,11 @@ terraform {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
 # `connection_type` derives the warehouse type, `data-lake`, from the first connection.
-# ../montecarlo_warehouse/resource.tf shows the deployment and agent behind `deployment_id`.
+# The `montecarlo_warehouse` example shows the deployment and agent behind `deployment_id`.
 resource "montecarlo_warehouse" "databricks" {
   name            = "production-databricks"
   connection_type = "databricks-metastore-sql-warehouse"

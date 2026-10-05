@@ -2,8 +2,8 @@
 # runtime. Monte Carlo stores only where to find them.
 #
 # Credentials do nothing until a connection reads with them — see
-# ../montecarlo_connection/resource.tf for the whole flow. For the alternative, where Monte
-# Carlo holds the secret, see ../montecarlo_snowflake_credentials/resource.tf.
+# the `montecarlo_connection` example for the whole flow. For the alternative, where Monte
+# Carlo holds the secret, see the `montecarlo_snowflake_credentials` example.
 #
 # Two things have to be true before this works, and neither is expressible here:
 #
@@ -35,7 +35,7 @@ terraform {
 provider "montecarlo" {
   endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile. See
-  # ../../provider/provider.tf for the alternatives.
+  # the provider documentation for the alternatives.
 }
 
 provider "aws" {

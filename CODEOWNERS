@@ -9,6 +9,10 @@
 /internal/provider/helpers.go @monte-carlo-data/apollo
 /internal/provider/helpers_test.go @monte-carlo-data/apollo
 
+# Generated from the schemas, examples/ and templates/ by `go generate ./...`. The inputs a
+# person writes keep their owner.
+/docs/
+
 # A regeneration moves the mc-sdk-go pin in the same commit as the code that needs it, so these
 # move with it. CI keeps that change to the SDK's own lines.
 /go.mod
