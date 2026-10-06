@@ -7,13 +7,8 @@ credentials and connections that run through them.
 
 ## Status
 
-Early, and **not yet published to the Terraform Registry**, so `terraform init` against the
-source below does not resolve yet. Until it is published the provider has to be built and run
-locally, which takes two commands — see
-[AGENTS.md](AGENTS.md#running-a-locally-built-provider).
-
-The provider is in **beta** and versioned `0.x`. Once published, patch releases will be frequent,
-one for each update to the API it is generated from. A new minor version can carry breaking
+The provider is in **beta** and versioned `0.x`. Patch releases are frequent, one for each update
+to the API it is generated from. A new minor version can carry breaking
 changes, so pin the minor version:
 
 ```hcl
@@ -27,7 +22,7 @@ terraform {
 }
 ```
 
-> There are community providers with the same name. This one will be published as
+> There are community providers with the same name. This one is published as
 > `monte-carlo-data/montecarlo` — check the source when adding it.
 
 Requires Terraform 1.11 or later, the first release with write-only arguments; see
@@ -39,9 +34,7 @@ storing it.
 The configuration below is
 [`examples/resources/montecarlo_aws_collection_agent/`](examples/resources/montecarlo_aws_collection_agent)
 without its comments and
-outputs, so that directory can be run as-is. Once published, the `required_providers` block is
-all it needs; today it also needs the `dev_overrides` setup in
-[AGENTS.md](AGENTS.md#running-a-locally-built-provider).
+outputs, so that directory can be run as-is.
 
 ```hcl
 terraform {
