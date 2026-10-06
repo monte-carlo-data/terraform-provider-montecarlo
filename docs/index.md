@@ -64,7 +64,7 @@ variable "mcd_token" {
 - `endpoint` (String) API base URL, for example https://api.getmontecarlo.com. Required, but may come from the profile's mcd_api_endpoint instead of being set here.
 - `instance` (String) Monte Carlo instance, for example us1. Required with OAuth credentials. Defaults to MCD_DEFAULT_INSTANCE_ID, then to the profile's mcd_instance_id.
 - `profile` (String) A profile in ~/.mcd/profiles.ini, written by the Monte Carlo CLI. Defaults to MCD_DEFAULT_PROFILE, then to the profile named default. A profile named here must exist.
-- `token` (String, Sensitive) A bearer credential obtained elsewhere, used instead of the pair above.
+- `token` (String, Sensitive) A bearer credential obtained elsewhere, used instead of token_id and token_secret.
 - `token_id` (String) Monte Carlo API token id. Defaults to MCD_DEFAULT_API_ID, then to the profile's mcd_id.
 - `token_secret` (String, Sensitive) Monte Carlo API token secret. Defaults to MCD_DEFAULT_API_TOKEN, then to the profile's mcd_token.
 - `token_url` (String) Where OAuth client credentials are exchanged. Defaults to the endpoint with /oauth2/token appended.
