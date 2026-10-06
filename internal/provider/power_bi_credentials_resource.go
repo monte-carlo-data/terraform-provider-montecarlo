@@ -34,11 +34,11 @@ func (r *powerBiCredentialsResource) Schema(ctx context.Context, _ resource.Sche
 	// Secrets: Terraform passes them to the provider on apply and never stores them.
 	writeOnly(s.Attributes, "power_bi_credentials.app_client_secret_wo", &resp.Diagnostics)
 	writeOnly(s.Attributes, "power_bi_credentials.password_wo", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "power_bi_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "power_bi_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "power_bi_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "power_bi_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "power_bi_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "power_bi_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "power_bi_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "power_bi_credentials.storage_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

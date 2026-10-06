@@ -33,11 +33,11 @@ func (r *mulesoftCredentialsResource) Schema(ctx context.Context, _ resource.Sch
 	s := resource_mulesoft_credentials.MulesoftCredentialsResourceSchema(ctx)
 	// Secrets: Terraform passes them to the provider on apply and never stores them.
 	writeOnly(s.Attributes, "mulesoft_credentials.app_client_secret_wo", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "mulesoft_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "mulesoft_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "mulesoft_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "mulesoft_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "mulesoft_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "mulesoft_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "mulesoft_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "mulesoft_credentials.storage_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

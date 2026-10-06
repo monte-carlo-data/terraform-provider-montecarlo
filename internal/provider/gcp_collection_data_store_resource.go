@@ -34,9 +34,9 @@ func (r *gcpCollectionDataStoreResource) Schema(ctx context.Context, _ resource.
 	// Secrets: Terraform passes them to the provider on apply and never stores them.
 	writeOnly(s.Attributes, "gcp_collection_data_store.service_account_key_wo", &resp.Diagnostics)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "gcp_collection_data_store.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "gcp_collection_data_store.id", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "gcp_collection_data_store.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "gcp_collection_data_store.id", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "gcp_collection_data_store.deployment_id", &resp.Diagnostics)
 	resp.Schema = s

@@ -32,12 +32,12 @@ func (r *etlContainerResource) Metadata(_ context.Context, req resource.Metadata
 func (r *etlContainerResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_etl_container.EtlContainerResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "etl_container.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "etl_container.deployment_id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "etl_container.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "etl_container.is_synthetic", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "etl_container.type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "etl_container.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "etl_container.deployment_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "etl_container.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "etl_container.is_synthetic", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "etl_container.type", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "etl_container.deployment_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "etl_container.type", &resp.Diagnostics)
