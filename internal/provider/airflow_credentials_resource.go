@@ -31,11 +31,11 @@ func (r *airflowCredentialsResource) Metadata(_ context.Context, req resource.Me
 
 func (r *airflowCredentialsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_airflow_credentials.AirflowCredentialsResourceSchema(ctx)
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "airflow_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "airflow_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "airflow_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "airflow_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "airflow_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "airflow_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "airflow_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "airflow_credentials.storage_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

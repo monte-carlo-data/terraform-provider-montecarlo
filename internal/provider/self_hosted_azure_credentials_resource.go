@@ -34,11 +34,11 @@ func (r *selfHostedAzureCredentialsResource) Metadata(_ context.Context, req res
 func (r *selfHostedAzureCredentialsResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_self_hosted_azure_credentials.SelfHostedAzureCredentialsResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "self_hosted_azure_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "self_hosted_azure_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "self_hosted_azure_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "self_hosted_azure_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "self_hosted_azure_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "self_hosted_azure_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "self_hosted_azure_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "self_hosted_azure_credentials.storage_type", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "self_hosted_azure_credentials.connection_type", &resp.Diagnostics)
 	resp.Schema = s

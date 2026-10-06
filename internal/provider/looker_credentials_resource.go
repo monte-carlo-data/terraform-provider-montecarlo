@@ -33,11 +33,11 @@ func (r *lookerCredentialsResource) Schema(ctx context.Context, _ resource.Schem
 	s := resource_looker_credentials.LookerCredentialsResourceSchema(ctx)
 	// Secrets: Terraform passes them to the provider on apply and never stores them.
 	writeOnly(s.Attributes, "looker_credentials.api_client_secret_wo", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "looker_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "looker_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "looker_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "looker_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "looker_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "looker_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "looker_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "looker_credentials.storage_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

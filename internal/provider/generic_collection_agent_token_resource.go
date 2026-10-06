@@ -34,13 +34,14 @@ func (r *genericCollectionAgentTokenResource) Metadata(_ context.Context, req re
 func (r *genericCollectionAgentTokenResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_generic_collection_agent_token.GenericCollectionAgentTokenResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_token.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_token.deployment_id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_token.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_token.mcd_id", &resp.Diagnostics)
+	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_token.mcd_token", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_token.description", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "generic_collection_agent_token.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "generic_collection_agent_token.deployment_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "generic_collection_agent_token.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "generic_collection_agent_token.mcd_id", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "generic_collection_agent_token.deployment_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "generic_collection_agent_token.description", &resp.Diagnostics)

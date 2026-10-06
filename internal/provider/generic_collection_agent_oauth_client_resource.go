@@ -34,15 +34,15 @@ func (r *genericCollectionAgentOauthClientResource) Metadata(_ context.Context, 
 func (r *genericCollectionAgentOauthClientResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_generic_collection_agent_oauth_client.GenericCollectionAgentOauthClientResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.client_id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.deployment_id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.id", &resp.Diagnostics)
+	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.client_secret", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.secret_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.description", &resp.Diagnostics)
-	// No response carries these, so state holds null. Only the plain modifier copies a null.
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.client_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.deployment_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "generic_collection_agent_oauth_client.expiration_days", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "generic_collection_agent_oauth_client.deployment_id", &resp.Diagnostics)

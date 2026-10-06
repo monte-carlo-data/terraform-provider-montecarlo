@@ -32,11 +32,11 @@ func (r *biContainerResource) Metadata(_ context.Context, req resource.MetadataR
 func (r *biContainerResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_bi_container.BiContainerResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "bi_container.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "bi_container.deployment_id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "bi_container.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "bi_container.type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "bi_container.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "bi_container.deployment_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "bi_container.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "bi_container.type", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "bi_container.deployment_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "bi_container.type", &resp.Diagnostics)

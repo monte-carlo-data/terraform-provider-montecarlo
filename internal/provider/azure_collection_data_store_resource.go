@@ -37,9 +37,9 @@ func (r *azureCollectionDataStoreResource) Schema(ctx context.Context, _ resourc
 	writeOnly(s.Attributes, "azure_collection_data_store.service_principal.client_secret_wo", &resp.Diagnostics)
 	writeOnly(s.Attributes, "azure_collection_data_store.storage_account_keys.connection_string_wo", &resp.Diagnostics)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "azure_collection_data_store.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "azure_collection_data_store.id", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "azure_collection_data_store.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "azure_collection_data_store.id", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "azure_collection_data_store.deployment_id", &resp.Diagnostics)
 	resp.Schema = s

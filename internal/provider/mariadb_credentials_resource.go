@@ -33,11 +33,11 @@ func (r *mariadbCredentialsResource) Schema(ctx context.Context, _ resource.Sche
 	s := resource_mariadb_credentials.MariadbCredentialsResourceSchema(ctx)
 	// Secrets: Terraform passes them to the provider on apply and never stores them.
 	writeOnly(s.Attributes, "mariadb_credentials.password_wo", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "mariadb_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "mariadb_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "mariadb_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "mariadb_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "mariadb_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "mariadb_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "mariadb_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "mariadb_credentials.storage_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

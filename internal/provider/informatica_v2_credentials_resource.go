@@ -37,11 +37,11 @@ func (r *informaticaV2CredentialsResource) Schema(ctx context.Context, _ resourc
 	writeOnly(s.Attributes, "informatica_v2_credentials.oauth_client_secret_wo", &resp.Diagnostics)
 	writeOnly(s.Attributes, "informatica_v2_credentials.oauth_password_wo", &resp.Diagnostics)
 	writeOnly(s.Attributes, "informatica_v2_credentials.password_wo", &resp.Diagnostics)
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "informatica_v2_credentials.connection_type", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "informatica_v2_credentials.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "informatica_v2_credentials.id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "informatica_v2_credentials.storage_type", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "informatica_v2_credentials.connection_type", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "informatica_v2_credentials.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "informatica_v2_credentials.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "informatica_v2_credentials.storage_type", &resp.Diagnostics)
 	resp.Schema = s
 }
 

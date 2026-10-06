@@ -1,7 +1,7 @@
 {
-  "api_codegen_commit": "d02dda30943bc664e66a7c9cbd26400342e433a2",
-  "api_codegen_run_id": 37501777180,
-  "generated_at": "2026-10-06T17:16:52Z",
+  "api_codegen_commit": "d5234929c587596f6b30833f41aefca1f2edddfc",
+  "api_codegen_run_id": 37512044022,
+  "generated_at": "2026-10-06T18:36:13Z",
   "tfplugingen_openapi_version": "0.3.0",
   "tfplugingen_framework_version": "0.4.1",
   "mc_sdk_go_commit": "023337bde456cb9a80a43eabd4583402bf0bd22c",

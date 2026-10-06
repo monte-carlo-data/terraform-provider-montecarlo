@@ -32,9 +32,9 @@ func (r *awsCollectionDataStoreResource) Metadata(_ context.Context, req resourc
 func (r *awsCollectionDataStoreResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_aws_collection_data_store.AwsCollectionDataStoreResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds.
-	useNonNullStateForUnknown(s.Attributes, "aws_collection_data_store.created_time", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "aws_collection_data_store.id", &resp.Diagnostics)
+	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
+	useStateForUnknown(s.Attributes, "aws_collection_data_store.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "aws_collection_data_store.id", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "aws_collection_data_store.deployment_id", &resp.Diagnostics)
 	resp.Schema = s
