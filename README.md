@@ -102,18 +102,43 @@ The deployment, and the agents and data stores that register onto it:
 | `montecarlo_generic_collection_agent_oauth_client` | An OAuth client a generic collection agent presents. The secret is returned once, on create. |
 | `montecarlo_generic_collection_agent_token` | A token a generic collection agent presents. The secret is returned once, on create. |
 
-The integrations that run through a deployment. A warehouse holds connections; a connection
-joins a warehouse to the credentials it reads with, and takes its type from them:
+The integrations that run through a deployment. A warehouse or a BI container holds
+connections; a connection joins one of them to the credentials it reads with, and takes its
+type from them:
 
 | Resource | Manages |
 |----------|---------|
 | `montecarlo_warehouse` | A warehouse: the container its connections belong to, and the deployment they run through. |
-| `montecarlo_connection` | A connection on a warehouse, reading with a given set of credentials. |
+| `montecarlo_connection` | A connection on a warehouse or BI container, reading with a given set of credentials. |
+| `montecarlo_bi_container` | A BI container: the container connections to a BI tool belong to, and the deployment they run through. |
+| `montecarlo_etl_container` | An ETL container: one ETL or orchestration tool, such as Fivetran or Airflow, and the deployment its connection runs through. |
 | `montecarlo_snowflake_credentials` | Snowflake key pair credentials stored by Monte Carlo. |
 | `montecarlo_bigquery_credentials` | BigQuery service account key credentials stored by Monte Carlo. |
 | `montecarlo_redshift_credentials` | Redshift user and password credentials stored by Monte Carlo. |
 | `montecarlo_databricks_metastore_sql_warehouse_credentials` | Databricks credentials stored by Monte Carlo, for a metadata connection. |
 | `montecarlo_databricks_sql_warehouse_credentials` | Databricks credentials stored by Monte Carlo, for a query connection. |
+| `montecarlo_azure_dedicated_sql_pool_credentials` | Azure Dedicated SQL Pool user and password credentials stored by Monte Carlo. |
+| `montecarlo_azure_sql_database_credentials` | Azure SQL Database user and password credentials stored by Monte Carlo. |
+| `montecarlo_clickhouse_credentials` | ClickHouse user and password credentials stored by Monte Carlo. |
+| `montecarlo_db2_credentials` | Db2 user and password credentials stored by Monte Carlo. |
+| `montecarlo_mariadb_credentials` | MariaDB user and password credentials stored by Monte Carlo. |
+| `montecarlo_mysql_credentials` | MySQL user and password credentials stored by Monte Carlo. |
+| `montecarlo_oracle_credentials` | Oracle user and password credentials stored by Monte Carlo. |
+| `montecarlo_postgres_credentials` | PostgreSQL user and password credentials stored by Monte Carlo. |
+| `montecarlo_sap_hana_credentials` | SAP HANA user and password credentials stored by Monte Carlo. |
+| `montecarlo_starburst_enterprise_credentials` | Starburst Enterprise user and password credentials stored by Monte Carlo. |
+| `montecarlo_starburst_galaxy_credentials` | Starburst Galaxy user and password credentials stored by Monte Carlo. |
+| `montecarlo_teradata_credentials` | Teradata user and password credentials stored by Monte Carlo. |
+| `montecarlo_looker_credentials` | Looker API key credentials stored by Monte Carlo. |
+| `montecarlo_looker_git_clone_credentials` | An HTTPS token or SSH key stored by Monte Carlo, to clone the LookML repository behind a Looker instance. |
+| `montecarlo_power_bi_credentials` | Power BI credentials stored by Monte Carlo: an Entra ID app, signing in as itself or as a user. |
+| `montecarlo_tableau_credentials` | Tableau credentials stored by Monte Carlo: a password, a personal access token or a connected app. |
+| `montecarlo_airflow_credentials` | Airflow credentials stored by Monte Carlo: the host name of the Airflow instance. |
+| `montecarlo_azure_data_factory_credentials` | Azure Data Factory credentials stored by Monte Carlo: an Entra ID app and the factory it reads. |
+| `montecarlo_fivetran_credentials` | Fivetran API key credentials stored by Monte Carlo. |
+| `montecarlo_gcp_dataform_credentials` | Dataform service account key credentials stored by Monte Carlo. |
+| `montecarlo_informatica_v2_credentials` | Informatica credentials stored by Monte Carlo: a username and password, or OAuth. |
+| `montecarlo_mulesoft_credentials` | MuleSoft Anypoint connected app credentials stored by Monte Carlo. |
 | `montecarlo_self_hosted_aws_credentials` | Credentials your agent reads from AWS Secrets Manager. Monte Carlo stores only where to find them. |
 | `montecarlo_self_hosted_azure_credentials` | The same, from Azure Key Vault. |
 | `montecarlo_self_hosted_gcp_credentials` | The same, from GCP Secret Manager. |
@@ -141,11 +166,35 @@ not by `id`, which is computed:
 | `montecarlo_generic_collection_agent_token` | `credential_id` |
 | `montecarlo_warehouse` | `warehouse_id` |
 | `montecarlo_connection` | `connection_id` |
+| `montecarlo_bi_container` | `bi_container_id` |
+| `montecarlo_etl_container` | `etl_container_id` |
 | `montecarlo_snowflake_credentials` | `credentials_id` |
 | `montecarlo_bigquery_credentials` | `credentials_id` |
 | `montecarlo_redshift_credentials` | `credentials_id` |
 | `montecarlo_databricks_metastore_sql_warehouse_credentials` | `credentials_id` |
 | `montecarlo_databricks_sql_warehouse_credentials` | `credentials_id` |
+| `montecarlo_azure_dedicated_sql_pool_credentials` | `credentials_id` |
+| `montecarlo_azure_sql_database_credentials` | `credentials_id` |
+| `montecarlo_clickhouse_credentials` | `credentials_id` |
+| `montecarlo_db2_credentials` | `credentials_id` |
+| `montecarlo_mariadb_credentials` | `credentials_id` |
+| `montecarlo_mysql_credentials` | `credentials_id` |
+| `montecarlo_oracle_credentials` | `credentials_id` |
+| `montecarlo_postgres_credentials` | `credentials_id` |
+| `montecarlo_sap_hana_credentials` | `credentials_id` |
+| `montecarlo_starburst_enterprise_credentials` | `credentials_id` |
+| `montecarlo_starburst_galaxy_credentials` | `credentials_id` |
+| `montecarlo_teradata_credentials` | `credentials_id` |
+| `montecarlo_looker_credentials` | `credentials_id` |
+| `montecarlo_looker_git_clone_credentials` | `credentials_id` |
+| `montecarlo_power_bi_credentials` | `credentials_id` |
+| `montecarlo_tableau_credentials` | `credentials_id` |
+| `montecarlo_airflow_credentials` | `credentials_id` |
+| `montecarlo_azure_data_factory_credentials` | `credentials_id` |
+| `montecarlo_fivetran_credentials` | `credentials_id` |
+| `montecarlo_gcp_dataform_credentials` | `credentials_id` |
+| `montecarlo_informatica_v2_credentials` | `credentials_id` |
+| `montecarlo_mulesoft_credentials` | `credentials_id` |
 | `montecarlo_self_hosted_aws_credentials` | `credentials_id` |
 | `montecarlo_self_hosted_azure_credentials` | `credentials_id` |
 | `montecarlo_self_hosted_gcp_credentials` | `credentials_id` |
