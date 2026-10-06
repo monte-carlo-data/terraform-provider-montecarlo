@@ -1,10 +1,10 @@
 {
-  "api_codegen_commit": "1815269f46474dd20101754c20d67411f3a8170f",
-  "api_codegen_run_id": 37391397435,
-  "generated_at": "2026-10-06T00:01:31Z",
+  "api_codegen_commit": "d02dda30943bc664e66a7c9cbd26400342e433a2",
+  "api_codegen_run_id": 37501777180,
+  "generated_at": "2026-10-06T17:16:52Z",
   "tfplugingen_openapi_version": "0.3.0",
   "tfplugingen_framework_version": "0.4.1",
-  "mc_sdk_go_commit": "b94cd7429085f0cb039e9715de885700bf586117",
+  "mc_sdk_go_commit": "023337bde456cb9a80a43eabd4583402bf0bd22c",
   "monolith_commit": "da87a19c88de6d273f65003f6b14dba352932b31",
   "monolith_run_id": 37360882612,
   "exported_at": "2026-10-05T20:13:16Z"
