@@ -339,8 +339,9 @@ func requiresReplace(attrs map[string]schema.Attribute, name string, diags *diag
 // row was first read — would then plan as null and apply as a value, which Terraform rejects
 // as an inconsistent result. This one leaves a null state unknown.
 //
-// The generated code calls this for every response field marked `x-mc-terraform-stable`, and
-// for every create-only output: a value the API returns once can never change on an update.
+// The generated code calls this for every create-only output, since a value the API returns once
+// can never change on an update, and for every unmarked optional response field the update body
+// refuses.
 func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseNonNullStateForUnknown(),
@@ -360,16 +361,20 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 
 // useStateForUnknown keeps an attribute's prior state value in the plan, including a null one.
 //
-// The plain variant, for the unreturned inputs: ones the API accepts and no response carries.
-// State holds null for one of those as soon as the config omits it, and
-// `useNonNullStateForUnknown` refuses to copy a null, which leaves the attribute unknown. An
-// unknown planned value is what `requiresReplace` reads as a change, so an unreturned attribute
-// that requires replacement destroys the resource on any edit until its null is held.
+// The plain variant, for an attribute whose null is final. A response field marked
+// `x-mc-terraform-stable` is one: the API never answers null for it and fills it in later, so a
+// connection's other parent id stays null for the connection's life. An unreturned input, one
+// the API accepts and no response carries, is another: state holds null for it as soon as the
+// config omits it. `useNonNullStateForUnknown` refuses to copy a null, which leaves the attribute
+// unknown. An unknown planned value is what `requiresReplace` reads as a change, so such an
+// attribute that requires replacement destroys the resource on any edit, a rename included,
+// until its null is held.
 //
-// Only safe because no response carries these: an attribute the API fills in later needs the
-// non-null variant, or the plan says null and the apply says otherwise.
+// Only safe because the null is final: an attribute the API fills in later needs the non-null
+// variant, or the plan says null and the apply says otherwise.
 //
-// The generated code calls this for every optional unreturned input that requires replacement.
+// The generated code calls this for every response field marked `x-mc-terraform-stable`, and
+// for every optional unreturned input that requires replacement.
 func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseStateForUnknown(),
