@@ -1,6 +1,6 @@
 # terraform-provider-montecarlo
 
-> The official Terraform provider for Monte Carlo. It is **not published to the Terraform Registry yet** (see [Releasing](#releasing)); the address it will take is `monte-carlo-data/montecarlo`, so HCL reads `provider "montecarlo"` and resources are `montecarlo_deployment` and so on. Until it is published, run it locally — see [Running a locally built provider](#running-a-locally-built-provider).
+> The official Terraform provider for Monte Carlo. It is published to the Terraform Registry as `monte-carlo-data/montecarlo` (see [Releasing](#releasing)), so HCL reads `provider "montecarlo"` and resources are `montecarlo_deployment` and so on. To try an unreleased change, run it locally — see [Running a locally built provider](#running-a-locally-built-provider).
 
 ## This repository is public
 
@@ -160,49 +160,50 @@ and permitted here, per the carve-out above. Never commit directly to `main`.
 
 ## Releasing
 
-**Not yet — the provider is unpublished.** Two properties make this a one-way door: the
-provider address is permanent once published, and a published provider cannot be unpublished.
+The provider is published to the Terraform Registry as `monte-carlo-data/montecarlo`. The
+address is permanent, and a published version cannot be withdrawn.
+
+Every merge to `main` is a release. `.github/workflows/tag.yml` tags the merge commit
+`v<base>.<n>`: `<base>` is the major.minor in `VERSION`, and `<n>` is one past the highest patch
+already tagged on that base. `.github/scripts/next-tag.sh` works the tag out, and CI runs its
+test. The tag is pushed by the org App, which with Apollo is the only actor allowed to create
+tags. A tag pushed with `GITHUB_TOKEN` would not start the release.
+
+Only the patch is bumped automatically. To start a new minor, change `VERSION` (`0.1` to `0.2`)
+in a pull request; its merge is tagged `v0.2.0`. The README tells users to pin `~> 0.1.0` and
+that a new minor can break them, so a merge that breaks the schema, by removing or renaming an
+attribute or making one required, must come with a minor bump. Releases stay `0.x` while the
+provider is in beta.
 
 ### How a release is built
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`. GoReleaser (`.goreleaser.yml`)
-cross-compiles every platform, zips each one, writes the `SHA256SUMS` file with
+The tag runs `.github/workflows/release.yml`. GoReleaser (`.goreleaser.yml`) cross-compiles
+every platform, zips each one, writes the `SHA256SUMS` file with
 `terraform-registry-manifest.json` in it, signs that file with GPG and attaches it all to a
-GitHub release. The registry picks the release up from there.
+GitHub release, which it publishes only once every asset is uploaded. The registry picks the
+release up from there. Don't create a release in the GitHub UI: that publishes it before its
+assets exist, and the registry then misses the version until it is resynced.
 
 The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
 `GPG_PASSPHRASE`, which only jobs running on a `v*` tag can use. The registry checks each release
-against the public half of the same key.
-
-The release refuses a tag whose commit is not on `main`, since that commit skipped review.
-Before it can read the signing key, the `release` environment waits for an approval from the
-`apollo` team, from someone other than whoever pushed the tag, and admins can't bypass it.
+against the public half of the same key. The release refuses a tag whose commit is not on
+`main`, since that commit skipped review.
 
 CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
 so a change that breaks a release fails before it merges. Tags are immutable, so a release that
-fails after tagging burns its version. To reproduce it locally, without signing, using the
-GoReleaser version pinned in `.github/actions/goreleaser/action.yml`:
+fails after tagging burns its version; the next merge releases the next one. To reproduce it
+locally, without signing, using the GoReleaser version pinned in
+`.github/actions/goreleaser/action.yml`:
 
 ```bash
 go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
 ```
 
-Releases stay `0.x` while the provider is in beta.
+### The Go SDK pin
 
-### Still outstanding before the first release
-
-- **The Go SDK this provider depends on must be tagged.** It is public, but `go.mod` pins it to
-  a pseudo-version because it has no tags. Tag it and replace the pseudo-version with the tag.
-  Until then the pin is only as durable as the commit it names, though the public module proxy
-  keeps serving any version it has already fetched, so a commit an upstream squash merge or
-  history rewrite orphans still resolves once fetched.
-
-  Moving the pin means regenerating, not `go get`. The SDK and the files under
-  `internal/provider/` come from one spec export and move together. A constructor's parameters
-  follow the order the spec declares the properties in. An export that changes that order
-  changes signatures with no schema change. Two same-typed parameters swapping is invisible to
-  the compiler, so a pin moved on its own can compile and pass the tests while sending a bucket
-  name as a deployment id.
-- **The signing key's public half, uploaded to the registry** when the provider is published.
-  The private half and its passphrase are already in the `release` environment, which only `v*`
-  tags can deploy to.
+`go.mod` pins the Go SDK to a pseudo-version, a commit, rather than to a release tag. Moving the
+pin means regenerating, not `go get`. The SDK and the files under `internal/provider/` come from
+one spec export and move together. A constructor's parameters follow the order the spec
+declares the properties in. An export that changes that order changes signatures with no schema
+change. Two same-typed parameters swapping is invisible to the compiler, so a pin moved on its
+own can compile and pass the tests while sending a bucket name as a deployment id.

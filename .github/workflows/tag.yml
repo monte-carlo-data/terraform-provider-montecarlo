@@ -1,0 +1,54 @@
+# Every merge to main is a release. This tags it v<base>.<n>, with <base> read from VERSION,
+# and the tag starts release.yml, which builds, signs and publishes it.
+
+name: Tag a release
+
+on:
+  push:
+    branches: [main]
+
+# The tag goes out under a token minted from the org App, not GITHUB_TOKEN: a tag pushed with
+# GITHUB_TOKEN does not start release.yml.
+permissions:
+  contents: read
+
+# One run at a time, so two quick merges cannot pick the same tag. A run still waiting here is
+# replaced by a newer one, whose tag then covers both merges.
+concurrency:
+  group: tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag the merge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Work out the tag
+        id: next
+        run: echo "tag=$(.github/scripts/next-tag.sh)" >> "$GITHUB_OUTPUT"
+
+      # Tag creation is restricted to the App and Apollo by a ruleset, and tags are immutable.
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        id: token
+        if: steps.next.outputs.tag != ''
+        with:
+          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
+          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
+          owner: monte-carlo-data
+          repositories: terraform-provider-montecarlo
+          permission-contents: write
+
+      - name: Tag ${{ steps.next.outputs.tag }}
+        if: steps.next.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          TAG: ${{ steps.next.outputs.tag }}
+        run: |
+          gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" > /dev/null
+          echo "Tagged $GITHUB_SHA as $TAG."

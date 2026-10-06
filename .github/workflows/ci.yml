@@ -42,6 +42,9 @@ jobs:
       - name: Test
         run: go test -race ./...
 
+      - name: The release tag is worked out correctly
+        run: .github/scripts/next-tag_test.sh
+
       # The registry renders docs/ as committed, so it has to match the schemas and examples.
       - name: Check the registry docs and third-party notices are current
         run: |
