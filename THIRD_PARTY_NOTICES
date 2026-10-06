@@ -3427,7 +3427,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ================================================================================
-github.com/monte-carlo-data/mc-sdk-go v0.0.0-20261005113630-8ad4e3e3e633
+github.com/monte-carlo-data/mc-sdk-go v0.0.0-20261005235713-b94cd7429085
 --------------------------------------------------------------------------------
 LICENSE
 
@@ -3619,7 +3619,7 @@ LICENSE
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2026 Monte Carlo Data, Inc. (now known as Monte Carlo AI, Inc.)
+   Copyright Monte Carlo AI, Inc.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
