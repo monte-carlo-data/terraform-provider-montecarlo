@@ -5,7 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-# The job only reads the tree. Nothing here publishes, comments or writes.
+# The jobs only read the tree. The tag job writes through a single-repository App token, and the
+# release job is granted contents: write for the GitHub release.
 permissions:
   contents: read
 
@@ -43,7 +44,9 @@ jobs:
         run: go test -race ./...
 
       - name: The release tag is worked out correctly
-        run: .github/scripts/next-tag_test.sh
+        run: |
+          .github/scripts/next-tag.sh > /dev/null
+          .github/scripts/next-tag_test.sh
 
       # The registry renders docs/ as committed, so it has to match the schemas and examples.
       - name: Check the registry docs and third-party notices are current
@@ -124,3 +127,87 @@ jobs:
             exit 1
           fi
           echo "Only the mc-sdk-go lines changed."
+
+  tag:
+    name: Tag the release
+    needs: [build, release-snapshot]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # One run at a time, so two quick merges cannot pick the same tag. A run still waiting here is
+    # replaced by a newer one, whose release then covers both merges.
+    concurrency:
+      group: tag
+      cancel-in-progress: false
+    outputs:
+      tag: ${{ steps.next.outputs.tag }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Work out the tag
+        id: next
+        run: |
+          tag=$(.github/scripts/next-tag.sh)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # Tag creation is restricted to the org App and the `apollo` team by a ruleset, and tags are
+      # immutable.
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        id: token
+        if: steps.next.outputs.tag != ''
+        with:
+          app-id: ${{ secrets.MC_GITHUB_APP_ID }}
+          private-key: ${{ secrets.MC_GITHUB_APP_PRIVATE_KEY }}
+          owner: monte-carlo-data
+          repositories: terraform-provider-montecarlo
+          permission-contents: write
+
+      - name: Tag ${{ steps.next.outputs.tag }}
+        if: steps.next.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          TAG: ${{ steps.next.outputs.tag }}
+        run: |
+          gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" > /dev/null
+          echo "Tagged $GITHUB_SHA as $TAG."
+
+  # The signing key is released only to this job, which runs from main's own workflow file; the
+  # `release` environment accepts only `main`.
+  release:
+    name: Build, sign and publish the release
+    needs: tag
+    if: needs.tag.outputs.tag != ''
+    runs-on: ubuntu-latest
+    environment: release
+    # GoReleaser creates the GitHub release with GITHUB_TOKEN.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # No build cache: a release is built from a clean module download, never from a cache that
+      # another workflow could have written.
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        id: gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - uses: ./.github/actions/goreleaser
+        with:
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}

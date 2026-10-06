@@ -44,6 +44,7 @@ go build ./...      # compile check only — it produces no binary, see below
 go test ./...
 go vet ./...
 gofmt -l .          # must be empty
+.github/scripts/next-tag_test.sh   # the release-tag logic
 go generate ./...   # regenerates docs/ and THIRD_PARTY_NOTICES; builds the provider and runs Terraform
 
 go build -o . .     # writes ./terraform-provider-montecarlo, which dev_overrides needs
@@ -60,6 +61,8 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `main.go` | Provider entry point |
 | `examples/` | Worked configurations, which double as registry documentation |
 | `templates/` | Registry page templates; only the index page has one |
+| `VERSION` | The major.minor release base — see [Releasing](#releasing) |
+| `.github/scripts/` | The release-tag script and its test |
 | `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
 | `tools/notices/` | Generates `THIRD_PARTY_NOTICES` — see [Third-party notices](#third-party-notices) |
 
@@ -118,10 +121,12 @@ spec came from. The next regeneration reads it to list what has changed since.
 The regeneration runs `go generate ./...` last, so `docs/` moves in the same commit as the
 schemas it documents, and `THIRD_PARTY_NOTICES` with the SDK pin.
 
-Two things the bot leaves behind for whoever merges it. README.md's tables of every resource,
+Three things the bot leaves behind for whoever merges it. README.md's tables of every resource,
 data source and import id are hand-written, so a pull request that adds a resource leaves them
 stale. And a new resource ships with no `examples/` entry; those are written deliberately,
-afterwards, rather than generated, so until then its registry page has no example.
+afterwards, rather than generated, so until then its registry page has no example. And the merge
+is a release. If the regeneration removes or renames an attribute or makes one required, bump
+`VERSION` in the same pull request first (see [Releasing](#releasing)).
 
 ## Running a locally built provider
 
@@ -163,11 +168,11 @@ and permitted here, per the carve-out above. Never commit directly to `main`.
 The provider is published to the Terraform Registry as `monte-carlo-data/montecarlo`. The
 address is permanent, and a published version cannot be withdrawn.
 
-Every merge to `main` is a release. `.github/workflows/tag.yml` tags the merge commit
+Every merge to `main` is a release. `.github/scripts/next-tag.sh` works out the tag
 `v<base>.<n>`: `<base>` is the major.minor in `VERSION`, and `<n>` is one past the highest patch
-already tagged on that base. `.github/scripts/next-tag.sh` works the tag out, and CI runs its
-test. The tag is pushed by the org App, which with Apollo is the only actor allowed to create
-tags. A tag pushed with `GITHUB_TOKEN` would not start the release.
+already tagged on that base. CI runs its test, and validates `VERSION`, on every pull request. The
+org App and the `apollo` team are the only actors allowed to create tags. The same script, its test
+and the `tag` job also live in mc-sdk-go; change them together.
 
 Only the patch is bumped automatically. To start a new minor, change `VERSION` (`0.1` to `0.2`)
 in a pull request; its merge is tagged `v0.2.0`. The README tells users to pin `~> 0.1.0` and
@@ -177,23 +182,23 @@ provider is in beta.
 
 ### How a release is built
 
-The tag runs `.github/workflows/release.yml`. GoReleaser (`.goreleaser.yml`) cross-compiles
-every platform, zips each one, writes the `SHA256SUMS` file with
-`terraform-registry-manifest.json` in it, signs that file with GPG and attaches it all to a
-GitHub release, which it publishes only once every asset is uploaded. The registry picks the
-release up from there. Don't create a release in the GitHub UI: that publishes it before its
-assets exist, and the registry then misses the version until it is resynced.
+On a push to `main`, CI's `tag` job, once the build and `release-snapshot` jobs pass, tags the
+merge commit, and the `release` job builds, signs and publishes it from `main`'s own workflow
+file. GoReleaser (`.goreleaser.yml`) cross-compiles every platform, zips each one, writes the
+`SHA256SUMS` file with `terraform-registry-manifest.json` in it, signs that file with GPG and
+attaches it all to a GitHub release, which it publishes only once every asset is uploaded. The
+registry picks the release up from there. Don't create a release in the GitHub UI: that publishes
+it before its assets exist, and the registry then misses the version until it is resynced.
 
 The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
-`GPG_PASSPHRASE`, which only jobs running on a `v*` tag can use. The registry checks each release
-against the public half of the same key. The release refuses a tag whose commit is not on
-`main`, since that commit skipped review.
+`GPG_PASSPHRASE`. The environment only accepts `main`, so the key never reaches a workflow that
+runs from a tag or a branch. The registry checks each release against the public half of the same
+key. If the `release` job fails, use "Re-run failed jobs": re-running all jobs finds the commit
+already tagged and skips the release. A commit older than an already-tagged one is never tagged.
 
 CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
-so a change that breaks a release fails before it merges. Tags are immutable, so a release that
-fails after tagging burns its version; the next merge releases the next one. To reproduce it
-locally, without signing, using the GoReleaser version pinned in
-`.github/actions/goreleaser/action.yml`:
+so a change that breaks a release fails before it merges. To reproduce it locally, without
+signing, using the GoReleaser version pinned in `.github/actions/goreleaser/action.yml`:
 
 ```bash
 go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
@@ -201,7 +206,7 @@ go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --
 
 ### The Go SDK pin
 
-`go.mod` pins the Go SDK to a pseudo-version, a commit, rather than to a release tag. Moving the
+`go.mod` pins the Go SDK at the version its generated code was built against. Moving the
 pin means regenerating, not `go get`. The SDK and the files under `internal/provider/` come from
 one spec export and move together. A constructor's parameters follow the order the spec
 declares the properties in. An export that changes that order changes signatures with no schema

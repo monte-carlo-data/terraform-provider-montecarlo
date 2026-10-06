@@ -22,7 +22,7 @@ terraform {
 }
 ```
 
-> There are community providers with the same name. This one will be published as
+> There are community providers with the same name. This one is published as
 > `monte-carlo-data/montecarlo` — check the source when adding it.
 
 Requires Terraform 1.11 or later, the first release with write-only arguments; see

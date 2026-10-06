@@ -68,5 +68,6 @@ regeneration diff that nobody made. AGENTS.md carries the same rule with the ful
 
 ## Verification
 
-`go build ./...`, `go vet ./...`, `gofmt -l .` (must be empty), and `go test -race ./...`. CI runs
-all four on every pull request and on every push to `main`.
+`go build ./...`, `go vet ./...`, `gofmt -l .` (must be empty), `go test -race ./...`, and
+`.github/scripts/next-tag_test.sh`. CI runs all five on every pull request and on every push to
+`main`.
