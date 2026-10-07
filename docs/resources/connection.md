@@ -3,12 +3,12 @@
 page_title: "montecarlo_connection Resource - Monte Carlo"
 subcategory: ""
 description: |-
-  A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.
+  A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.
 ---
 
 # montecarlo_connection (Resource)
 
-A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.
+A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.
 
 ## Example Usage
 
@@ -144,21 +144,23 @@ output "job_types" {
 ### Required
 
 - `credentials_id` (String) The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints.
-- `name` (String) Display name for the connection. Unique among the connections of its warehouse or BI container.
+- `name` (String) Display name for the connection. Unique among the connections of its warehouse or BI container. An ETL container holds one connection.
 
 ### Optional
 
-- `bi_container_id` (String) The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send this or `warehouse_id`, not both.
+- `bi_container_id` (String) The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send exactly one of this, `warehouse_id` and `etl_container_id`.
+- `etl_container_id` (String) The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. Send exactly one of this, `warehouse_id` and `bi_container_id`.
 - `job_types` (List of String) The jobs to run on this connection. Omit it to run what the connection type runs by default, which is what the app does. Which values are accepted depends on the connection type. An empty list is not accepted; omit the field to take the defaults.
-- `warehouse_id` (String) The warehouse to add the connection to. Its type has to match what the credentials are for. Send this or `bi_container_id`, not both.
+- `warehouse_id` (String) The warehouse to add the connection to. Its type has to match what the credentials are for. Send exactly one of this, `bi_container_id` and `etl_container_id`.
 
 ### Read-Only
 
-- `bi_container_name` (String) Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.
+- `bi_container_name` (String) Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.
 - `connection_type` (String) What the connection reaches, such as `snowflake`. Taken from the credentials the connection was created with, and fixed once created.
 - `created_time` (String) When the connection was created.
 - `credentials_storage_type` (String) Where that secret lives. Null when there are no credentials to describe.
-- `deployment_id` (String) The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.
+- `deployment_id` (String) The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.
 - `deployment_name` (String) Display name of that deployment. Null when there is no deployment to name.
+- `etl_container_name` (String) Display name of that ETL container. Null when there is no ETL container.
 - `id` (String) Unique identifier of the connection.
-- `warehouse_name` (String) Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.
+- `warehouse_name` (String) Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.

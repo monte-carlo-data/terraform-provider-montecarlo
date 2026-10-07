@@ -14,13 +14,13 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"bi_container_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The BI container the connection belongs to. Null for a connection on a warehouse. Fixed once created.",
-				MarkdownDescription: "The BI container the connection belongs to. Null for a connection on a warehouse. Fixed once created.",
+				Description:         "The BI container the connection belongs to. Null for a connection on a warehouse or an ETL container. Fixed once created.",
+				MarkdownDescription: "The BI container the connection belongs to. Null for a connection on a warehouse or an ETL container. Fixed once created.",
 			},
 			"bi_container_name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
-				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
+				Description:         "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.",
+				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.",
 			},
 			"connection_id": schema.StringAttribute{
 				Required:            true,
@@ -49,13 +49,23 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
-				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				Description:         "The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Display name of that deployment. Null when there is no deployment to name.",
 				MarkdownDescription: "Display name of that deployment. Null when there is no deployment to name.",
+			},
+			"etl_container_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI dataflows, and it changes when that is turned on or off. Null otherwise.",
+				MarkdownDescription: "The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI dataflows, and it changes when that is turned on or off. Null otherwise.",
+			},
+			"etl_container_name": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Display name of that ETL container. Null when there is no ETL container.",
+				MarkdownDescription: "Display name of that ETL container. Null when there is no ETL container.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -75,17 +85,17 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"warehouse_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The warehouse the connection belongs to. Null for a connection on a BI container. Fixed once created.",
-				MarkdownDescription: "The warehouse the connection belongs to. Null for a connection on a BI container. Fixed once created.",
+				Description:         "The warehouse the connection belongs to. Null for a connection on a BI or ETL container. Fixed once created.",
+				MarkdownDescription: "The warehouse the connection belongs to. Null for a connection on a BI or ETL container. Fixed once created.",
 			},
 			"warehouse_name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
-				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
+				Description:         "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.",
+				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.",
 			},
 		},
-		Description:         "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
-		MarkdownDescription: "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
+		Description:         "A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.",
+		MarkdownDescription: "A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.",
 	}
 }
 
@@ -99,6 +109,8 @@ type ConnectionModel struct {
 	CredentialsStorageType types.String `tfsdk:"credentials_storage_type"`
 	DeploymentId           types.String `tfsdk:"deployment_id"`
 	DeploymentName         types.String `tfsdk:"deployment_name"`
+	EtlContainerId         types.String `tfsdk:"etl_container_id"`
+	EtlContainerName       types.String `tfsdk:"etl_container_name"`
 	Id                     types.String `tfsdk:"id"`
 	JobTypes               types.List   `tfsdk:"job_types"`
 	Name                   types.String `tfsdk:"name"`
