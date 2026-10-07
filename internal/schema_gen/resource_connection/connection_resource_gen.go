@@ -18,13 +18,13 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			"bi_container_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send this or `warehouse_id`, not both.",
-				MarkdownDescription: "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send this or `warehouse_id`, not both.",
+				Description:         "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send exactly one of this, `warehouse_id` and `etl_container_id`.",
+				MarkdownDescription: "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send exactly one of this, `warehouse_id` and `etl_container_id`.",
 			},
 			"bi_container_name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
-				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.",
+				Description:         "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.",
+				MarkdownDescription: "Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.",
 			},
 			"connection_type": schema.StringAttribute{
 				Computed:            true,
@@ -48,13 +48,24 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
-				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				Description:         "The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
+				MarkdownDescription: "The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Display name of that deployment. Null when there is no deployment to name.",
 				MarkdownDescription: "Display name of that deployment. Null when there is no deployment to name.",
+			},
+			"etl_container_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. Send exactly one of this, `warehouse_id` and `bi_container_id`.",
+				MarkdownDescription: "The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. Send exactly one of this, `warehouse_id` and `bi_container_id`.",
+			},
+			"etl_container_name": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Display name of that ETL container. Null when there is no ETL container.",
+				MarkdownDescription: "Display name of that ETL container. Null when there is no ETL container.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -73,8 +84,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				Description:         "Display name for the connection. Unique among the connections of its warehouse or BI container.",
-				MarkdownDescription: "Display name for the connection. Unique among the connections of its warehouse or BI container.",
+				Description:         "Display name for the connection. Unique among the connections of its warehouse or BI container. An ETL container holds one connection.",
+				MarkdownDescription: "Display name for the connection. Unique among the connections of its warehouse or BI container. An ETL container holds one connection.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
@@ -82,17 +93,17 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			"warehouse_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The warehouse to add the connection to. Its type has to match what the credentials are for. Send this or `bi_container_id`, not both.",
-				MarkdownDescription: "The warehouse to add the connection to. Its type has to match what the credentials are for. Send this or `bi_container_id`, not both.",
+				Description:         "The warehouse to add the connection to. Its type has to match what the credentials are for. Send exactly one of this, `bi_container_id` and `etl_container_id`.",
+				MarkdownDescription: "The warehouse to add the connection to. Its type has to match what the credentials are for. Send exactly one of this, `bi_container_id` and `etl_container_id`.",
 			},
 			"warehouse_name": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
-				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.",
+				Description:         "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.",
+				MarkdownDescription: "Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.",
 			},
 		},
-		Description:         "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
-		MarkdownDescription: "A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.",
+		Description:         "A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.",
+		MarkdownDescription: "A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.",
 	}
 }
 
@@ -105,6 +116,8 @@ type ConnectionModel struct {
 	CredentialsStorageType types.String `tfsdk:"credentials_storage_type"`
 	DeploymentId           types.String `tfsdk:"deployment_id"`
 	DeploymentName         types.String `tfsdk:"deployment_name"`
+	EtlContainerId         types.String `tfsdk:"etl_container_id"`
+	EtlContainerName       types.String `tfsdk:"etl_container_name"`
 	Id                     types.String `tfsdk:"id"`
 	JobTypes               types.List   `tfsdk:"job_types"`
 	Name                   types.String `tfsdk:"name"`

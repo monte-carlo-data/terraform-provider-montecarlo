@@ -3,12 +3,12 @@
 page_title: "montecarlo_connection Data Source - Monte Carlo"
 subcategory: ""
 description: |-
-  A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.
+  A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.
 ---
 
 # montecarlo_connection (Data Source)
 
-A connection lets Monte Carlo reach a warehouse's data platform or a BI container's BI tool with one set of credentials. It belongs to a warehouse or a BI container and takes its type from the credentials it references.
+A connection lets Monte Carlo reach a warehouse's data platform, a BI container's BI tool or an ETL container's ETL tool with one set of credentials. It belongs to a warehouse, a BI container or an ETL container and takes its type from the credentials it references.
 
 
 
@@ -21,16 +21,18 @@ A connection lets Monte Carlo reach a warehouse's data platform or a BI containe
 
 ### Read-Only
 
-- `bi_container_id` (String) The BI container the connection belongs to. Null for a connection on a warehouse. Fixed once created.
-- `bi_container_name` (String) Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse.
+- `bi_container_id` (String) The BI container the connection belongs to. Null for a connection on a warehouse or an ETL container. Fixed once created.
+- `bi_container_name` (String) Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.
 - `connection_type` (String) What the connection reaches, such as `snowflake`. Taken from the credentials the connection was created with, and fixed once created.
 - `created_time` (String) When the connection was created.
 - `credentials_id` (String) The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.
 - `credentials_storage_type` (String) Where that secret lives. Null when there are no credentials to describe.
-- `deployment_id` (String) The deployment the connection runs through, taken from its warehouse or BI container. Null when that has no deployment. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.
+- `deployment_id` (String) The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.
 - `deployment_name` (String) Display name of that deployment. Null when there is no deployment to name.
+- `etl_container_id` (String) The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI dataflows, and it changes when that is turned on or off. Null otherwise.
+- `etl_container_name` (String) Display name of that ETL container. Null when there is no ETL container.
 - `id` (String) Unique identifier of the connection.
 - `job_types` (List of String) The jobs Monte Carlo runs on this connection, such as `metadata`.
 - `name` (String) Display name of the connection. Null for a connection that was never named.
-- `warehouse_id` (String) The warehouse the connection belongs to. Null for a connection on a BI container. Fixed once created.
-- `warehouse_name` (String) Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI container.
+- `warehouse_id` (String) The warehouse the connection belongs to. Null for a connection on a BI or ETL container. Fixed once created.
+- `warehouse_name` (String) Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.

@@ -91,6 +91,16 @@ func (d *connectionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	} else {
 		m.DeploymentName = types.StringNull()
 	}
+	if v, ok := out.GetEtlContainerIdOk(); ok && v != nil {
+		m.EtlContainerId = types.StringValue(*v)
+	} else {
+		m.EtlContainerId = types.StringNull()
+	}
+	if v, ok := out.GetEtlContainerNameOk(); ok && v != nil {
+		m.EtlContainerName = types.StringValue(*v)
+	} else {
+		m.EtlContainerName = types.StringNull()
+	}
 	if v, ok := out.GetNameOk(); ok && v != nil {
 		m.Name = types.StringValue(*v)
 	} else {
