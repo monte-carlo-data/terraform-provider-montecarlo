@@ -172,7 +172,7 @@ Every merge to `main` is a release. `.github/scripts/next-tag.sh` works out the 
 `v<base>.<n>`: `<base>` is the major.minor in `VERSION`, and `<n>` is one past the highest patch
 already tagged on that base. CI runs its test, and validates `VERSION`, on every pull request. The
 org App and the `apollo` team are the only actors allowed to create tags. The same script, its test
-and the `tag` job also live in mc-sdk-go; change them together.
+and the `tag` job also live in mc-sdk-go and mc-cli; change them together.
 
 Only the patch is bumped automatically. To start a new minor, change `VERSION` (`0.1` to `0.2`)
 in a pull request; its merge is tagged `v0.2.0`. The README tells users to pin `~> 0.1.0` and
