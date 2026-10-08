@@ -34,7 +34,6 @@ func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaReques
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
 	useNonNullStateForUnknown(s.Attributes, "connection.etl_container_id", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "connection.job_types", &resp.Diagnostics)
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.connection_type", &resp.Diagnostics)
@@ -45,7 +44,6 @@ func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaReques
 	requiresReplace(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.etl_container_id", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "connection.job_types", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	resp.Schema = s
 }
@@ -121,6 +119,9 @@ func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	body := sdk.NewConnectionPatch()
+	if !plan.JobTypes.IsNull() && !plan.JobTypes.IsUnknown() {
+		body.SetJobTypes(listOfStrings(ctx, plan.JobTypes))
+	}
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
