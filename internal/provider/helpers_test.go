@@ -51,6 +51,27 @@ var planModifierHelpers = map[string]planModifierHelper{
 		description: "Once set, the value of this attribute in state will not change.",
 		consequence: "replace the resource when it also requires replacement",
 	},
+	"useStateUnlessChanged": {
+		apply:       withSibling(useStateUnlessChanged),
+		description: "The value of this attribute in state will not change unless sibling changes.",
+		consequence: "replace the resource when it also requires replacement",
+	},
+	"requiresReplaceIfConfigured": {
+		apply:       requiresReplaceIfConfigured,
+		description: "If the configured value of this attribute changes, Terraform will destroy and recreate the resource.",
+		consequence: "in-place update the API does not implement",
+	},
+}
+
+// withSibling adapts useStateUnlessChanged to the table's signature. It names one sibling,
+// "sibling", and adds it to the schema, so the table's tests exercise the attribute's own type.
+func withSibling(
+	helper func(map[string]schema.Attribute, string, []string, *diag.Diagnostics),
+) func(map[string]schema.Attribute, string, *diag.Diagnostics) {
+	return func(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+		attrs["sibling"] = schema.StringAttribute{}
+		helper(attrs, name, []string{"sibling"}, diags)
+	}
 }
 
 // everyAttributeType is one of each type the generated schemas can contain.
@@ -485,6 +506,154 @@ func TestHoldingAnUnreturnedValueAfterTheReplacementComesTooLate(t *testing.T) {
 	if !replace {
 		t.Error("RequiresReplace = false, so this order is safe and the generated one need not be")
 	}
+}
+
+func TestUseStateUnlessChangedReportsASiblingThatIsNotAnotherAttribute(t *testing.T) {
+	for name, siblings := range map[string][]string{
+		"none":    nil,
+		"absent":  {"job_type"},
+		"itself":  {"etl_container_id"},
+		"one bad": {"job_types", "job_type"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := map[string]schema.Attribute{
+				"etl_container_id": schema.StringAttribute{Optional: true, Computed: true},
+				"job_types":        schema.ListAttribute{ElementType: types.StringType, Optional: true, Computed: true},
+			}
+			var diags diag.Diagnostics
+
+			useStateUnlessChanged(attrs, "connection.etl_container_id", siblings, &diags)
+
+			if !diags.HasError() {
+				t.Fatal("a sibling the schema cannot compare must not pass in silence")
+			}
+			if detail := diags.Errors()[0].Detail(); !strings.Contains(detail, "connection.etl_container_id") {
+				t.Errorf("the error must name the attribute, got %q", detail)
+			}
+		})
+	}
+}
+
+// A connection's etl_container_id: null on a warehouse connection until `etl` is added to its
+// job_types, and fixed on an ETL container's connection. Both modifiers run in the order the
+// generated schema attaches them.
+func TestAnAttributeHeldUnlessASiblingChangesIsReplacedOnlyByItsConfig(t *testing.T) {
+	jobs := func(values ...string) tftypes.Value {
+		elems := make([]tftypes.Value, 0, len(values))
+		for _, v := range values {
+			elems = append(elems, tftypes.NewValue(tftypes.String, v))
+		}
+		return tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, elems)
+	}
+	nullJobs := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, nil)
+	unknownJobs := tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, tftypes.UnknownValue)
+	unknownID := types.StringUnknown()
+
+	for name, tc := range map[string]struct {
+		stateID, planID, configID       types.String
+		stateJobs, planJobs, configJobs tftypes.Value
+		create                          bool
+		want                            types.String
+		wantReplace                     bool
+	}{
+		// Martin's rename: job_types is omitted, so it plans unknown and is not sent.
+		"a rename keeps a null": {
+			stateID: types.StringNull(), planID: unknownID, configID: types.StringNull(),
+			stateJobs: jobs("metadata"), planJobs: unknownJobs, configJobs: nullJobs,
+			want: types.StringNull(),
+		},
+		"a rename keeps a value the config omits": {
+			stateID: types.StringValue("c1"), planID: unknownID, configID: types.StringNull(),
+			stateJobs: jobs("metadata", "etl"), planJobs: unknownJobs, configJobs: nullJobs,
+			want: types.StringValue("c1"),
+		},
+		"a rename with the same job_types configured keeps a null": {
+			stateID: types.StringNull(), planID: unknownID, configID: types.StringNull(),
+			stateJobs: jobs("metadata"), planJobs: jobs("metadata"), configJobs: jobs("metadata"),
+			want: types.StringNull(),
+		},
+		"adding etl plans it unknown in place": {
+			stateID: types.StringNull(), planID: unknownID, configID: types.StringNull(),
+			stateJobs: jobs("metadata"), planJobs: jobs("metadata", "etl"), configJobs: jobs("metadata", "etl"),
+			want: unknownID,
+		},
+		"removing etl plans it unknown in place": {
+			stateID: types.StringValue("c1"), planID: unknownID, configID: types.StringNull(),
+			stateJobs: jobs("metadata", "etl"), planJobs: jobs("metadata"), configJobs: jobs("metadata"),
+			want: unknownID,
+		},
+		"job_types the config sets to an unknown value plans it unknown": {
+			stateID: types.StringNull(), planID: unknownID, configID: types.StringNull(),
+			stateJobs: jobs("metadata"), planJobs: unknownJobs, configJobs: unknownJobs,
+			want: unknownID,
+		},
+		"a configured value that changes replaces": {
+			stateID: types.StringValue("c1"), planID: types.StringValue("c2"), configID: types.StringValue("c2"),
+			stateJobs: jobs("metadata"), planJobs: unknownJobs, configJobs: nullJobs,
+			want: types.StringValue("c2"), wantReplace: true,
+		},
+		"a configured value that stays does not replace when job_types changes": {
+			stateID: types.StringValue("c1"), planID: types.StringValue("c1"), configID: types.StringValue("c1"),
+			stateJobs: jobs("metadata"), planJobs: jobs("metadata", "logs"), configJobs: jobs("metadata", "logs"),
+			want: types.StringValue("c1"),
+		},
+		"create leaves it unknown": {
+			create: true, stateID: types.StringNull(), planID: unknownID, configID: types.StringNull(),
+			stateJobs: nullJobs, planJobs: unknownJobs, configJobs: nullJobs,
+			want: unknownID,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			attrs := map[string]schema.Attribute{
+				"etl_container_id": schema.StringAttribute{Optional: true, Computed: true},
+				"job_types":        schema.ListAttribute{ElementType: types.StringType, Optional: true, Computed: true},
+			}
+			var diags diag.Diagnostics
+			useStateUnlessChanged(attrs, "connection.etl_container_id", []string{"job_types"}, &diags)
+			requiresReplaceIfConfigured(attrs, "connection.etl_container_id", &diags)
+			if diags.HasError() {
+				t.Fatalf("reported %v", diags.Errors())
+			}
+
+			s := schema.Schema{Attributes: attrs}
+			state := connectionRaw(tc.stateID, tc.stateJobs)
+			if tc.create {
+				state = tftypes.NewValue(connectionType, nil)
+			}
+			planned, replace := chainStringModifiers(t, attrs["etl_container_id"], planmodifier.StringRequest{
+				State:       tfsdk.State{Schema: s, Raw: state},
+				Plan:        tfsdk.Plan{Schema: s, Raw: connectionRaw(tc.planID, tc.planJobs)},
+				Config:      tfsdk.Config{Schema: s, Raw: connectionRaw(tc.configID, tc.configJobs)},
+				StateValue:  tc.stateID,
+				PlanValue:   tc.planID,
+				ConfigValue: tc.configID,
+			})
+
+			if !planned.Equal(tc.want) {
+				t.Errorf("planned %s, want %s", planned, tc.want)
+			}
+			if replace != tc.wantReplace {
+				t.Errorf("RequiresReplace = %t, want %t", replace, tc.wantReplace)
+			}
+		})
+	}
+}
+
+var connectionType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+	"etl_container_id": tftypes.String,
+	"job_types":        tftypes.List{ElementType: tftypes.String},
+}}
+
+// connectionRaw is a whole-resource value holding etl_container_id and job_types.
+func connectionRaw(id types.String, jobs tftypes.Value) tftypes.Value {
+	raw := tftypes.NewValue(tftypes.String, nil)
+	switch {
+	case id.IsUnknown():
+		raw = tftypes.NewValue(tftypes.String, tftypes.UnknownValue)
+	case !id.IsNull():
+		raw = tftypes.NewValue(tftypes.String, id.ValueString())
+	}
+	return tftypes.NewValue(connectionType, map[string]tftypes.Value{"etl_container_id": raw, "job_types": jobs})
 }
 
 // chainStringModifiers runs every modifier attached to a string attribute the way the framework
