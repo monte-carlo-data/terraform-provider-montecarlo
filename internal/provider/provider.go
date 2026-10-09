@@ -198,6 +198,7 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 		NewBigqueryCredentialsDataSource,
 		NewClickhouseCredentialsDataSource,
 		NewConnectionDataSource,
+		NewCustomConnectorTypeDataSource,
 		NewDatabricksMetastoreSqlWarehouseCredentialsDataSource,
 		NewDatabricksSqlWarehouseCredentialsDataSource,
 		NewDb2CredentialsDataSource,

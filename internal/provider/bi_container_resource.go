@@ -62,7 +62,10 @@ func (r *biContainerResource) Create(ctx context.Context, req resource.CreateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewBiContainerIn(sdk.NewBiContainerType(plan.Type.ValueString()), plan.Name.ValueString(), plan.DeploymentId.ValueString())
+	body := sdk.NewBiContainerIn(sdk.NewBiContainerType(plan.Type.ValueString()), plan.Name.ValueString())
+	if !plan.DeploymentId.IsNull() && !plan.DeploymentId.IsUnknown() {
+		body.SetDeploymentId(plan.DeploymentId.ValueString())
+	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.BiContainerOut, *http.Response, error) {
 		return r.clients.api.BiContainersAPI.CreateBiContainer(ctx).BiContainerIn(*body).Execute()

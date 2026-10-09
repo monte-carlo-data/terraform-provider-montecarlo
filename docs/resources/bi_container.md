@@ -3,12 +3,12 @@
 page_title: "montecarlo_bi_container Resource - Monte Carlo"
 subcategory: ""
 description: |-
-  A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.
+  A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site, a Power BI tenant or a custom BI connector. It runs on a deployment, and every connection added to it goes through that deployment. deployment_id is required for Looker, Tableau and Power BI. A custom-bi-connector container takes the deployment of the agent that registered the connector, or none for a push-only connector, whose BI assets are pushed to Monte Carlo.
 ---
 
 # montecarlo_bi_container (Resource)
 
-A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.
+A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site, a Power BI tenant or a custom BI connector. It runs on a deployment, and every connection added to it goes through that deployment. `deployment_id` is required for Looker, Tableau and Power BI. A `custom-bi-connector` container takes the deployment of the agent that registered the connector, or none for a push-only connector, whose BI assets are pushed to Monte Carlo.
 
 
 
@@ -17,9 +17,12 @@ A BI container groups the connections Monte Carlo uses to monitor one BI tool: a
 
 ### Required
 
-- `deployment_id` (String) The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted.
 - `name` (String) Display name for the BI container.
 - `type` (String) The BI tool the container represents. Every connection added to it has to be for this tool. Cannot be changed after the container is created.
+
+### Optional
+
+- `deployment_id` (String) The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `custom-bi-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.
 
 ### Read-Only
 
