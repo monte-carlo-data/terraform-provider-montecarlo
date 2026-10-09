@@ -37,8 +37,8 @@ func EtlContainerDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"is_synthetic": schema.BoolAttribute{
 				Computed:            true,
-				Description:         "True for a container this API does not create or delete. Most belong to another connection, such as a warehouse or BI connection, and go away with it.",
-				MarkdownDescription: "True for a container this API does not create or delete. Most belong to another connection, such as a warehouse or BI connection, and go away with it.",
+				Description:         "True for a container that belongs to a warehouse or BI connection and goes away with it. This API does not create or delete one. Fixed by the type.",
+				MarkdownDescription: "True for a container that belongs to a warehouse or BI connection and goes away with it. This API does not create or delete one. Fixed by the type.",
 			},
 			"name": schema.StringAttribute{
 				Computed:            true,

@@ -37,9 +37,10 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the connection was created.",
 			},
 			"credentials_id": schema.StringAttribute{
-				Required:            true,
-				Description:         "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints.",
-				MarkdownDescription: "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints.",
+				Optional:            true,
+				Computed:            true,
+				Description:         "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only ETL container: a `custom-etl-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
+				MarkdownDescription: "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only ETL container: a `custom-etl-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
 			},
 			"credentials_storage_type": schema.StringAttribute{
 				Computed:            true,
@@ -59,8 +60,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			"etl_container_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. Send exactly one of this, `warehouse_id` and `bi_container_id`.",
-				MarkdownDescription: "The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. Send exactly one of this, `warehouse_id` and `bi_container_id`.",
+				Description:         "The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. A `custom-etl-connector` container takes a custom ETL connector's credentials, or none when it has no deployment. Send exactly one of this, `warehouse_id` and `bi_container_id`.",
+				MarkdownDescription: "The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. A `custom-etl-connector` container takes a custom ETL connector's credentials, or none when it has no deployment. Send exactly one of this, `warehouse_id` and `bi_container_id`.",
 			},
 			"etl_container_name": schema.StringAttribute{
 				Computed:            true,
