@@ -33,6 +33,7 @@ func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaReques
 	s := resource_connection.ConnectionResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
+	useNonNullStateForUnknown(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	useNonNullStateForUnknown(s.Attributes, "connection.etl_container_id", &resp.Diagnostics)
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
@@ -67,9 +68,12 @@ func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewConnectionIn(plan.Name.ValueString(), plan.CredentialsId.ValueString())
+	body := sdk.NewConnectionIn(plan.Name.ValueString())
 	if !plan.BiContainerId.IsNull() && !plan.BiContainerId.IsUnknown() {
 		body.SetBiContainerId(plan.BiContainerId.ValueString())
+	}
+	if !plan.CredentialsId.IsNull() && !plan.CredentialsId.IsUnknown() {
+		body.SetCredentialsId(plan.CredentialsId.ValueString())
 	}
 	if !plan.EtlContainerId.IsNull() && !plan.EtlContainerId.IsUnknown() {
 		body.SetEtlContainerId(plan.EtlContainerId.ValueString())

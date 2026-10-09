@@ -22,8 +22,8 @@ func EtlContainerResourceSchema(ctx context.Context) schema.Schema {
 			"deployment_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. Required for every type except `airflow`, which takes none.",
-				MarkdownDescription: "The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. Required for every type except `airflow`, which takes none.",
+				Description:         "The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `airflow` takes none. `custom-etl-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.",
+				MarkdownDescription: "The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `airflow` takes none. `custom-etl-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
@@ -37,8 +37,8 @@ func EtlContainerResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"is_synthetic": schema.BoolAttribute{
 				Computed:            true,
-				Description:         "True for a container this API does not create or delete. Most belong to another connection, such as a warehouse or BI connection, and go away with it.",
-				MarkdownDescription: "True for a container this API does not create or delete. Most belong to another connection, such as a warehouse or BI connection, and go away with it.",
+				Description:         "True for a container that belongs to a warehouse or BI connection and goes away with it. This API does not create or delete one. Fixed by the type.",
+				MarkdownDescription: "True for a container that belongs to a warehouse or BI connection and goes away with it. This API does not create or delete one. Fixed by the type.",
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
@@ -56,6 +56,7 @@ func EtlContainerResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.OneOf(
 						"airflow",
 						"azure-data-factory",
+						"custom-etl-connector",
 						"fivetran",
 						"gcp-dataform",
 						"informatica-v2",

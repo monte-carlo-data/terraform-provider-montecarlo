@@ -22,11 +22,11 @@ description: |-
 
 ### Optional
 
-- `deployment_id` (String) The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. Required for every type except `airflow`, which takes none.
+- `deployment_id` (String) The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `airflow` takes none. `custom-etl-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.
 
 ### Read-Only
 
 - `created_time` (String) When the ETL container was created.
 - `deployment_name` (String) Display name of the deployment. Null exactly when `deployment_id` is.
 - `id` (String) Unique identifier of the ETL container.
-- `is_synthetic` (Boolean) True for a container this API does not create or delete. Most belong to another connection, such as a warehouse or BI connection, and go away with it.
+- `is_synthetic` (Boolean) True for a container that belongs to a warehouse or BI connection and goes away with it. This API does not create or delete one. Fixed by the type.
