@@ -28,7 +28,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 )
@@ -339,8 +341,9 @@ func requiresReplace(attrs map[string]schema.Attribute, name string, diags *diag
 // row was first read — would then plan as null and apply as a value, which Terraform rejects
 // as an inconsistent result. This one leaves a null state unknown.
 //
-// The generated code calls this for every response field marked `x-mc-terraform-stable`, and
-// for every create-only output: a value the API returns once can never change on an update.
+// The generated code calls this for every create-only output, since a value the API returns
+// once can never change on an update, and for every unmarked optional response field the update
+// body refuses.
 func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseNonNullStateForUnknown(),
@@ -366,10 +369,11 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 // unknown planned value is what `requiresReplace` reads as a change, so an unreturned attribute
 // that requires replacement destroys the resource on any edit until its null is held.
 //
-// Only safe because no response carries these: an attribute the API fills in later needs the
-// non-null variant, or the plan says null and the apply says otherwise.
+// Only safe where a null is final: an attribute the API fills in later needs the non-null
+// variant, or the plan says null and the apply says otherwise.
 //
-// The generated code calls this for every optional unreturned input that requires replacement.
+// The generated code calls this for every response field marked `x-mc-terraform-stable`, whose
+// null is final, and for every optional unreturned input that requires replacement.
 func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseStateForUnknown(),
@@ -385,6 +389,218 @@ func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *d
 		set:     setplanmodifier.UseStateForUnknown(),
 		object:  objectplanmodifier.UseStateForUnknown(),
 	}, "Terraform would plan the attribute as unknown on every update, and replace the resource when it also requires replacement.", diags)
+}
+
+// useStateUnlessChanged keeps an attribute's prior state value in the plan, including a null one,
+// unless the update changes one of the named sibling attributes. Then it leaves the attribute
+// unknown, because the API may set it as a result.
+//
+// A connection's `etl_container_id` is the case: adding `etl` to a Snowflake connection's
+// `job_types` creates an ETL container, and removing it clears the id again. Any other update
+// leaves the id as it is, null included, so a rename must not plan it unknown.
+//
+// A sibling changes when its planned value is known and differs from state, or when it is
+// configured and still unknown. A sibling the config omits and the plan leaves unknown is not
+// sent, so it does not change.
+//
+// The generated code calls this for every response field marked `x-mc-terraform-stable-unless`,
+// with the siblings the marker names.
+func useStateUnlessChanged(attrs map[string]schema.Attribute, name string, siblings []string, diags *diag.Diagnostics) {
+	const consequence = "Terraform would plan the attribute as unknown on every update, and replace the resource when it also requires replacement."
+	m := stateUnlessChanged{siblings: siblings}
+	before := diags.ErrorsCount()
+	applyPlanModifier(attrs, name, planModifierSet{
+		str: m, boolean: m, i32: m, i64: m, f32: m, f64: m, dynamic: m, number: m,
+		list: m, mapping: m, set: m, object: m,
+	}, consequence, diags)
+	if diags.ErrorsCount() > before {
+		return
+	}
+	if len(siblings) == 0 {
+		diags.AddError("provider bug", fmt.Sprintf("%s names no sibling attributes. %s", name, consequence))
+	}
+	_, attribute, _ := strings.Cut(name, ".")
+	for _, sibling := range siblings {
+		if _, ok := attrs[sibling]; !ok || sibling == attribute {
+			diags.AddError(
+				"provider bug",
+				fmt.Sprintf("%s names %q, which is not another attribute in the generated schema. %s", name, sibling, consequence),
+			)
+		}
+	}
+}
+
+// stateUnlessChanged is the plan modifier useStateUnlessChanged attaches, for every attribute type.
+type stateUnlessChanged struct{ siblings []string }
+
+func (m stateUnlessChanged) Description(context.Context) string {
+	return fmt.Sprintf("The value of this attribute in state will not change unless %s changes.", strings.Join(m.siblings, " or "))
+}
+
+func (m stateUnlessChanged) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+// keep reports whether to plan the state value. Only an update's unknown plan value is replaced:
+// a create has no state, and a known value is already settled by the config.
+func (m stateUnlessChanged) keep(state tfsdk.State, plan tfsdk.Plan, config tfsdk.Config, planned attr.Value, diags *diag.Diagnostics) bool {
+	if state.Raw.IsNull() || !planned.IsUnknown() {
+		return false
+	}
+	for _, sibling := range m.siblings {
+		at := tftypes.NewAttributePath().WithAttributeName(sibling)
+		prior, errState := rawAttribute(state.Raw, at)
+		next, errPlan := rawAttribute(plan.Raw, at)
+		configured, errConfig := rawAttribute(config.Raw, at)
+		if err := errors.Join(errState, errPlan, errConfig); err != nil {
+			diags.AddError("provider bug", fmt.Sprintf("reading %s: %s", sibling, err))
+			return false
+		}
+		if next.IsFullyKnown() {
+			if !next.Equal(prior) {
+				return false
+			}
+		} else if !configured.IsNull() {
+			return false
+		}
+	}
+	return true
+}
+
+// rawAttribute is the value of a top-level attribute of a whole-resource value.
+func rawAttribute(v tftypes.Value, at *tftypes.AttributePath) (tftypes.Value, error) {
+	got, _, err := tftypes.WalkAttributePath(v, at)
+	if err != nil {
+		return tftypes.Value{}, err
+	}
+	value, ok := got.(tftypes.Value)
+	if !ok {
+		return tftypes.Value{}, fmt.Errorf("%s is a %T, not a value", at, got)
+	}
+	return value, nil
+}
+
+func (m stateUnlessChanged) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyBool(_ context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyInt32(_ context.Context, req planmodifier.Int32Request, resp *planmodifier.Int32Response) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyInt64(_ context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyFloat32(_ context.Context, req planmodifier.Float32Request, resp *planmodifier.Float32Response) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyFloat64(_ context.Context, req planmodifier.Float64Request, resp *planmodifier.Float64Response) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyDynamic(_ context.Context, req planmodifier.DynamicRequest, resp *planmodifier.DynamicResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyNumber(_ context.Context, req planmodifier.NumberRequest, resp *planmodifier.NumberResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyList(_ context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyMap(_ context.Context, req planmodifier.MapRequest, resp *planmodifier.MapResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifySet(_ context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func (m stateUnlessChanged) PlanModifyObject(_ context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+	if m.keep(req.State, req.Plan, req.Config, req.PlanValue, &resp.Diagnostics) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+// requiresReplaceIfConfigured replaces the resource when the config changes the attribute, and
+// not when the attribute is left out of the config and the API changes it.
+//
+// The partner of useStateUnlessChanged. When a sibling changes, the attribute plans unknown, and
+// requiresReplace would read that unknown as a change. The create body accepts the attribute and
+// the update body does not, so a value the config sets still has to replace.
+//
+// The generated code calls this, in place of requiresReplace, for every attribute marked
+// `x-mc-terraform-stable-unless` that the update body does not accept.
+func requiresReplaceIfConfigured(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
+	const description = "If the configured value of this attribute changes, Terraform will destroy and recreate the resource."
+	applyPlanModifier(attrs, name, planModifierSet{
+		str: stringplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		boolean: boolplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.BoolRequest, resp *boolplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		i32: int32planmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.Int32Request, resp *int32planmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		i64: int64planmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.Int64Request, resp *int64planmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		f32: float32planmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.Float32Request, resp *float32planmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		f64: float64planmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.Float64Request, resp *float64planmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		dynamic: dynamicplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.DynamicRequest, resp *dynamicplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		number: numberplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.NumberRequest, resp *numberplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		list: listplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.ListRequest, resp *listplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		mapping: mapplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.MapRequest, resp *mapplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		set: setplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.SetRequest, resp *setplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+		object: objectplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.ObjectRequest, resp *objectplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.ConfigValue.IsNull()
+		}, description, description),
+	}, "Terraform would report an in-place update the API does not implement, and write a value into state the API never received.", diags)
 }
 
 // writeOnlyConsequence ends every writeOnly error: what a secret left unmarked costs.
