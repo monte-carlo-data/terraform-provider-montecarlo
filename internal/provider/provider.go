@@ -48,8 +48,8 @@ func (p *mcProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *p
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Optional: true,
-				Description: "API base URL, for example https://api.getmontecarlo.com. Required, " +
-					"but may come from the profile's mcd_api_endpoint instead of being set here.",
+				Description: "API base URL. Defaults to the profile's mcd_api_endpoint, then to " +
+					"https://api.getmontecarlo.com, which serves every instance.",
 			},
 			"token_id": schema.StringAttribute{
 				Optional: true,
