@@ -134,6 +134,7 @@ func (p *mcProvider) Configure(ctx context.Context, req provider.ConfigureReques
 
 func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewAirflowCallbacksKeyResource,
 		NewAirflowCredentialsResource,
 		NewAwsCollectionAgentResource,
 		NewAwsCollectionDataStoreResource,
@@ -159,6 +160,7 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 		NewGenericCollectionAgentOauthClientResource,
 		NewGenericCollectionAgentTokenResource,
 		NewInformaticaV2CredentialsResource,
+		NewIngestionKeyResource,
 		NewLookerCredentialsResource,
 		NewLookerGitCloneCredentialsResource,
 		NewMariadbCredentialsResource,
@@ -186,6 +188,7 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 
 func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewAirflowCallbacksKeyDataSource,
 		NewAirflowCredentialsDataSource,
 		NewAwsCollectionAgentDataSource,
 		NewAwsCollectionDataStoreDataSource,
@@ -211,6 +214,7 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 		NewGenericCollectionAgentOauthClientDataSource,
 		NewGenericCollectionAgentTokenDataSource,
 		NewInformaticaV2CredentialsDataSource,
+		NewIngestionKeyDataSource,
 		NewLookerCredentialsDataSource,
 		NewLookerGitCloneCredentialsDataSource,
 		NewMariadbCredentialsDataSource,
