@@ -60,7 +60,7 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `internal/schema_gen/` | Generated attribute schemas, one package per resource and per data source |
 | `main.go` | Provider entry point |
 | `examples/` | Worked configurations, which double as registry documentation |
-| `templates/` | Registry page templates; only the index page has one |
+| `templates/` | Registry page templates: the index page by hand, one per resource and data source generated |
 | `VERSION` | The major.minor release base — see [Releasing](#releasing) |
 | `.github/scripts/` | The release-tag script and its test |
 | `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
@@ -68,9 +68,9 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 
 ## What is generated
 
-The resources, the data sources, the provider registration and every attribute schema. A fix
-to one of those files does not survive regeneration — it belongs in the API, or in the
-generator that reads its spec.
+The resources, the data sources, the provider registration, every attribute schema and the
+registry page template of each resource and data source. A fix to one of those files does not
+survive regeneration — it belongs in the API, or in the generator that reads its spec.
 
 Regeneration decides what to replace **by filename**, not by reading the file, so the boundary
 is a naming rule and it is worth knowing exactly:
@@ -78,6 +78,8 @@ is a naming rule and it is worth knowing exactly:
 - `internal/schema_gen/` is deleted whole and recreated. Nothing hand-written can live there.
 - In `internal/provider/`, exactly `*_resource.go`, `*_data_source.go` and `provider.go` are
   deleted and rewritten. Every other file in that package is left untouched.
+- `templates/resources/` and `templates/data-sources/` are deleted whole and recreated.
+  `templates/index.md.tmpl` is left untouched.
 
 A new hand-written file under `internal/schema_gen/`, or one in `internal/provider/` whose name
 matches those patterns, is therefore lost on the next regeneration, and the loss looks like a
@@ -85,15 +87,17 @@ deletion nobody made. Hand-written code in `internal/provider/` has to be named 
 outside the patterns, as `helpers.go` and `helpers_test.go` do.
 
 Hand-written: `main.go`, the helpers the generated code calls, `tools/`, the examples and the
-templates.
+index page template.
 
 ## Registry documentation
 
 The registry renders `docs/` as committed; it does not read the schema. `go generate ./...` runs
 `tfplugindocs`, at the version pinned in `main.go`, and rebuilds `docs/` from three inputs: the
-schemas for every attribute description, `examples/` for each page's example, and `templates/`
-for the index page, which adds the beta notice. Never edit `docs/` by hand. Change an input and
-regenerate. CI fails when `docs/` differs from what `go generate` produces.
+schemas for every attribute description, `examples/` for each page's example, and `templates/`.
+The index page's template adds the beta notice. Each resource and data source has a generated
+template that differs from tfplugindocs' default only in its `subcategory`, the registry
+sidebar group, which the API spec declares in `x-mc-terraform-subcategory`. Never edit `docs/`
+by hand. Change an input and regenerate. CI fails when `docs/` differs from what `go generate` produces.
 
 ## Third-party notices
 
