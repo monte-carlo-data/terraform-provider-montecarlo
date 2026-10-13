@@ -34,9 +34,9 @@ provider "montecarlo" {
   token_secret = var.mcd_token
 }
 
-# If you have run the Monte Carlo CLI, all three can be left out: the endpoint
-# and the token come from ~/.mcd/profiles.ini, and this is the whole provider
-# block.
+# If you have run the Monte Carlo CLI, all three can be left out: the token
+# comes from ~/.mcd/profiles.ini, the endpoint defaults to this one, and this is
+# the whole provider block.
 #
 #   provider "montecarlo" {}
 

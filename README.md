@@ -250,15 +250,16 @@ show how.
 
 Credentials can be set on the provider, taken from the environment, or read from a profile
 written by the [Monte Carlo CLI](https://docs.getmontecarlo.com/docs/using-the-cli), in that
-order. If you have run the CLI, the provider works with nothing configured at all — the
-endpoint comes from the profile too:
+order. If you have run the CLI, the provider works with nothing configured at all. The
+endpoint defaults to `https://api.getmontecarlo.com`, which serves every instance:
 
 ```hcl
 provider "montecarlo" {}
 ```
 
 The profile is a section of `~/.mcd/profiles.ini`, shared with the CLI and the Python SDK, so
-credentials are configured once per machine.
+credentials are configured once per machine. The provider reads `MCD_DEFAULT_PROFILE`, then
+`default`; it does not follow the profile the CLI's `profile use` selects.
 
 | Provider attribute | Environment variable | Profile key |
 |--------------------|----------------------|-------------|
