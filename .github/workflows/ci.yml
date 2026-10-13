@@ -59,6 +59,27 @@ jobs:
             exit 1
           fi
 
+  examples:
+    name: Every example validates against this build
+    # The registry docs embed the examples without parsing them, so a schema change that breaks
+    # one would otherwise ship. Modules and other providers come from the registry.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Validate the examples
+        run: .github/scripts/validate-examples.sh
+
   release-snapshot:
     name: The release builds for every platform
     # Tags are immutable, so a release that fails after tagging burns that version. A change that
