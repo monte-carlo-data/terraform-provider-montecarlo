@@ -45,6 +45,7 @@ go test ./...
 go vet ./...
 gofmt -l .          # must be empty
 .github/scripts/next-tag_test.sh   # the release-tag logic
+.github/scripts/validate-examples.sh   # init + validate every directory under examples/, against this checkout's build
 go generate ./...   # regenerates docs/ and THIRD_PARTY_NOTICES; builds the provider and runs Terraform
 
 go build -o . .     # writes ./terraform-provider-montecarlo, which dev_overrides needs
@@ -59,10 +60,10 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `internal/provider/` | Generated resources and data sources, plus the hand-written helpers they call |
 | `internal/schema_gen/` | Generated attribute schemas, one package per resource and per data source |
 | `main.go` | Provider entry point |
-| `examples/` | Worked configurations, which double as registry documentation |
-| `templates/` | Registry page templates: the index page by hand, one per resource and data source generated |
+| `examples/` | Worked configurations, which double as registry documentation; `examples/guides/` holds the ones only a guide embeds |
+| `templates/` | Registry page templates: the index page and the guides (`templates/guides/`) by hand, one per resource and data source generated |
 | `VERSION` | The major.minor release base — see [Releasing](#releasing) |
-| `.github/scripts/` | The release-tag script and its test |
+| `.github/scripts/` | The release-tag script and its test, and the example validator |
 | `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
 | `tools/notices/` | Generates `THIRD_PARTY_NOTICES` — see [Third-party notices](#third-party-notices) |
 
@@ -98,6 +99,20 @@ The index page's template adds the beta notice. Each resource and data source ha
 template that differs from tfplugindocs' default only in its `subcategory`, the registry
 sidebar group, which the API spec declares in `x-mc-terraform-subcategory`. Never edit `docs/`
 by hand. Change an input and regenerate. CI fails when `docs/` differs from what `go generate` produces.
+
+The guides are hand-written, one `templates/guides/<name>.md.tmpl` per page, rendered to
+`docs/guides/`. A guide gets no template data, so it names the provider in its own text. It
+embeds HCL with `{{ tffile "examples/..." }}`, which takes a whole file, so each snippet is a
+file of its own. A guide's own snippets live under `examples/guides/<guide>/`, never as an extra
+`.tf` under `examples/resources/` or `examples/provider/`: tfplugindocs puts every file there on
+the resource or index page as well. Guides link to one another by file name, as
+`[...](deploy-a-collection-agent)`.
+
+`tffile` does not parse what it embeds, so `.github/scripts/validate-examples.sh` does. It runs
+`terraform init -backend=false` and `terraform validate` in every directory under `examples/`,
+against a provider built from the checkout and served from a filesystem mirror. Modules and
+other providers still come from the registry. CI runs it, so a schema change that breaks an
+example fails the pull request rather than shipping in the docs.
 
 ## Third-party notices
 
