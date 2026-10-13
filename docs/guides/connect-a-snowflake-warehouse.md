@@ -57,7 +57,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -151,21 +150,9 @@ output "job_types" {
 
 ## On the deployment Monte Carlo hosts
 
-To have Monte Carlo run the queries, skip the deployment and agent. Put the warehouse on the deployment Monte Carlo hosts for your account, and take its id from the Monte Carlo app.
+To have Monte Carlo run the queries, skip the deployment and agent. Put the warehouse on the deployment Monte Carlo hosts for your account, and pass its id in as `hosted_deployment_id`. Get the id from the Monte Carlo app, or ask Monte Carlo support.
 
 ```terraform
-# A Snowflake connection with credentials Monte Carlo stores: the warehouse, the
-# credentials, and the connection that joins them.
-#
-# This is the Monte Carlo managed option, where Monte Carlo holds the key pair.
-# To keep the secret in your own store instead, use one of the self-hosted
-# credentials resources — the `montecarlo_self_hosted_aws_credentials` example
-# is the AWS Secrets Manager one.
-#
-# Authentication is key pair only; there is no password option. See
-# https://docs.getmontecarlo.com/docs/snowflake for provisioning the service
-# user and granting it the reads Monte Carlo needs.
-
 terraform {
   # Write-only arguments need Terraform 1.11 or later.
   required_version = ">= 1.11"
@@ -178,17 +165,18 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
-  # See the provider documentation for the alternatives.
 }
 
-# The `montecarlo_warehouse` example shows the deployment and agent behind
-# `deployment_id`.
+variable "hosted_deployment_id" {
+  description = "Id of the deployment Monte Carlo hosts for your account."
+  type        = string
+}
+
 resource "montecarlo_warehouse" "snowflake" {
   name          = "production-snowflake"
   type          = "snowflake"
-  deployment_id = "<deployment id, from the Monte Carlo app>"
+  deployment_id = var.hosted_deployment_id
 }
 
 resource "montecarlo_snowflake_credentials" "snowflake" {
@@ -196,14 +184,8 @@ resource "montecarlo_snowflake_credentials" "snowflake" {
   account = "xy12345.us-east-1"
   user    = "MONTE_CARLO"
 
-  # PEM text, BEGIN and END lines included. The placeholder below shows the
-  # shape; in a real configuration read the key from a file kept out of version
-  # control, with `file("${path.module}/snowflake_key.p8")`, rather than pasting
-  # it into a .tf file that gets committed.
-  #
-  # Write-only, so never stored in state or a plan. Changing it alone plans
-  # nothing: bump the version with it. Bumping either version sends the key and
-  # the passphrase together.
+  # PEM text. In a real configuration, read the key from a file kept out of
+  # version control, with `file("${path.module}/snowflake_key.p8")`.
   private_key_wo         = <<-EOT
     -----BEGIN PRIVATE KEY-----
     MII...
@@ -211,40 +193,19 @@ resource "montecarlo_snowflake_credentials" "snowflake" {
   EOT
   private_key_wo_version = 1
 
-  # Only for an encrypted key. Omit both for an unencrypted one.
-  # private_key_passphrase_wo         = "..."
-  # private_key_passphrase_wo_version = 1
-
   # The virtual warehouse queries run in. Omit it to use the user's default.
   warehouse = "MONTE_CARLO_WH"
 }
 
-# The connection's type comes from the credentials, and has to fit the
-# warehouse's type.
 resource "montecarlo_connection" "snowflake" {
   name           = "production-snowflake"
   warehouse_id   = montecarlo_warehouse.snowflake.id
   credentials_id = montecarlo_snowflake_credentials.snowflake.id
-}
-
-output "storage_type" {
-  description = "Where the secret lives. mc_managed for these, since Monte Carlo stores them."
-  value       = montecarlo_snowflake_credentials.snowflake.storage_type
-}
-
-output "connection_id" {
-  description = "Id of the connection."
-  value       = montecarlo_connection.snowflake.id
-}
-
-output "connection_type" {
-  description = "What the connection reaches, taken from the credentials."
-  value       = montecarlo_connection.snowflake.connection_type
 }
 ```
 
 ## Afterwards
 
 - To rotate the key, change `private_key_wo` and bump `private_key_wo_version`. Changing the key without bumping the version plans nothing.
-- To keep the key in your own secret store instead of Monte Carlo's, replace `montecarlo_snowflake_credentials` with a self-hosted credentials resource and point `credentials_id` at it. Nothing else changes. See [Use self-hosted credentials](use-self-hosted-credentials).
+- On a deployment you run, you can keep the key in your own secret store instead of Monte Carlo's. Replace `montecarlo_snowflake_credentials` with a self-hosted credentials resource and point `credentials_id` at it. Terraform replaces the connection, because `credentials_id` can't change in place. Your collection agent reads self-hosted credentials, so this doesn't apply on the deployment Monte Carlo hosts. See [Use self-hosted credentials](use-self-hosted-credentials).
 - `job_types` on the connection defaults to the jobs the Monte Carlo app runs for Snowflake. Set it only to run fewer.

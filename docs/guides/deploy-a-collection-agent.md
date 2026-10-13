@@ -13,11 +13,18 @@ A deployment is where Monte Carlo's queries against your data run. Monte Carlo h
 
 A deployment holds one or the other, and its `type` (`COLLECTION_AGENT` or `COLLECTION_DATA_STORE`) says which. A warehouse, a BI container or an ETL container then goes on the deployment through its `deployment_id`; see [Connect a Snowflake warehouse](connect-a-snowflake-warehouse).
 
-Every flow has the same three parts:
+Every flow has the same three parts, except the generic agent, which has no infrastructure endpoint to hand over (see step 3):
 
-1. `montecarlo_deployment`, which comes first.
+1. `montecarlo_deployment`, which the registration references.
 2. The infrastructure in your cloud. For an agent, Monte Carlo publishes a module per platform. A data store has no module, so its bucket or container is defined directly.
-3. The registration (`montecarlo_<platform>_collection_agent` or `montecarlo_<platform>_collection_data_store`), which hands Monte Carlo the endpoint and the credential it reaches your infrastructure with.
+3. The registration (`montecarlo_<platform>_collection_agent` or `montecarlo_<platform>_collection_data_store`), which hands Monte Carlo the endpoint and the credential it reaches your infrastructure with. The generic agent's registration takes only `deployment_id`, because the agent connects out to Monte Carlo.
+
+## Before you start
+
+- Credentials for your cloud that can create the agent's or data store's resources.
+- Terraform 1.11 or later for Azure, GCP and the generic agent. Their examples pass secrets through write-only arguments. The AWS examples don't need it.
+- For Azure with a service principal, the Cloud Application Administrator role in your tenant. The module creates an Entra ID app registration and a caller principal, which needs it. The default, the Function App key, needs no directory permissions.
+- The provider configured. See [Authenticate the provider](authenticate-the-provider).
 
 ## AWS
 
@@ -42,7 +49,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -83,7 +89,7 @@ output "agent_enabled" {
 }
 ```
 
-An AWS data store follows the same order, for the same reason:
+An AWS data store follows the same order, for the same reason. Replace `mcd_account_id` with your own value: the "AWS account ID" under Collection on the Account Information page in the Monte Carlo product. The value in the example is one deployment's account and may not be yours.
 
 ```terraform
 # An AWS data store, end to end: the deployment, the bucket and role Monte Carlo
@@ -116,7 +122,6 @@ provider "aws" {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -317,7 +322,6 @@ provider "azurerm" {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -431,7 +435,6 @@ provider "azurerm" {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -612,7 +615,6 @@ provider "google" {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -703,7 +705,6 @@ provider "google" {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -805,7 +806,7 @@ A generic agent runs wherever you run it, so it authenticates to Monte Carlo rat
 
 The credential belongs to the deployment, so it can be minted before the agent exists. Its secret is returned once and kept in state, so keep state in a backend that encrypts it and limits who can read it. Pass the secret on through a write-only argument, as below, so it isn't stored a second time.
 
-Registration succeeds once the agent is running with that credential. Until then the agent answers 503. The provider retries for a while, then fails the apply; apply again once the agent is up. This example runs the agent on EKS with the [`mcd-k8s-agent` module](https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/aws). The AKS and GKE modules take the same inputs.
+Registration succeeds once the agent is running with that credential. Until then, Monte Carlo's API answers 503. The provider retries for a while, then fails the apply; apply again once the agent is up. This example runs the agent on EKS with the [`mcd-k8s-agent` module](https://registry.terraform.io/modules/monte-carlo-data/mcd-k8s-agent/aws). The AKS and GKE modules take the same inputs.
 
 ```terraform
 # A generic collection agent, end to end: the deployment, the credential the
@@ -843,7 +844,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -943,3 +943,12 @@ output "agent_enabled" {
 ```
 
 The [generic agent platforms](https://docs.getmontecarlo.com/docs/generic-agent-platforms) page in the Monte Carlo docs covers Docker Compose and clusters you already run.
+
+## Afterwards
+
+Check that Monte Carlo accepted the registration. The examples expose `enabled` as an output (`agent_enabled` or `data_store_enabled`). It is `true` once Monte Carlo has validated the agent or data store and is using it. For an agent, the deployment's `enabled` is `true` once the agent is registered. If it is `false`, the registration hasn't happened yet or validation failed.
+
+Then:
+
+- Put a warehouse on the deployment: [Connect a Snowflake warehouse](connect-a-snowflake-warehouse).
+- To keep connection secrets in your own store: [Use self-hosted credentials](use-self-hosted-credentials).

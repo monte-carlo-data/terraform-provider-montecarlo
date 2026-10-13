@@ -6,12 +6,13 @@ description: |-
 
 # Authenticate the provider
 
-The provider authenticates with one of two credentials. See [API authentication](https://docs.getmontecarlo.com/docs/api-authentication) in the Monte Carlo docs for how to get either.
+The provider authenticates with one of three credentials. See [API authentication](https://docs.getmontecarlo.com/docs/api-authentication) in the Monte Carlo docs for how to get an API token or OAuth client credentials.
 
 - An **API token**: `token_id` and `token_secret`.
 - **OAuth client credentials**: `client_id` and `client_secret`, plus the `instance` they belong to.
+- A **bearer token** obtained elsewhere: `token`. Set it in the configuration only. It has no environment variable or profile key.
 
-Set one or the other, not both. A pair is all or nothing: setting half of one is an error, and the other half is never filled in from anywhere else.
+Set one, not several. If you do, OAuth wins over an API token, and an API token wins over a bearer token. Half a pair in the configuration or in a profile is an error. In the environment it is ignored, and the provider moves on to the profile. The other half is never filled in from anywhere else.
 
 The endpoint defaults to `https://api.getmontecarlo.com`, which serves every instance. Set `endpoint` only to reach a different one.
 
@@ -25,6 +26,8 @@ The provider takes the first credential it finds, in this order:
 
 It picks a whole credential, not field by field: an API token set in the configuration is used as is, even when OAuth variables are also set in the environment.
 
+When `endpoint` isn't set, it comes from the profile's `mcd_api_endpoint` if the profile has one, even when the credential comes from the configuration or the environment. Otherwise it is the default.
+
 | Provider attribute | Environment variable | Profile key |
 |---|---|---|
 | `token_id` | `MCD_DEFAULT_API_ID` | `mcd_id` |
@@ -33,6 +36,7 @@ It picks a whole credential, not field by field: an API token set in the configu
 | `client_secret` | `MCD_DEFAULT_OAUTH_CLIENT_SECRET` | `mcd_oauth_client_secret` |
 | `instance` | `MCD_DEFAULT_INSTANCE_ID` | `mcd_instance_id` |
 | `endpoint` | none | `mcd_api_endpoint` |
+| `token` | none | none |
 | `token_url` | none | `mcd_token_endpoint` |
 | `profile` | `MCD_DEFAULT_PROFILE` | none |
 
@@ -57,14 +61,12 @@ terraform {
 # with the values in a *.tfvars file that is not committed — never as literals
 # in a .tf file.
 provider "montecarlo" {
-  endpoint     = "https://api.getmontecarlo.com"
   token_id     = var.mcd_id
   token_secret = var.mcd_token
 }
 
-# If you have run the Monte Carlo CLI, all three can be left out: the token
-# comes from ~/.mcd/profiles.ini, the endpoint defaults to this one, and this is
-# the whole provider block.
+# If you have run the Monte Carlo CLI, both can be left out: the token comes
+# from ~/.mcd/profiles.ini, and this is the whole provider block.
 #
 #   provider "montecarlo" {}
 

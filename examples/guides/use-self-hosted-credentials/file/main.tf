@@ -9,7 +9,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
 }
 

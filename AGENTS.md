@@ -61,9 +61,9 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `internal/schema_gen/` | Generated attribute schemas, one package per resource and per data source |
 | `main.go` | Provider entry point |
 | `examples/` | Worked configurations, which double as registry documentation; `examples/guides/` holds the ones only a guide embeds |
-| `templates/` | Registry page templates: the index page by hand, one per resource and data source generated |
+| `templates/` | Registry page templates: the index page and the guides (`templates/guides/`) by hand, one per resource and data source generated |
 | `VERSION` | The major.minor release base — see [Releasing](#releasing) |
-| `.github/scripts/` | The release-tag script and its test |
+| `.github/scripts/` | The release-tag script and its test, and the example validator |
 | `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
 | `tools/notices/` | Generates `THIRD_PARTY_NOTICES` — see [Third-party notices](#third-party-notices) |
 

@@ -269,11 +269,13 @@ credentials are configured once per machine. The provider reads `MCD_DEFAULT_PRO
 | `client_id` | `MCD_DEFAULT_OAUTH_CLIENT_ID` | `mcd_oauth_client_id` |
 | `client_secret` | `MCD_DEFAULT_OAUTH_CLIENT_SECRET` | `mcd_oauth_client_secret` |
 | `instance` | `MCD_DEFAULT_INSTANCE_ID` | `mcd_instance_id` |
+| `token` | — | — |
 | `token_url` | — | `mcd_token_endpoint` |
 | `profile` | `MCD_DEFAULT_PROFILE` | — |
 
 `token_id`/`token_secret` are an API token pair, and `client_id`/`client_secret` are OAuth
-client credentials, which also need `instance`. Set one mechanism or the other, not both. See
+client credentials, which also need `instance`. `token` is a bearer token obtained elsewhere,
+set only on the provider. Set one mechanism, not several. See
 [API authentication](https://docs.getmontecarlo.com/docs/api-authentication) for how to obtain
 either.
 
@@ -290,6 +292,12 @@ If you do put credentials in your configuration, keep them in variables and the 
   the agent presents (a [token](examples/resources/montecarlo_generic_collection_agent_token) or
   an [OAuth client](examples/resources/montecarlo_generic_collection_agent_oauth_client)) and
   registers the agent you run with it.
+- [`examples/guides/`](examples/guides) — the snippets only the registry guides embed.
+
+The guides: [Connect a Snowflake warehouse](docs/guides/connect-a-snowflake-warehouse.md),
+[Deploy a collection agent](docs/guides/deploy-a-collection-agent.md),
+[Use self-hosted credentials](docs/guides/use-self-hosted-credentials.md) and
+[Authenticate the provider](docs/guides/authenticate-the-provider.md).
 
 For an integration, [`montecarlo_connection`](examples/resources/montecarlo_connection) is the
 one to read first: it carries the whole chain, from the deployment through to the connection.

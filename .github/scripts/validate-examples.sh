@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
-# Runs `terraform init -backend=false` and `terraform validate` in every directory under examples/
-# that holds a .tf file, against the provider built from this checkout.
-#
-# The registry docs embed these files without parsing them, so this is what catches an example
-# a schema change broke. The local build is served from a filesystem mirror, so modules and
-# other providers still come from the registry. Needs go, terraform and network access.
+# Runs `terraform init` and `terraform validate` in every examples/ directory, against the provider
+# built from this checkout. Needs go, terraform and network access: only this provider comes from
+# the local mirror; modules and other providers come from the registry.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -48,6 +45,6 @@ while IFS= read -r dir; do
     echo "ok      $dir"
   fi
   rm -f "$dir/.terraform.lock.hcl"
-done < <(find examples -name '*.tf' -exec dirname {} \; | sort -u)
+done < <(find examples -name .terraform -prune -o -name '*.tf' -exec dirname {} \; | sort -u)
 
 exit "$failed"

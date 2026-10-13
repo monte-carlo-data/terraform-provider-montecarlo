@@ -61,8 +61,7 @@ jobs:
 
   examples:
     name: Every example validates against this build
-    # The registry docs embed the examples without parsing them, so a schema change that breaks
-    # one would otherwise ship. Modules and other providers come from the registry.
+    # The docs embed the examples unparsed, so a schema change that breaks one would otherwise ship.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -151,7 +150,7 @@ jobs:
 
   tag:
     name: Tag the release
-    needs: [build, release-snapshot]
+    needs: [build, release-snapshot, examples]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # One run at a time, so two quick merges cannot pick the same tag. A run still waiting here is

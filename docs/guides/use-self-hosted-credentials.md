@@ -16,11 +16,16 @@ Monte Carlo managed credentials, such as `montecarlo_snowflake_credentials`, giv
 | `montecarlo_self_hosted_env_var_credentials` | An environment variable on the agent, named `MCD_…` |
 | `montecarlo_self_hosted_file_credentials` | A file on the agent |
 
-A connection uses them the same way it uses managed credentials, through `credentials_id`. Switching a connection between the two changes nothing else in its configuration.
+A connection uses them the same way it uses managed credentials, through `credentials_id`. Switching a connection between the two changes nothing else in its configuration, but Terraform replaces the connection, because `credentials_id` can't change in place.
 
 ## Before you start
 
-Two things have to be true, and neither can be expressed in the Monte Carlo provider:
+Before you use any of these, you need:
+
+- A collection agent that you run, registered on the deployment the warehouse uses. The deployment Monte Carlo hosts has no agent of yours to read the secret. See [Deploy a collection agent](deploy-a-collection-agent).
+- The provider configured with an API token or OAuth client credentials. See [Authenticate the provider](authenticate-the-provider).
+
+Two more things have to be true, and neither can be expressed in the Monte Carlo provider:
 
 1. **The secret holds the JSON that the connection type expects.** Each connection type documents its own shape in [Self-hosted credentials](https://docs.getmontecarlo.com/docs/self-hosted-credentials). For Snowflake, `private_key` is the base64 body of the PKCS#8 key, without the BEGIN and END lines that `montecarlo_snowflake_credentials` takes.
 2. **The agent can read the secret.** Grant the agent's identity read access to that one secret, and make the credentials resource `depends_on` the grant. Without it, the connection is created and then fails to reach the warehouse.
@@ -70,7 +75,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
   # See the provider documentation for the alternatives.
 }
@@ -159,6 +163,8 @@ To read a secret in another account, set `assumable_role` and `external_id`. The
 
 ## Azure Key Vault
 
+The agent module gives the agent's managed identity no Key Vault access, so this example grants it the "Key Vault Secrets User" role on the vault. The vault must use Azure RBAC. The module outputs the identity's principal id as `mcd_agent_service_identity_principal_id`.
+
 Name the vault with `akv_vault_name`, `akv_vault_url`, or both.
 
 ```terraform
@@ -169,12 +175,23 @@ terraform {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
     }
+    azurerm = {
+      source = "hashicorp/azurerm"
+    }
   }
 }
 
+provider "azurerm" {
+  features {}
+}
+
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
+}
+
+variable "agent_principal_id" {
+  description = "Principal id of the agent's managed identity. The agent module outputs it as mcd_agent_service_identity_principal_id."
+  type        = string
 }
 
 # The warehouse sits on the deployment whose agent reads the secret.
@@ -184,10 +201,25 @@ resource "montecarlo_warehouse" "snowflake" {
   deployment_id = "<deployment id>"
 }
 
+data "azurerm_key_vault" "secrets" {
+  name                = "my-key-vault"
+  resource_group_name = "my-resource-group"
+}
+
+# The agent module grants no Key Vault access. The vault must use Azure RBAC.
+resource "azurerm_role_assignment" "agent_read_secret" {
+  scope                = data.azurerm_key_vault.secrets.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.agent_principal_id
+}
+
 resource "montecarlo_self_hosted_azure_credentials" "snowflake" {
   connection_type = "snowflake"
   akv_secret      = "monte-carlo-snowflake"
-  akv_vault_name  = "my-key-vault"
+  akv_vault_name  = data.azurerm_key_vault.secrets.name
+
+  # The grant has to exist before Monte Carlo is told where the secret is.
+  depends_on = [azurerm_role_assignment.agent_read_secret]
 }
 
 resource "montecarlo_connection" "snowflake" {
@@ -199,6 +231,8 @@ resource "montecarlo_connection" "snowflake" {
 
 ## GCP Secret Manager
 
+The agent module gives the agent's service account no Secret Manager access, so this example grants it `roles/secretmanager.secretAccessor` on the one secret. The service account is the one the agent's Cloud Run service runs as.
+
 ```terraform
 # Snowflake credentials in GCP Secret Manager, read by a GCP collection agent.
 
@@ -207,12 +241,23 @@ terraform {
     montecarlo = {
       source = "monte-carlo-data/montecarlo"
     }
+    google = {
+      source = "hashicorp/google"
+    }
   }
 }
 
+provider "google" {
+  project = "my-project"
+}
+
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
+}
+
+variable "agent_service_account_email" {
+  description = "Email of the service account the agent's Cloud Run service runs as. The agent module does not output it."
+  type        = string
 }
 
 # The warehouse sits on the deployment whose agent reads the secret.
@@ -222,9 +267,23 @@ resource "montecarlo_warehouse" "snowflake" {
   deployment_id = "<deployment id>"
 }
 
+locals {
+  secret_name = "monte-carlo-snowflake"
+}
+
+# The agent module grants no Secret Manager access.
+resource "google_secret_manager_secret_iam_member" "agent_read_secret" {
+  secret_id = local.secret_name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${var.agent_service_account_email}"
+}
+
 resource "montecarlo_self_hosted_gcp_credentials" "snowflake" {
   connection_type = "snowflake"
-  gcp_secret      = "monte-carlo-snowflake"
+  gcp_secret      = local.secret_name
+
+  # The grant has to exist before Monte Carlo is told where the secret is.
+  depends_on = [google_secret_manager_secret_iam_member.agent_read_secret]
 }
 
 resource "montecarlo_connection" "snowflake" {
@@ -236,7 +295,7 @@ resource "montecarlo_connection" "snowflake" {
 
 ## Environment variable
 
-The variable is set on the agent, and its name must start with `MCD_`. If its value is encrypted with an AWS KMS key, set `kms_key_id`.
+The variable has to be set in the agent's own runtime, where you run it, for example the agent container's environment. Its name must start with `MCD_`. If its value is encrypted with an AWS KMS key, set `kms_key_id`.
 
 ```terraform
 # Snowflake credentials in an environment variable on the agent.
@@ -250,7 +309,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
 }
 
@@ -278,7 +336,7 @@ resource "montecarlo_connection" "snowflake" {
 
 ## File
 
-The path is a file on the agent.
+The file has to exist in the agent's own runtime, where you run it, for example a file mounted into the agent container.
 
 ```terraform
 # Snowflake credentials in a file on the agent.
@@ -292,7 +350,6 @@ terraform {
 }
 
 provider "montecarlo" {
-  endpoint = "https://api.getmontecarlo.com"
   # Credentials come from the environment or from the Monte Carlo CLI's profile.
 }
 
