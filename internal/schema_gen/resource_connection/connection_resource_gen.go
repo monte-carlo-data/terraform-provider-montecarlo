@@ -18,8 +18,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			"bi_container_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send exactly one of this, `warehouse_id` and `etl_container_id`.",
-				MarkdownDescription: "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. Send exactly one of this, `warehouse_id` and `etl_container_id`.",
+				Description:         "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. A `custom-bi-connector` container takes a custom BI connector's credentials, or none when it has no deployment. Send exactly one of this, `warehouse_id` and `etl_container_id`.",
+				MarkdownDescription: "The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. A `custom-bi-connector` container takes a custom BI connector's credentials, or none when it has no deployment. Send exactly one of this, `warehouse_id` and `etl_container_id`.",
 			},
 			"bi_container_name": schema.StringAttribute{
 				Computed:            true,
@@ -39,8 +39,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			"credentials_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only ETL container: a `custom-etl-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
-				MarkdownDescription: "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only ETL container: a `custom-etl-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
+				Description:         "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
+				MarkdownDescription: "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
 			},
 			"credentials_storage_type": schema.StringAttribute{
 				Computed:            true,

@@ -20,9 +20,10 @@ func BiContainerResourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "When the BI container was created.",
 			},
 			"deployment_id": schema.StringAttribute{
-				Required:            true,
-				Description:         "The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted.",
-				MarkdownDescription: "The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted.",
+				Optional:            true,
+				Computed:            true,
+				Description:         "The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `custom-bi-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.",
+				MarkdownDescription: "The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `custom-bi-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.",
 			},
 			"deployment_name": schema.StringAttribute{
 				Computed:            true,
@@ -51,12 +52,13 @@ func BiContainerResourceSchema(ctx context.Context) schema.Schema {
 						"looker",
 						"tableau",
 						"power-bi",
+						"custom-bi-connector",
 					),
 				},
 			},
 		},
-		Description:         "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.",
-		MarkdownDescription: "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site or a Power BI tenant. It runs on a deployment, and every connection added to it goes through that deployment.",
+		Description:         "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site, a Power BI tenant or a custom BI connector. It runs on a deployment, and every connection added to it goes through that deployment. `deployment_id` is required for Looker, Tableau and Power BI. A `custom-bi-connector` container takes the deployment of the agent that registered the connector, or none for a push-only connector, whose BI assets are pushed to Monte Carlo.",
+		MarkdownDescription: "A BI container groups the connections Monte Carlo uses to monitor one BI tool: a Looker instance, a Tableau site, a Power BI tenant or a custom BI connector. It runs on a deployment, and every connection added to it goes through that deployment. `deployment_id` is required for Looker, Tableau and Power BI. A `custom-bi-connector` container takes the deployment of the agent that registered the connector, or none for a push-only connector, whose BI assets are pushed to Monte Carlo.",
 	}
 }
 
