@@ -12,10 +12,17 @@ Manage Monte Carlo with Terraform. Credentials may be set here, taken from the e
 to the API it is generated from. A new minor version can carry breaking changes, so pin the
 minor version, as in the example below.
 
+-> **Requires Terraform 1.11 or later**, the first release with write-only arguments, which the
+provider uses for every secret. An older Terraform fails with an error when given a secret,
+rather than storing it.
+
 ## Example Usage
 
 ```terraform
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source  = "monte-carlo-data/montecarlo"

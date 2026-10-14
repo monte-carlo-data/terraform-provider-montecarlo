@@ -13,6 +13,8 @@ changes, so pin the minor version:
 
 ```hcl
 terraform {
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source  = "monte-carlo-data/montecarlo"
