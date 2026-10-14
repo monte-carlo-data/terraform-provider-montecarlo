@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	sdk "github.com/monte-carlo-data/mc-sdk-go/montecarlo"
 )
 
 // planModifierHelper is one helper that attaches a plan modifier, together with the two strings
@@ -1319,5 +1321,41 @@ func TestPlanModifierHelpersRejectANestedPathInsteadOfTargetingATopLevelNamesake
 				t.Errorf("got %d plan modifiers on the top-level \"name\" attribute, want 0", got)
 			}
 		})
+	}
+}
+
+// errorFrom returns the error a real SDK call gets when the API answers with status and body.
+func errorFrom(t *testing.T, status int, body string) error {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	cfg := sdk.NewConfiguration()
+	cfg.Servers = sdk.ServerConfigurations{{URL: srv.URL}}
+	_, _, err := sdk.NewAPIClient(cfg).EtlContainersAPI.GetEtlContainer(context.Background(), "id").Execute()
+	if err == nil {
+		t.Fatal("got no error from the SDK call")
+	}
+	return err
+}
+
+func TestAPIErrStatesAGatewayRejectionOnce(t *testing.T) {
+	err := errorFrom(t, http.StatusUnauthorized, `{"Message":"User is not authorized to access this resource"}`)
+	want := "401 Unauthorized: User is not authorized to access this resource"
+	if got := apiErr(err); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestAPIErrNamesAProblemsFieldErrors(t *testing.T) {
+	err := errorFrom(t, http.StatusNotFound, `{"type":"about:blank","title":"Not Found","status":404,`+
+		`"code":"not_found","detail":"No such container","request_id":"r1",`+
+		`"errors":[{"field":["body","name"],"code":"unknown","message":"unknown"}]}`)
+	want := "Not Found: No such container (request r1); body.name: unknown"
+	if got := apiErr(err); got != want {
+		t.Errorf("got %q, want %q", got, want)
 	}
 }
