@@ -48,6 +48,9 @@ An API token:
 
 ```terraform
 terraform {
+  # Write-only arguments need Terraform 1.11 or later.
+  required_version = ">= 1.11"
+
   required_providers {
     montecarlo = {
       source  = "monte-carlo-data/montecarlo"
