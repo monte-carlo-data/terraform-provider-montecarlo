@@ -740,13 +740,13 @@ func stringList(l []string) types.List {
 }
 
 // apiErr renders an API failure using the decoded problem's named fields, falling back to the
-// raw response body only when the SDK decoded no model.
+// client's error when the SDK decoded no model.
 //
-// The client's error alone reports the status and nothing else. Naming the fields — rather
-// than forwarding the whole body — also bounds what a diagnostic can ever show: an unnamed
-// problem member added on the server side does not reach a customer's screen just because it
-// showed up in the response. Without this a plan failure reads as "400 Bad Request" with no
-// indication of which attribute was at fault.
+// The client's error reports the status and at most one message, never a field. Naming the
+// fields — rather than forwarding the whole body — also bounds what a diagnostic can ever show:
+// an unnamed problem member added on the server side does not reach a customer's screen just
+// because it showed up in the response. Without this a plan failure reads as "400 Bad Request"
+// with no indication of which attribute was at fault.
 func apiErr(err error) string {
 	var e *sdk.GenericOpenAPIError
 	if !errors.As(err, &e) {
@@ -754,9 +754,9 @@ func apiErr(err error) string {
 	}
 	problem, ok := e.Model().(sdk.ProblemOut)
 	if !ok {
-		// No declared model for this status: the SDK decoded nothing, so the raw body is all
-		// there is to show.
-		return fmt.Sprintf("%s: %s", e.Error(), e.Body())
+		// No problem document, e.g. a gateway rejection: the client's error already carries the
+		// status and the body's message.
+		return e.Error()
 	}
 	msg := fmt.Sprintf("%s: %s (request %s)", problem.Title, problem.Detail, problem.RequestId)
 	for _, fieldErr := range problem.Errors {
