@@ -32,12 +32,11 @@ func (r *connectionResource) Metadata(_ context.Context, req resource.MetadataRe
 func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_connection.ConnectionResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
-	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
-	useNonNullStateForUnknown(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.connection_type", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	// Updating the resource changes these only when it changes the attributes named with them. Until then the plan keeps what state holds, a null included.

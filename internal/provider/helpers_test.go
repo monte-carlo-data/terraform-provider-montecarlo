@@ -641,6 +641,37 @@ func TestAnAttributeHeldUnlessASiblingChangesIsReplacedOnlyByItsConfig(t *testin
 	}
 }
 
+// A connection on a push-only container has no credentials, so its credentials_id is null for
+// good. Renaming it must plan an in-place update, not plan the id unknown and replace the
+// connection. The same holds for whichever parent id a connection does not have. This reads the
+// generated connection schema, so it covers the modifiers and the order they are attached in.
+func TestRenamingAConnectionKeepsItsNullIDsInPlace(t *testing.T) {
+	var resp resource.SchemaResponse
+	NewConnectionResource().Schema(t.Context(), resource.SchemaRequest{}, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("reported %v", resp.Diagnostics.Errors())
+	}
+
+	for _, attribute := range []string{"credentials_id", "warehouse_id", "bi_container_id"} {
+		t.Run(attribute, func(t *testing.T) {
+			planned, replace := chainStringModifiers(t, resp.Schema.Attributes[attribute], planmodifier.StringRequest{
+				State:       tfsdk.State{Schema: stringResourceSchema(attribute), Raw: resourceRaw(attribute, nil)},
+				Plan:        tfsdk.Plan{Schema: stringResourceSchema(attribute), Raw: resourceRaw(attribute, tftypes.UnknownValue)},
+				StateValue:  types.StringNull(),
+				PlanValue:   types.StringUnknown(),
+				ConfigValue: types.StringNull(),
+			})
+
+			if !planned.Equal(types.StringNull()) {
+				t.Errorf("planned %s, want null", planned)
+			}
+			if replace {
+				t.Error("RequiresReplace = true, so a rename replaces the connection")
+			}
+		})
+	}
+}
+
 var connectionType = tftypes.Object{AttributeTypes: map[string]tftypes.Type{
 	"etl_container_id": tftypes.String,
 	"job_types":        tftypes.List{ElementType: tftypes.String},
