@@ -3,12 +3,12 @@
 page_title: "montecarlo_azure_collection_agent Data Source - Monte Carlo"
 subcategory: "Deployments"
 description: |-
-  An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.
+  An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.
 ---
 
 # montecarlo_azure_collection_agent (Data Source)
 
-An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.
+An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.
 
 
 

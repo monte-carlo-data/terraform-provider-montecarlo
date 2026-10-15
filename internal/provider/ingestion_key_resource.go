@@ -34,7 +34,6 @@ func (r *ingestionKeyResource) Schema(ctx context.Context, _ resource.SchemaRequ
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
 	useNonNullStateForUnknown(s.Attributes, "ingestion_key.mcd_token", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "ingestion_key.description", &resp.Diagnostics)
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "ingestion_key.bi_container_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "ingestion_key.created_time", &resp.Diagnostics)
@@ -42,6 +41,7 @@ func (r *ingestionKeyResource) Schema(ctx context.Context, _ resource.SchemaRequ
 	useStateForUnknown(s.Attributes, "ingestion_key.id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "ingestion_key.mcd_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "ingestion_key.warehouse_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "ingestion_key.description", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "ingestion_key.bi_container_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "ingestion_key.description", &resp.Diagnostics)
