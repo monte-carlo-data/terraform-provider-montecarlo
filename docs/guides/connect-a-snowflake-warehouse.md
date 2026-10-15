@@ -150,7 +150,7 @@ output "job_types" {
 
 ## On the deployment Monte Carlo hosts
 
-To have Monte Carlo run the queries, skip the deployment and agent. Put the warehouse on the deployment Monte Carlo hosts for your account, and pass its id in as `hosted_deployment_id`. Get the id from the Monte Carlo app, or ask Monte Carlo support.
+To have Monte Carlo run the queries, skip the deployment and agent. Put the warehouse on the deployment Monte Carlo hosts for your account, and pass its id in as `hosted_deployment_id`. In the Monte Carlo app, go to **Settings > Deployments**, open the deployment of type **Cloud**, and copy its **Deployment UUID**.
 
 ```terraform
 terraform {
@@ -169,7 +169,7 @@ provider "montecarlo" {
 }
 
 variable "hosted_deployment_id" {
-  description = "Id of the deployment Monte Carlo hosts for your account."
+  description = "Deployment UUID of the Cloud deployment under Settings > Deployments in the Monte Carlo app."
   type        = string
 }
 
