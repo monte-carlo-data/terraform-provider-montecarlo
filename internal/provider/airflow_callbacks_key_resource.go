@@ -34,12 +34,12 @@ func (r *airflowCallbacksKeyResource) Schema(ctx context.Context, _ resource.Sch
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
 	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
 	useNonNullStateForUnknown(s.Attributes, "airflow_callbacks_key.mcd_token", &resp.Diagnostics)
-	useNonNullStateForUnknown(s.Attributes, "airflow_callbacks_key.description", &resp.Diagnostics)
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "airflow_callbacks_key.created_time", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "airflow_callbacks_key.etl_container_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "airflow_callbacks_key.id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "airflow_callbacks_key.mcd_id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "airflow_callbacks_key.description", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "airflow_callbacks_key.description", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "airflow_callbacks_key.etl_container_id", &resp.Diagnostics)

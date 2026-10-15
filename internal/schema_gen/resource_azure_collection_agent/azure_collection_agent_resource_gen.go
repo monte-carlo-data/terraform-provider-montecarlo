@@ -21,6 +21,30 @@ import (
 func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"auth_headers": schema.SingleNestedAttribute{
+				Attributes: map[string]schema.Attribute{
+					"headers_wo": schema.MapAttribute{
+						ElementType:         types.StringType,
+						Required:            true,
+						Sensitive:           true,
+						Description:         "Header names, each mapped to the value to send for it. Names have to be valid HTTP header names. At most 20 headers, each value up to 8192 characters.",
+						MarkdownDescription: "Header names, each mapped to the value to send for it. Names have to be valid HTTP header names. At most 20 headers, each value up to 8192 characters.",
+					},
+					"headers_wo_version": schema.Int64Attribute{
+						Required:            true,
+						Description:         "Bump to send `headers_wo` again. Terraform stores this, never the secret.",
+						MarkdownDescription: "Bump to send `headers_wo` again. Terraform stores this, never the secret.",
+					},
+				},
+				CustomType: AuthHeadersType{
+					ObjectType: types.ObjectType{
+						AttrTypes: AuthHeadersValue{}.AttributeTypes(ctx),
+					},
+				},
+				Optional:            true,
+				Description:         "Credentials for `CUSTOM_AUTH_HEADERS`. Send only the object matching `authentication_type`.",
+				MarkdownDescription: "Credentials for `CUSTOM_AUTH_HEADERS`. Send only the object matching `authentication_type`.",
+			},
 			"authentication_type": schema.StringAttribute{
 				Required:            true,
 				Description:         "How Monte Carlo authenticates when it calls the agent. Send it together with the matching credentials object.",
@@ -29,6 +53,7 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					stringvalidator.OneOf(
 						"AZURE_FUNCTION_APP_KEY",
 						"AZURE_FUNCTION_SERVICE_PRINCIPAL",
+						"CUSTOM_AUTH_HEADERS",
 					),
 				},
 			},
@@ -67,8 +92,8 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Description:         "Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both.",
-				MarkdownDescription: "Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both.",
+				Description:         "Credentials for `AZURE_FUNCTION_APP_KEY`. Send only the object matching `authentication_type`.",
+				MarkdownDescription: "Credentials for `AZURE_FUNCTION_APP_KEY`. Send only the object matching `authentication_type`.",
 			},
 			"function_app_url": schema.StringAttribute{
 				Required:            true,
@@ -147,16 +172,17 @@ func AzureCollectionAgentResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				Optional:            true,
-				Description:         "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both.",
-				MarkdownDescription: "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both.",
+				Description:         "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send only the object matching `authentication_type`.",
+				MarkdownDescription: "Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send only the object matching `authentication_type`.",
 			},
 		},
-		Description:         "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.",
-		MarkdownDescription: "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.",
+		Description:         "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.",
+		MarkdownDescription: "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.",
 	}
 }
 
 type AzureCollectionAgentModel struct {
+	AuthHeaders         AuthHeadersValue      `tfsdk:"auth_headers"`
 	AuthenticationType  types.String          `tfsdk:"authentication_type"`
 	CreatedTime         types.String          `tfsdk:"created_time"`
 	DeploymentId        types.String          `tfsdk:"deployment_id"`
@@ -170,6 +196,412 @@ type AzureCollectionAgentModel struct {
 	LastUpdatedTime     types.String          `tfsdk:"last_updated_time"`
 	Name                types.String          `tfsdk:"name"`
 	ServicePrincipal    ServicePrincipalValue `tfsdk:"service_principal"`
+}
+
+var _ basetypes.ObjectTypable = AuthHeadersType{}
+
+type AuthHeadersType struct {
+	basetypes.ObjectType
+}
+
+func (t AuthHeadersType) Equal(o attr.Type) bool {
+	other, ok := o.(AuthHeadersType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t AuthHeadersType) String() string {
+	return "AuthHeadersType"
+}
+
+func (t AuthHeadersType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	headersWoAttribute, ok := attributes["headers_wo"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`headers_wo is missing from object`)
+
+		return nil, diags
+	}
+
+	headersWoVal, ok := headersWoAttribute.(basetypes.MapValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`headers_wo expected to be basetypes.MapValue, was: %T`, headersWoAttribute))
+	}
+
+	headersWoVersionAttribute, ok := attributes["headers_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`headers_wo_version is missing from object`)
+
+		return nil, diags
+	}
+
+	headersWoVersionVal, ok := headersWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`headers_wo_version expected to be basetypes.Int64Value, was: %T`, headersWoVersionAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return AuthHeadersValue{
+		HeadersWo:        headersWoVal,
+		HeadersWoVersion: headersWoVersionVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewAuthHeadersValueNull() AuthHeadersValue {
+	return AuthHeadersValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewAuthHeadersValueUnknown() AuthHeadersValue {
+	return AuthHeadersValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewAuthHeadersValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (AuthHeadersValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing AuthHeadersValue Attribute Value",
+				"While creating a AuthHeadersValue value, a missing attribute value was detected. "+
+					"A AuthHeadersValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("AuthHeadersValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid AuthHeadersValue Attribute Type",
+				"While creating a AuthHeadersValue value, an invalid attribute value was detected. "+
+					"A AuthHeadersValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("AuthHeadersValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("AuthHeadersValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra AuthHeadersValue Attribute Value",
+				"While creating a AuthHeadersValue value, an extra attribute value was detected. "+
+					"A AuthHeadersValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra AuthHeadersValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewAuthHeadersValueUnknown(), diags
+	}
+
+	headersWoAttribute, ok := attributes["headers_wo"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`headers_wo is missing from object`)
+
+		return NewAuthHeadersValueUnknown(), diags
+	}
+
+	headersWoVal, ok := headersWoAttribute.(basetypes.MapValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`headers_wo expected to be basetypes.MapValue, was: %T`, headersWoAttribute))
+	}
+
+	headersWoVersionAttribute, ok := attributes["headers_wo_version"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`headers_wo_version is missing from object`)
+
+		return NewAuthHeadersValueUnknown(), diags
+	}
+
+	headersWoVersionVal, ok := headersWoVersionAttribute.(basetypes.Int64Value)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`headers_wo_version expected to be basetypes.Int64Value, was: %T`, headersWoVersionAttribute))
+	}
+
+	if diags.HasError() {
+		return NewAuthHeadersValueUnknown(), diags
+	}
+
+	return AuthHeadersValue{
+		HeadersWo:        headersWoVal,
+		HeadersWoVersion: headersWoVersionVal,
+		state:            attr.ValueStateKnown,
+	}, diags
+}
+
+func NewAuthHeadersValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) AuthHeadersValue {
+	object, diags := NewAuthHeadersValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewAuthHeadersValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t AuthHeadersType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewAuthHeadersValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewAuthHeadersValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewAuthHeadersValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewAuthHeadersValueMust(AuthHeadersValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t AuthHeadersType) ValueType(ctx context.Context) attr.Value {
+	return AuthHeadersValue{}
+}
+
+var _ basetypes.ObjectValuable = AuthHeadersValue{}
+
+type AuthHeadersValue struct {
+	HeadersWo        basetypes.MapValue   `tfsdk:"headers_wo"`
+	HeadersWoVersion basetypes.Int64Value `tfsdk:"headers_wo_version"`
+	state            attr.ValueState
+}
+
+func (v AuthHeadersValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 2)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["headers_wo"] = basetypes.MapType{
+		ElemType: types.StringType,
+	}.TerraformType(ctx)
+	attrTypes["headers_wo_version"] = basetypes.Int64Type{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 2)
+
+		val, err = v.HeadersWo.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["headers_wo"] = val
+
+		val, err = v.HeadersWoVersion.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["headers_wo_version"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v AuthHeadersValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v AuthHeadersValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v AuthHeadersValue) String() string {
+	return "AuthHeadersValue"
+}
+
+func (v AuthHeadersValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var headersWoVal basetypes.MapValue
+	switch {
+	case v.HeadersWo.IsUnknown():
+		headersWoVal = types.MapUnknown(types.StringType)
+	case v.HeadersWo.IsNull():
+		headersWoVal = types.MapNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		headersWoVal, d = types.MapValue(types.StringType, v.HeadersWo.Elements())
+		diags.Append(d...)
+	}
+
+	if diags.HasError() {
+		return types.ObjectUnknown(map[string]attr.Type{
+			"headers_wo": basetypes.MapType{
+				ElemType: types.StringType,
+			},
+			"headers_wo_version": basetypes.Int64Type{},
+		}), diags
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"headers_wo": basetypes.MapType{
+			ElemType: types.StringType,
+		},
+		"headers_wo_version": basetypes.Int64Type{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"headers_wo":         headersWoVal,
+			"headers_wo_version": v.HeadersWoVersion,
+		})
+
+	return objVal, diags
+}
+
+func (v AuthHeadersValue) Equal(o attr.Value) bool {
+	other, ok := o.(AuthHeadersValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.HeadersWo.Equal(other.HeadersWo) {
+		return false
+	}
+
+	if !v.HeadersWoVersion.Equal(other.HeadersWoVersion) {
+		return false
+	}
+
+	return true
+}
+
+func (v AuthHeadersValue) Type(ctx context.Context) attr.Type {
+	return AuthHeadersType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v AuthHeadersValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"headers_wo": basetypes.MapType{
+			ElemType: types.StringType,
+		},
+		"headers_wo_version": basetypes.Int64Type{},
+	}
 }
 
 var _ basetypes.ObjectTypable = FunctionAppKeyType{}

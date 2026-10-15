@@ -73,8 +73,8 @@ func AzureCollectionAgentDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "Display name of the collection agent. Null when it has no name.",
 			},
 		},
-		Description:         "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.",
-		MarkdownDescription: "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.",
+		Description:         "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.",
+		MarkdownDescription: "An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.",
 	}
 }
 

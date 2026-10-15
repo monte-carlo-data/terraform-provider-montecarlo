@@ -32,6 +32,7 @@ func (r *azureCollectionAgentResource) Metadata(_ context.Context, req resource.
 func (r *azureCollectionAgentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_azure_collection_agent.AzureCollectionAgentResourceSchema(ctx)
 	// Secrets: Terraform passes them to the provider on apply and never stores them.
+	writeOnly(s.Attributes, "azure_collection_agent.auth_headers.headers_wo", &resp.Diagnostics)
 	writeOnly(s.Attributes, "azure_collection_agent.function_app_key.app_key_wo", &resp.Diagnostics)
 	writeOnly(s.Attributes, "azure_collection_agent.service_principal.client_secret_wo", &resp.Diagnostics)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
@@ -68,6 +69,10 @@ func (r *azureCollectionAgentResource) Create(ctx context.Context, req resource.
 	body := sdk.NewAzureCollectionAgentIn(sdk.AzureAgentAuthenticationType(plan.AuthenticationType.ValueString()), plan.DeploymentId.ValueString(), plan.FunctionAppUrl.ValueString())
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
+	}
+	if !plan.AuthHeaders.IsNull() && !plan.AuthHeaders.IsUnknown() {
+		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, config.AuthHeaders.HeadersWo))
+		body.SetAuthHeaders(*nested)
 	}
 	if !plan.FunctionAppKey.IsNull() && !plan.FunctionAppKey.IsUnknown() {
 		nested := sdk.NewFunctionAppKeyCredentialsIn(config.FunctionAppKey.AppKeyWo.ValueString())
@@ -132,6 +137,10 @@ func (r *azureCollectionAgentResource) Update(ctx context.Context, req resource.
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
+	if !plan.AuthHeaders.IsNull() && !plan.AuthHeaders.IsUnknown() {
+		nested := sdk.NewAuthHeadersCredentialsIn(mapOfStrings(ctx, config.AuthHeaders.HeadersWo))
+		body.SetAuthHeaders(*nested)
+	}
 	if !plan.FunctionAppKey.IsNull() && !plan.FunctionAppKey.IsUnknown() {
 		nested := sdk.NewFunctionAppKeyCredentialsIn(config.FunctionAppKey.AppKeyWo.ValueString())
 		body.SetFunctionAppKey(*nested)
@@ -172,6 +181,15 @@ func (r *azureCollectionAgentResource) ImportState(ctx context.Context, req reso
 // applyAzureCollectionAgentNested copies the unreturned nested credential blocks from src into m,
 // resolving an omitted block or sub-field to null. src is the plan on create, state on read.
 func applyAzureCollectionAgentNested(m *resource_azure_collection_agent.AzureCollectionAgentModel, src resource_azure_collection_agent.AzureCollectionAgentModel) {
+	if src.AuthHeaders.IsNull() || src.AuthHeaders.IsUnknown() {
+		m.AuthHeaders = resource_azure_collection_agent.NewAuthHeadersValueNull()
+	} else {
+		v := src.AuthHeaders
+		if v.HeadersWo.IsUnknown() {
+			v.HeadersWo = types.MapNull(types.StringType)
+		}
+		m.AuthHeaders = v
+	}
 	if src.FunctionAppKey.IsNull() || src.FunctionAppKey.IsUnknown() {
 		m.FunctionAppKey = resource_azure_collection_agent.NewFunctionAppKeyValueNull()
 	} else {

@@ -3,12 +3,12 @@
 page_title: "montecarlo_azure_collection_agent Resource - Monte Carlo"
 subcategory: "Deployments"
 description: |-
-  An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.
+  An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.
 ---
 
 # montecarlo_azure_collection_agent (Resource)
 
-An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key or a service principal. Registering it completes a deployment provisioned for an Azure agent.
+An Azure collection agent is a function app in your Azure subscription that collects from warehouses inside your network. Monte Carlo calls it with an app key, a service principal or custom auth headers. Registering it completes a deployment provisioned for an Azure agent.
 
 ## Example Usage
 
@@ -132,9 +132,10 @@ output "agent_enabled" {
 
 ### Optional
 
-- `function_app_key` (Attributes) Credentials for `AZURE_FUNCTION_APP_KEY`. Send this or `service_principal`, never both. (see [below for nested schema](#nestedatt--function_app_key))
+- `auth_headers` (Attributes) Credentials for `CUSTOM_AUTH_HEADERS`. Send only the object matching `authentication_type`. (see [below for nested schema](#nestedatt--auth_headers))
+- `function_app_key` (Attributes) Credentials for `AZURE_FUNCTION_APP_KEY`. Send only the object matching `authentication_type`. (see [below for nested schema](#nestedatt--function_app_key))
 - `name` (String) Display name for the collection agent. Replaces the name it currently has.
-- `service_principal` (Attributes) Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send this or `function_app_key`, never both. (see [below for nested schema](#nestedatt--service_principal))
+- `service_principal` (Attributes) Credentials for `AZURE_FUNCTION_SERVICE_PRINCIPAL`. Send only the object matching `authentication_type`. (see [below for nested schema](#nestedatt--service_principal))
 
 ### Read-Only
 
@@ -145,6 +146,15 @@ output "agent_enabled" {
 - `image_version` (String) Version of the image the collection agent is running. Null until Monte Carlo has contacted the agent.
 - `is_remote_upgradeable` (Boolean) Whether Monte Carlo can update the collection agent's image for you.
 - `last_updated_time` (String) When the collection agent was last changed. Registering it, renaming it, changing how Monte Carlo reaches it, and Monte Carlo picking up a new image version all update this. Null until any of those has happened.
+
+<a id="nestedatt--auth_headers"></a>
+### Nested Schema for `auth_headers`
+
+Required:
+
+- `headers_wo` (Map of String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Header names, each mapped to the value to send for it. Names have to be valid HTTP header names. At most 20 headers, each value up to 8192 characters.
+- `headers_wo_version` (Number) Bump to send `headers_wo` again. Terraform stores this, never the secret.
+
 
 <a id="nestedatt--function_app_key"></a>
 ### Nested Schema for `function_app_key`
