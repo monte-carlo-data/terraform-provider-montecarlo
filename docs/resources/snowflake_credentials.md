@@ -108,7 +108,7 @@ output "connection_type" {
 
 > **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
 
-- `account` (String) Snowflake account identifier, such as `xy12345.us-east-1`. Without the `.snowflakecomputing.com` suffix.
+- `account` (String) Snowflake account identifier, such as `xy12345.us-east-1`. Without the `.snowflakecomputing.com` suffix. Letters, digits, `_`, `.` and `-` only.
 - `private_key_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) The private key of the pair, as PEM text including its BEGIN and END lines. Stored by Monte Carlo and never returned.
 - `private_key_wo_version` (Number) Bump to send `private_key_wo` again. Terraform stores this, never the secret.
 - `user` (String) Snowflake user the key pair belongs to.
