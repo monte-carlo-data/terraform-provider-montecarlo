@@ -18,8 +18,8 @@ func SnowflakeCredentialsResourceSchema(ctx context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"account": schema.StringAttribute{
 				Required:            true,
-				Description:         "Snowflake account identifier, such as `xy12345.us-east-1`. Without the `.snowflakecomputing.com` suffix.",
-				MarkdownDescription: "Snowflake account identifier, such as `xy12345.us-east-1`. Without the `.snowflakecomputing.com` suffix.",
+				Description:         "Snowflake account identifier, such as `xy12345.us-east-1`. Without the `.snowflakecomputing.com` suffix. Letters, digits, `_`, `.` and `-` only.",
+				MarkdownDescription: "Snowflake account identifier, such as `xy12345.us-east-1`. Without the `.snowflakecomputing.com` suffix. Letters, digits, `_`, `.` and `-` only.",
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 200),
 				},
