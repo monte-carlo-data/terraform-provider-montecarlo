@@ -14,7 +14,7 @@ provider "montecarlo" {
 }
 
 variable "hosted_deployment_id" {
-  description = "Id of the deployment Monte Carlo hosts for your account."
+  description = "Deployment UUID of the Cloud deployment under Settings > Deployments in the Monte Carlo app."
   type        = string
 }
 
