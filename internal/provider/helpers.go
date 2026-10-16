@@ -363,7 +363,8 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 
 // useStateForUnknown keeps an attribute's prior state value in the plan, including a null one.
 //
-// The plain variant, for the unreturned inputs: ones the API accepts and no response carries.
+// The plain variant, for attributes whose null is final. The unreturned inputs are the case
+// that matters most: ones the API accepts and no response carries.
 // State holds null for one of those as soon as the config omits it, and
 // `useNonNullStateForUnknown` refuses to copy a null, which leaves the attribute unknown. An
 // unknown planned value is what `requiresReplace` reads as a change, so an unreturned attribute
