@@ -32,6 +32,8 @@ func (r *deploymentResource) Metadata(_ context.Context, req resource.MetadataRe
 func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	s := resource_deployment.DeploymentResourceSchema(ctx)
 	// These holds come before the replacements below: plan modifiers run in the order they are attached.
+	// Updating the resource never changes these, so the plan keeps what state holds once it holds a value.
+	useNonNullStateForUnknown(s.Attributes, "deployment.aws_external_id", &resp.Diagnostics)
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "deployment.created_time", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "deployment.id", &resp.Diagnostics)
