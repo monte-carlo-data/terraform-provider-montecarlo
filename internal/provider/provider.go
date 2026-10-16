@@ -213,6 +213,7 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 		NewGenericCollectionAgentDataSource,
 		NewGenericCollectionAgentOauthClientDataSource,
 		NewGenericCollectionAgentTokenDataSource,
+		NewHostingDomainsDataSource,
 		NewInformaticaV2CredentialsDataSource,
 		NewIngestionKeyDataSource,
 		NewLookerCredentialsDataSource,
