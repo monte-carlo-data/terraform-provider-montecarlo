@@ -36,6 +36,7 @@ func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaReques
 	useStateForUnknown(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.connection_type", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.created_time", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "connection.credentials_storage_type", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
