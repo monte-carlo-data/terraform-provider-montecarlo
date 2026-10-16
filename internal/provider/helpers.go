@@ -342,8 +342,8 @@ func requiresReplace(attrs map[string]schema.Attribute, name string, diags *diag
 // as an inconsistent result. This one leaves a null state unknown.
 //
 // The generated code calls this for every create-only output, since a value the API returns
-// once can never change on an update, and for every unmarked optional response field the update
-// body refuses.
+// once can never change on an update, and for every response field marked
+// `x-mc-terraform-stable-once-set`.
 func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseNonNullStateForUnknown(),
@@ -363,7 +363,8 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 
 // useStateForUnknown keeps an attribute's prior state value in the plan, including a null one.
 //
-// The plain variant, for the unreturned inputs: ones the API accepts and no response carries.
+// The plain variant, for attributes whose null is final. The unreturned inputs are the case
+// that matters most: ones the API accepts and no response carries.
 // State holds null for one of those as soon as the config omits it, and
 // `useNonNullStateForUnknown` refuses to copy a null, which leaves the attribute unknown. An
 // unknown planned value is what `requiresReplace` reads as a change, so an unreturned attribute
@@ -373,7 +374,8 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 // variant, or the plan says null and the apply says otherwise.
 //
 // The generated code calls this for every response field marked `x-mc-terraform-stable`, whose
-// null is final, and for every optional unreturned input that requires replacement.
+// null is final, for every optional returned input the update body refuses, and for every
+// optional unreturned input that requires replacement.
 func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseStateForUnknown(),
