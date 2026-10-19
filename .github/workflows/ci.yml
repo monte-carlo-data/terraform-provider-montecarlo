@@ -47,6 +47,7 @@ jobs:
         run: |
           .github/scripts/next-tag.sh > /dev/null
           .github/scripts/next-tag_test.sh
+          .github/scripts/release-tag_test.sh
 
       # The registry renders docs/ as committed, so it has to match the schemas and examples.
       - name: Check the registry docs and third-party notices are current
@@ -158,8 +159,6 @@ jobs:
     concurrency:
       group: tag
       cancel-in-progress: false
-    outputs:
-      tag: ${{ steps.next.outputs.tag }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -194,12 +193,32 @@ jobs:
             -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" > /dev/null
           echo "Tagged $GITHUB_SHA as $TAG."
 
+  # Reads the tag from the commit, so a rerun that finds the commit already tagged still releases
+  # it. Kept out of the release job so an untagged commit never enters the release environment.
+  release-tag:
+    name: Find the commit's release tag
+    needs: tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.find.outputs.tag }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Find the tag
+        id: find
+        run: |
+          tag=$(.github/scripts/release-tag.sh)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
   # The signing key is released only to this job, which runs from main's own workflow file; the
   # `release` environment accepts only `main`.
   release:
     name: Build, sign and publish the release
-    needs: tag
-    if: needs.tag.outputs.tag != ''
+    needs: release-tag
+    if: needs.release-tag.outputs.tag != ''
     runs-on: ubuntu-latest
     environment: release
     # GoReleaser creates the GitHub release with GITHUB_TOKEN.
@@ -208,7 +227,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          ref: ${{ needs.tag.outputs.tag }}
+          ref: refs/tags/${{ needs.release-tag.outputs.tag }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -231,3 +250,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+          # Publish the tag this job gated on, not whichever GoReleaser picks from HEAD.
+          GORELEASER_CURRENT_TAG: ${{ needs.release-tag.outputs.tag }}
