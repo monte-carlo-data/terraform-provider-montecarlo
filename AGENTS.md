@@ -192,7 +192,9 @@ Every merge to `main` is a release. `.github/scripts/next-tag.sh` works out the 
 `v<base>.<n>`: `<base>` is the major.minor in `VERSION`, and `<n>` is one past the highest patch
 already tagged on that base. CI runs its test, and validates `VERSION`, on every pull request. The
 org App and the `apollo` team are the only actors allowed to create tags. The same script, its test
-and the `tag` job also live in mc-sdk-go and mc-cli; change them together.
+and the `tag` job also live in mc-sdk-go and mc-cli. `.github/scripts/release-tag.sh`, its test and
+the `release-tag` job also live in mc-cli, and mc-sdk-go does the same lookup in its
+`github-release.sh`. Change them together.
 
 Only the patch is bumped automatically. To start a new minor, change `VERSION` (`0.1` to `0.2`)
 in a pull request; its merge is tagged `v0.2.0`. The README tells users to pin `~> 0.1.0` and
@@ -205,11 +207,12 @@ provider is in beta.
 On a push to `main`, CI's `tag` job, once the build and `release-snapshot` jobs pass, tags the
 merge commit. The `release-tag` job then reads the commit's version tag with
 `.github/scripts/release-tag.sh`, and the `release` job builds, signs and publishes it from
-`main`'s own workflow file. GoReleaser (`.goreleaser.yml`) cross-compiles every platform, zips each one, writes the
-`SHA256SUMS` file with `terraform-registry-manifest.json` in it, signs that file with GPG and
-attaches it all to a GitHub release, which it publishes only once every asset is uploaded. The
-registry picks the release up from there. Don't create a release in the GitHub UI: that publishes
-it before its assets exist, and the registry then misses the version until it is resynced.
+`main`'s own workflow file. GoReleaser (`.goreleaser.yml`) cross-compiles every platform, zips each
+one, writes the `SHA256SUMS` file with `terraform-registry-manifest.json` in it, signs that file
+with GPG and attaches it all to a GitHub release, which it publishes only once every asset is
+uploaded. The registry picks the release up from there. Don't create a release in the GitHub UI:
+that publishes it before its assets exist, and the registry then misses the version until it is
+resynced.
 
 The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
 `GPG_PASSPHRASE`. The environment only accepts `main`, so the key never reaches a workflow that
