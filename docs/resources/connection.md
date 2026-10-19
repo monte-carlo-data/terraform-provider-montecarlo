@@ -148,6 +148,7 @@ output "job_types" {
 
 - `bi_container_id` (String) The BI container to add the connection to, for Tableau, Looker or Power BI credentials. Its type has to match what the credentials are for: a `looker` container takes both `looker` and `looker-git-clone` credentials. A `custom-bi-connector` container takes a custom BI connector's credentials, or none when it has no deployment. Send exactly one of this, `warehouse_id` and `etl_container_id`.
 - `credentials_id` (String) The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type.
+- `dbt_cloud` (Attributes) Which dbt Cloud runs a dbt Cloud webhook connection processes. A dbt Cloud webhook reports runs from every environment in the dbt account. These settings decide which of them Monte Carlo processes for the connection's warehouse. Only a dbt Cloud webhook connection takes it. Omit it to process every run. Setting it requires every attribute in it. (see [below for nested schema](#nestedatt--dbt_cloud))
 - `etl_container_id` (String) The ETL container to add the connection to, for ETL tool credentials such as Fivetran or Airflow. The container's type has to equal the credentials' type, and the container must not have a connection yet. A `custom-etl-connector` container takes a custom ETL connector's credentials, or none when it has no deployment. Send exactly one of this, `warehouse_id` and `bi_container_id`.
 - `job_types` (List of String) The jobs to run on this connection. Omit it to run what the connection type runs by default, which is what the app does. Which values are accepted depends on the connection type. `etl` on a Snowflake, Power BI or Salesforce Data Cloud connection also creates its ETL container. An empty list is not accepted; omit the field to take the defaults.
 - `warehouse_id` (String) The warehouse to add the connection to. Its type has to match what the credentials are for. Send exactly one of this, `bi_container_id` and `etl_container_id`.
@@ -163,3 +164,12 @@ output "job_types" {
 - `etl_container_name` (String) Display name of that ETL container. Null when there is no ETL container.
 - `id` (String) Unique identifier of the connection.
 - `warehouse_name` (String) Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.
+
+<a id="nestedatt--dbt_cloud"></a>
+### Nested Schema for `dbt_cloud`
+
+Optional:
+
+- `allowed_connections` (List of String) The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.
+- `allowed_environments` (List of String) The dbt environments, by name and ignoring case, whose runs are kept. Empty keeps runs from every environment.
+- `connection_match` (String) How a run is matched to the connection's warehouse. `off`, the default, drops no run for its dbt connection.

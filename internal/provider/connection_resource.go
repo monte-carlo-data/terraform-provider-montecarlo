@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -86,6 +88,10 @@ func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequ
 	if !plan.WarehouseId.IsNull() && !plan.WarehouseId.IsUnknown() {
 		body.SetWarehouseId(plan.WarehouseId.ValueString())
 	}
+	if !plan.DbtCloud.IsNull() && !plan.DbtCloud.IsUnknown() {
+		nested := sdk.NewDbtCloudSettingsIn(sdk.ConnectionMatch(plan.DbtCloud.ConnectionMatch.ValueString()), listOfStrings(ctx, plan.DbtCloud.AllowedConnections), listOfStrings(ctx, plan.DbtCloud.AllowedEnvironments))
+		body.SetDbtCloud(*nested)
+	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.ConnectionOut, *http.Response, error) {
 		return r.clients.api.ConnectionsAPI.CreateConnection(ctx).ConnectionIn(*body).Execute()
@@ -94,7 +100,7 @@ func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("Create connection failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, connectionToModel(out))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, connectionToModel(ctx, out, &resp.Diagnostics))...)
 }
 
 func (r *connectionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -113,7 +119,7 @@ func (r *connectionResource) Read(ctx context.Context, req resource.ReadRequest,
 		resp.Diagnostics.AddError("Read connection failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, connectionToModel(out))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, connectionToModel(ctx, out, &resp.Diagnostics))...)
 }
 
 func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -131,6 +137,11 @@ func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequ
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
+	// The read returns dbt_cloud, so it is sent only when the plan changes it.
+	if !plan.DbtCloud.IsNull() && !plan.DbtCloud.IsUnknown() && !plan.DbtCloud.Equal(state.DbtCloud) {
+		nested := sdk.NewDbtCloudSettingsIn(sdk.ConnectionMatch(plan.DbtCloud.ConnectionMatch.ValueString()), listOfStrings(ctx, plan.DbtCloud.AllowedConnections), listOfStrings(ctx, plan.DbtCloud.AllowedEnvironments))
+		body.SetDbtCloud(*nested)
+	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.ConnectionOut, *http.Response, error) {
 		return r.clients.api.ConnectionsAPI.UpdateConnection(ctx, state.Id.ValueString()).ConnectionPatch(*body).Execute()
@@ -139,7 +150,7 @@ func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequ
 		resp.Diagnostics.AddError("Update connection failed", apiErr(err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, connectionToModel(out))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, connectionToModel(ctx, out, &resp.Diagnostics))...)
 }
 
 func (r *connectionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -158,7 +169,7 @@ func (r *connectionResource) ImportState(ctx context.Context, req resource.Impor
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func connectionToModel(o *sdk.ConnectionOut) resource_connection.ConnectionModel {
+func connectionToModel(ctx context.Context, o *sdk.ConnectionOut, diags *diag.Diagnostics) resource_connection.ConnectionModel {
 	m := resource_connection.ConnectionModel{
 		ConnectionType: types.StringValue(o.GetConnectionType()),
 		CreatedTime:    types.StringValue(o.GetCreatedTime().Format(time.RFC3339)),
@@ -184,6 +195,11 @@ func connectionToModel(o *sdk.ConnectionOut) resource_connection.ConnectionModel
 		m.CredentialsStorageType = types.StringValue(string(*v))
 	} else {
 		m.CredentialsStorageType = types.StringNull()
+	}
+	if v, ok := o.GetDbtCloudOk(); ok && v != nil {
+		m.DbtCloud = connectionResourceDbtCloud(ctx, *v, diags)
+	} else {
+		m.DbtCloud = resource_connection.NewDbtCloudValueNull()
 	}
 	if v, ok := o.GetDeploymentIdOk(); ok && v != nil {
 		m.DeploymentId = types.StringValue(*v)
@@ -221,4 +237,16 @@ func connectionToModel(o *sdk.ConnectionOut) resource_connection.ConnectionModel
 		m.WarehouseName = types.StringNull()
 	}
 	return m
+}
+
+// connectionResourceDbtCloud converts the SDK's DbtCloudSettingsOut into the dbt_cloud attribute's value.
+func connectionResourceDbtCloud(ctx context.Context, o sdk.DbtCloudSettingsOut, diags *diag.Diagnostics) resource_connection.DbtCloudValue {
+	attrs := map[string]attr.Value{
+		"allowed_connections":  stringList(o.GetAllowedConnections()),
+		"allowed_environments": stringList(o.GetAllowedEnvironments()),
+		"connection_match":     types.StringValue(string(o.GetConnectionMatch())),
+	}
+	v, d := resource_connection.NewDbtCloudValue(resource_connection.DbtCloudValue{}.AttributeTypes(ctx), attrs)
+	diags.Append(d...)
+	return v
 }
