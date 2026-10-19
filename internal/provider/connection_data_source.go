@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"time"
 
@@ -54,6 +56,7 @@ func (d *connectionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.AddError("Read connection failed", apiErr(err))
 		return
 	}
+	diags := &resp.Diagnostics
 	m := datasource_connection.ConnectionModel{
 		ConnectionId:   cfg.ConnectionId,
 		ConnectionType: types.StringValue(out.GetConnectionType()),
@@ -80,6 +83,11 @@ func (d *connectionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		m.CredentialsStorageType = types.StringValue(string(*v))
 	} else {
 		m.CredentialsStorageType = types.StringNull()
+	}
+	if v, ok := out.GetDbtCloudOk(); ok && v != nil {
+		m.DbtCloud = connectionDataSourceDbtCloud(ctx, *v, diags)
+	} else {
+		m.DbtCloud = datasource_connection.NewDbtCloudValueNull()
 	}
 	if v, ok := out.GetDeploymentIdOk(); ok && v != nil {
 		m.DeploymentId = types.StringValue(*v)
@@ -117,4 +125,16 @@ func (d *connectionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		m.WarehouseName = types.StringNull()
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
+}
+
+// connectionDataSourceDbtCloud converts the SDK's DbtCloudSettingsOut into the dbt_cloud attribute's value.
+func connectionDataSourceDbtCloud(ctx context.Context, o sdk.DbtCloudSettingsOut, diags *diag.Diagnostics) datasource_connection.DbtCloudValue {
+	attrs := map[string]attr.Value{
+		"allowed_connections":  stringList(o.GetAllowedConnections()),
+		"allowed_environments": stringList(o.GetAllowedEnvironments()),
+		"connection_match":     types.StringValue(string(o.GetConnectionMatch())),
+	}
+	v, d := datasource_connection.NewDbtCloudValue(datasource_connection.DbtCloudValue{}.AttributeTypes(ctx), attrs)
+	diags.Append(d...)
+	return v
 }

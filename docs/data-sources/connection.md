@@ -27,6 +27,7 @@ A connection lets Monte Carlo reach a warehouse's data platform, a BI container'
 - `created_time` (String) When the connection was created.
 - `credentials_id` (String) The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.
 - `credentials_storage_type` (String) Where that secret lives. Null when there are no credentials to describe.
+- `dbt_cloud` (Attributes) Which dbt Cloud runs a dbt Cloud webhook connection processes. A dbt Cloud webhook reports runs from every environment in the dbt account. These settings decide which of them Monte Carlo processes for the connection's warehouse. Null for every other connection type. (see [below for nested schema](#nestedatt--dbt_cloud))
 - `deployment_id` (String) The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.
 - `deployment_name` (String) Display name of that deployment. Null when there is no deployment to name.
 - `etl_container_id` (String) The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI dataflows, and it changes when that is turned on or off. Null otherwise.
@@ -36,3 +37,12 @@ A connection lets Monte Carlo reach a warehouse's data platform, a BI container'
 - `name` (String) Display name of the connection. Null for a connection that was never named.
 - `warehouse_id` (String) The warehouse the connection belongs to. Null for a connection on a BI or ETL container. Fixed once created.
 - `warehouse_name` (String) Display name of that warehouse. Null for a warehouse that was never named, and for a connection on a BI or ETL container.
+
+<a id="nestedatt--dbt_cloud"></a>
+### Nested Schema for `dbt_cloud`
+
+Read-Only:
+
+- `allowed_connections` (List of String) The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.
+- `allowed_environments` (List of String) The dbt environments, by name and ignoring case, whose runs are kept. Empty keeps runs from every environment.
+- `connection_match` (String) How a run is matched to the connection's warehouse. `off`, the default, drops no run for its dbt connection.

@@ -4,10 +4,18 @@ package resource_connection
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -46,6 +54,55 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 				Computed:            true,
 				Description:         "Where that secret lives. Null when there are no credentials to describe.",
 				MarkdownDescription: "Where that secret lives. Null when there are no credentials to describe.",
+			},
+			"dbt_cloud": schema.SingleNestedAttribute{
+				Attributes: map[string]schema.Attribute{
+					"allowed_connections": schema.ListAttribute{
+						ElementType:         types.StringType,
+						Optional:            true,
+						Computed:            true,
+						Description:         "The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.",
+						MarkdownDescription: "The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.",
+						Validators: []validator.List{
+							listvalidator.SizeAtMost(100),
+						},
+					},
+					"allowed_environments": schema.ListAttribute{
+						ElementType:         types.StringType,
+						Optional:            true,
+						Computed:            true,
+						Description:         "The dbt environments, by name and ignoring case, whose runs are kept. Empty keeps runs from every environment.",
+						MarkdownDescription: "The dbt environments, by name and ignoring case, whose runs are kept. Empty keeps runs from every environment.",
+						Validators: []validator.List{
+							listvalidator.SizeAtMost(100),
+						},
+					},
+					"connection_match": schema.StringAttribute{
+						Optional:            true,
+						Computed:            true,
+						Description:         "How a run is matched to the connection's warehouse. `off`, the default, drops no run for its dbt connection.",
+						MarkdownDescription: "How a run is matched to the connection's warehouse. `off`, the default, drops no run for its dbt connection.",
+						Validators: []validator.String{
+							stringvalidator.OneOf(
+								"off",
+								"auto",
+								"allow_list",
+							),
+						},
+					},
+				},
+				CustomType: DbtCloudType{
+					ObjectType: types.ObjectType{
+						AttrTypes: DbtCloudValue{}.AttributeTypes(ctx),
+					},
+				},
+				Optional:            true,
+				Computed:            true,
+				Description:         "Which dbt Cloud runs a dbt Cloud webhook connection processes. A dbt Cloud webhook reports runs from every environment in the dbt account. These settings decide which of them Monte Carlo processes for the connection's warehouse. Only a dbt Cloud webhook connection takes it. Omit it to process every run. Setting it requires every attribute in it.",
+				MarkdownDescription: "Which dbt Cloud runs a dbt Cloud webhook connection processes. A dbt Cloud webhook reports runs from every environment in the dbt account. These settings decide which of them Monte Carlo processes for the connection's warehouse. Only a dbt Cloud webhook connection takes it. Omit it to process every run. Setting it requires every attribute in it.",
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("allowed_connections"), path.MatchRelative().AtName("allowed_environments"), path.MatchRelative().AtName("connection_match")),
+				},
 			},
 			"deployment_id": schema.StringAttribute{
 				Computed:            true,
@@ -109,19 +166,514 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type ConnectionModel struct {
-	BiContainerId          types.String `tfsdk:"bi_container_id"`
-	BiContainerName        types.String `tfsdk:"bi_container_name"`
-	ConnectionType         types.String `tfsdk:"connection_type"`
-	CreatedTime            types.String `tfsdk:"created_time"`
-	CredentialsId          types.String `tfsdk:"credentials_id"`
-	CredentialsStorageType types.String `tfsdk:"credentials_storage_type"`
-	DeploymentId           types.String `tfsdk:"deployment_id"`
-	DeploymentName         types.String `tfsdk:"deployment_name"`
-	EtlContainerId         types.String `tfsdk:"etl_container_id"`
-	EtlContainerName       types.String `tfsdk:"etl_container_name"`
-	Id                     types.String `tfsdk:"id"`
-	JobTypes               types.List   `tfsdk:"job_types"`
-	Name                   types.String `tfsdk:"name"`
-	WarehouseId            types.String `tfsdk:"warehouse_id"`
-	WarehouseName          types.String `tfsdk:"warehouse_name"`
+	BiContainerId          types.String  `tfsdk:"bi_container_id"`
+	BiContainerName        types.String  `tfsdk:"bi_container_name"`
+	ConnectionType         types.String  `tfsdk:"connection_type"`
+	CreatedTime            types.String  `tfsdk:"created_time"`
+	CredentialsId          types.String  `tfsdk:"credentials_id"`
+	CredentialsStorageType types.String  `tfsdk:"credentials_storage_type"`
+	DbtCloud               DbtCloudValue `tfsdk:"dbt_cloud"`
+	DeploymentId           types.String  `tfsdk:"deployment_id"`
+	DeploymentName         types.String  `tfsdk:"deployment_name"`
+	EtlContainerId         types.String  `tfsdk:"etl_container_id"`
+	EtlContainerName       types.String  `tfsdk:"etl_container_name"`
+	Id                     types.String  `tfsdk:"id"`
+	JobTypes               types.List    `tfsdk:"job_types"`
+	Name                   types.String  `tfsdk:"name"`
+	WarehouseId            types.String  `tfsdk:"warehouse_id"`
+	WarehouseName          types.String  `tfsdk:"warehouse_name"`
+}
+
+var _ basetypes.ObjectTypable = DbtCloudType{}
+
+type DbtCloudType struct {
+	basetypes.ObjectType
+}
+
+func (t DbtCloudType) Equal(o attr.Type) bool {
+	other, ok := o.(DbtCloudType)
+
+	if !ok {
+		return false
+	}
+
+	return t.ObjectType.Equal(other.ObjectType)
+}
+
+func (t DbtCloudType) String() string {
+	return "DbtCloudType"
+}
+
+func (t DbtCloudType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	attributes := in.Attributes()
+
+	allowedConnectionsAttribute, ok := attributes["allowed_connections"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`allowed_connections is missing from object`)
+
+		return nil, diags
+	}
+
+	allowedConnectionsVal, ok := allowedConnectionsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`allowed_connections expected to be basetypes.ListValue, was: %T`, allowedConnectionsAttribute))
+	}
+
+	allowedEnvironmentsAttribute, ok := attributes["allowed_environments"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`allowed_environments is missing from object`)
+
+		return nil, diags
+	}
+
+	allowedEnvironmentsVal, ok := allowedEnvironmentsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`allowed_environments expected to be basetypes.ListValue, was: %T`, allowedEnvironmentsAttribute))
+	}
+
+	connectionMatchAttribute, ok := attributes["connection_match"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`connection_match is missing from object`)
+
+		return nil, diags
+	}
+
+	connectionMatchVal, ok := connectionMatchAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`connection_match expected to be basetypes.StringValue, was: %T`, connectionMatchAttribute))
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return DbtCloudValue{
+		AllowedConnections:  allowedConnectionsVal,
+		AllowedEnvironments: allowedEnvironmentsVal,
+		ConnectionMatch:     connectionMatchVal,
+		state:               attr.ValueStateKnown,
+	}, diags
+}
+
+func NewDbtCloudValueNull() DbtCloudValue {
+	return DbtCloudValue{
+		state: attr.ValueStateNull,
+	}
+}
+
+func NewDbtCloudValueUnknown() DbtCloudValue {
+	return DbtCloudValue{
+		state: attr.ValueStateUnknown,
+	}
+}
+
+func NewDbtCloudValue(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) (DbtCloudValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Reference: https://github.com/hashicorp/terraform-plugin-framework/issues/521
+	ctx := context.Background()
+
+	for name, attributeType := range attributeTypes {
+		attribute, ok := attributes[name]
+
+		if !ok {
+			diags.AddError(
+				"Missing DbtCloudValue Attribute Value",
+				"While creating a DbtCloudValue value, a missing attribute value was detected. "+
+					"A DbtCloudValue must contain values for all attributes, even if null or unknown. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("DbtCloudValue Attribute Name (%s) Expected Type: %s", name, attributeType.String()),
+			)
+
+			continue
+		}
+
+		if !attributeType.Equal(attribute.Type(ctx)) {
+			diags.AddError(
+				"Invalid DbtCloudValue Attribute Type",
+				"While creating a DbtCloudValue value, an invalid attribute value was detected. "+
+					"A DbtCloudValue must use a matching attribute type for the value. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("DbtCloudValue Attribute Name (%s) Expected Type: %s\n", name, attributeType.String())+
+					fmt.Sprintf("DbtCloudValue Attribute Name (%s) Given Type: %s", name, attribute.Type(ctx)),
+			)
+		}
+	}
+
+	for name := range attributes {
+		_, ok := attributeTypes[name]
+
+		if !ok {
+			diags.AddError(
+				"Extra DbtCloudValue Attribute Value",
+				"While creating a DbtCloudValue value, an extra attribute value was detected. "+
+					"A DbtCloudValue must not contain values beyond the expected attribute types. "+
+					"This is always an issue with the provider and should be reported to the provider developers.\n\n"+
+					fmt.Sprintf("Extra DbtCloudValue Attribute Name: %s", name),
+			)
+		}
+	}
+
+	if diags.HasError() {
+		return NewDbtCloudValueUnknown(), diags
+	}
+
+	allowedConnectionsAttribute, ok := attributes["allowed_connections"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`allowed_connections is missing from object`)
+
+		return NewDbtCloudValueUnknown(), diags
+	}
+
+	allowedConnectionsVal, ok := allowedConnectionsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`allowed_connections expected to be basetypes.ListValue, was: %T`, allowedConnectionsAttribute))
+	}
+
+	allowedEnvironmentsAttribute, ok := attributes["allowed_environments"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`allowed_environments is missing from object`)
+
+		return NewDbtCloudValueUnknown(), diags
+	}
+
+	allowedEnvironmentsVal, ok := allowedEnvironmentsAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`allowed_environments expected to be basetypes.ListValue, was: %T`, allowedEnvironmentsAttribute))
+	}
+
+	connectionMatchAttribute, ok := attributes["connection_match"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`connection_match is missing from object`)
+
+		return NewDbtCloudValueUnknown(), diags
+	}
+
+	connectionMatchVal, ok := connectionMatchAttribute.(basetypes.StringValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`connection_match expected to be basetypes.StringValue, was: %T`, connectionMatchAttribute))
+	}
+
+	if diags.HasError() {
+		return NewDbtCloudValueUnknown(), diags
+	}
+
+	return DbtCloudValue{
+		AllowedConnections:  allowedConnectionsVal,
+		AllowedEnvironments: allowedEnvironmentsVal,
+		ConnectionMatch:     connectionMatchVal,
+		state:               attr.ValueStateKnown,
+	}, diags
+}
+
+func NewDbtCloudValueMust(attributeTypes map[string]attr.Type, attributes map[string]attr.Value) DbtCloudValue {
+	object, diags := NewDbtCloudValue(attributeTypes, attributes)
+
+	if diags.HasError() {
+		// This could potentially be added to the diag package.
+		diagsStrings := make([]string, 0, len(diags))
+
+		for _, diagnostic := range diags {
+			diagsStrings = append(diagsStrings, fmt.Sprintf(
+				"%s | %s | %s",
+				diagnostic.Severity(),
+				diagnostic.Summary(),
+				diagnostic.Detail()))
+		}
+
+		panic("NewDbtCloudValueMust received error(s): " + strings.Join(diagsStrings, "\n"))
+	}
+
+	return object
+}
+
+func (t DbtCloudType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	if in.Type() == nil {
+		return NewDbtCloudValueNull(), nil
+	}
+
+	if !in.Type().Equal(t.TerraformType(ctx)) {
+		return nil, fmt.Errorf("expected %s, got %s", t.TerraformType(ctx), in.Type())
+	}
+
+	if !in.IsKnown() {
+		return NewDbtCloudValueUnknown(), nil
+	}
+
+	if in.IsNull() {
+		return NewDbtCloudValueNull(), nil
+	}
+
+	attributes := map[string]attr.Value{}
+
+	val := map[string]tftypes.Value{}
+
+	err := in.As(&val)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range val {
+		a, err := t.AttrTypes[k].ValueFromTerraform(ctx, v)
+
+		if err != nil {
+			return nil, err
+		}
+
+		attributes[k] = a
+	}
+
+	return NewDbtCloudValueMust(DbtCloudValue{}.AttributeTypes(ctx), attributes), nil
+}
+
+func (t DbtCloudType) ValueType(ctx context.Context) attr.Value {
+	return DbtCloudValue{}
+}
+
+var _ basetypes.ObjectValuable = DbtCloudValue{}
+
+type DbtCloudValue struct {
+	AllowedConnections  basetypes.ListValue   `tfsdk:"allowed_connections"`
+	AllowedEnvironments basetypes.ListValue   `tfsdk:"allowed_environments"`
+	ConnectionMatch     basetypes.StringValue `tfsdk:"connection_match"`
+	state               attr.ValueState
+}
+
+func (v DbtCloudValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
+	attrTypes := make(map[string]tftypes.Type, 3)
+
+	var val tftypes.Value
+	var err error
+
+	attrTypes["allowed_connections"] = basetypes.ListType{
+		ElemType: types.StringType,
+	}.TerraformType(ctx)
+	attrTypes["allowed_environments"] = basetypes.ListType{
+		ElemType: types.StringType,
+	}.TerraformType(ctx)
+	attrTypes["connection_match"] = basetypes.StringType{}.TerraformType(ctx)
+
+	objectType := tftypes.Object{AttributeTypes: attrTypes}
+
+	switch v.state {
+	case attr.ValueStateKnown:
+		vals := make(map[string]tftypes.Value, 3)
+
+		val, err = v.AllowedConnections.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["allowed_connections"] = val
+
+		val, err = v.AllowedEnvironments.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["allowed_environments"] = val
+
+		val, err = v.ConnectionMatch.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["connection_match"] = val
+
+		if err := tftypes.ValidateValue(objectType, vals); err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		return tftypes.NewValue(objectType, vals), nil
+	case attr.ValueStateNull:
+		return tftypes.NewValue(objectType, nil), nil
+	case attr.ValueStateUnknown:
+		return tftypes.NewValue(objectType, tftypes.UnknownValue), nil
+	default:
+		panic(fmt.Sprintf("unhandled Object state in ToTerraformValue: %s", v.state))
+	}
+}
+
+func (v DbtCloudValue) IsNull() bool {
+	return v.state == attr.ValueStateNull
+}
+
+func (v DbtCloudValue) IsUnknown() bool {
+	return v.state == attr.ValueStateUnknown
+}
+
+func (v DbtCloudValue) String() string {
+	return "DbtCloudValue"
+}
+
+func (v DbtCloudValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var allowedConnectionsVal basetypes.ListValue
+	switch {
+	case v.AllowedConnections.IsUnknown():
+		allowedConnectionsVal = types.ListUnknown(types.StringType)
+	case v.AllowedConnections.IsNull():
+		allowedConnectionsVal = types.ListNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		allowedConnectionsVal, d = types.ListValue(types.StringType, v.AllowedConnections.Elements())
+		diags.Append(d...)
+	}
+
+	if diags.HasError() {
+		return types.ObjectUnknown(map[string]attr.Type{
+			"allowed_connections": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"allowed_environments": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"connection_match": basetypes.StringType{},
+		}), diags
+	}
+
+	var allowedEnvironmentsVal basetypes.ListValue
+	switch {
+	case v.AllowedEnvironments.IsUnknown():
+		allowedEnvironmentsVal = types.ListUnknown(types.StringType)
+	case v.AllowedEnvironments.IsNull():
+		allowedEnvironmentsVal = types.ListNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		allowedEnvironmentsVal, d = types.ListValue(types.StringType, v.AllowedEnvironments.Elements())
+		diags.Append(d...)
+	}
+
+	if diags.HasError() {
+		return types.ObjectUnknown(map[string]attr.Type{
+			"allowed_connections": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"allowed_environments": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"connection_match": basetypes.StringType{},
+		}), diags
+	}
+
+	attributeTypes := map[string]attr.Type{
+		"allowed_connections": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"allowed_environments": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"connection_match": basetypes.StringType{},
+	}
+
+	if v.IsNull() {
+		return types.ObjectNull(attributeTypes), diags
+	}
+
+	if v.IsUnknown() {
+		return types.ObjectUnknown(attributeTypes), diags
+	}
+
+	objVal, diags := types.ObjectValue(
+		attributeTypes,
+		map[string]attr.Value{
+			"allowed_connections":  allowedConnectionsVal,
+			"allowed_environments": allowedEnvironmentsVal,
+			"connection_match":     v.ConnectionMatch,
+		})
+
+	return objVal, diags
+}
+
+func (v DbtCloudValue) Equal(o attr.Value) bool {
+	other, ok := o.(DbtCloudValue)
+
+	if !ok {
+		return false
+	}
+
+	if v.state != other.state {
+		return false
+	}
+
+	if v.state != attr.ValueStateKnown {
+		return true
+	}
+
+	if !v.AllowedConnections.Equal(other.AllowedConnections) {
+		return false
+	}
+
+	if !v.AllowedEnvironments.Equal(other.AllowedEnvironments) {
+		return false
+	}
+
+	if !v.ConnectionMatch.Equal(other.ConnectionMatch) {
+		return false
+	}
+
+	return true
+}
+
+func (v DbtCloudValue) Type(ctx context.Context) attr.Type {
+	return DbtCloudType{
+		basetypes.ObjectType{
+			AttrTypes: v.AttributeTypes(ctx),
+		},
+	}
+}
+
+func (v DbtCloudValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"allowed_connections": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"allowed_environments": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"connection_match": basetypes.StringType{},
+	}
 }
