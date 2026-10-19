@@ -250,3 +250,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
+          # Publish the tag this job gated on, not whichever GoReleaser picks from HEAD.
+          GORELEASER_CURRENT_TAG: ${{ needs.release-tag.outputs.tag }}
