@@ -44,7 +44,8 @@ go build ./...      # compile check only — it produces no binary, see below
 go test ./...
 go vet ./...
 gofmt -l .          # must be empty
-.github/scripts/next-tag_test.sh   # the release-tag logic
+.github/scripts/next-tag_test.sh   # the logic that picks the next tag
+.github/scripts/release-tag_test.sh   # the lookup of the tag the release publishes
 .github/scripts/validate-examples.sh   # init + validate every directory under examples/, against this checkout's build
 go generate ./...   # regenerates docs/ and THIRD_PARTY_NOTICES; builds the provider and runs Terraform
 
@@ -63,7 +64,7 @@ terraform -chdir=examples/resources/montecarlo_aws_collection_agent plan   # aga
 | `examples/` | Worked configurations, which double as registry documentation; `examples/guides/` holds the ones only a guide embeds |
 | `templates/` | Registry page templates: the index page and the guides (`templates/guides/`) by hand, one per resource and data source generated |
 | `VERSION` | The major.minor release base — see [Releasing](#releasing) |
-| `.github/scripts/` | The release-tag script and its test, and the example validator |
+| `.github/scripts/` | The tag scripts and their tests, and the example validator |
 | `docs/` | Registry documentation, generated — see [Registry documentation](#registry-documentation) |
 | `tools/notices/` | Generates `THIRD_PARTY_NOTICES` — see [Third-party notices](#third-party-notices) |
 
@@ -202,8 +203,9 @@ provider is in beta.
 ### How a release is built
 
 On a push to `main`, CI's `tag` job, once the build and `release-snapshot` jobs pass, tags the
-merge commit, and the `release` job builds, signs and publishes it from `main`'s own workflow
-file. GoReleaser (`.goreleaser.yml`) cross-compiles every platform, zips each one, writes the
+merge commit. The `release-tag` job then reads the commit's version tag with
+`.github/scripts/release-tag.sh`, and the `release` job builds, signs and publishes it from
+`main`'s own workflow file. GoReleaser (`.goreleaser.yml`) cross-compiles every platform, zips each one, writes the
 `SHA256SUMS` file with `terraform-registry-manifest.json` in it, signs that file with GPG and
 attaches it all to a GitHub release, which it publishes only once every asset is uploaded. The
 registry picks the release up from there. Don't create a release in the GitHub UI: that publishes
@@ -212,8 +214,9 @@ it before its assets exist, and the registry then misses the version until it is
 The signing key is read from the `release` environment's secrets, `GPG_PRIVATE_KEY` and
 `GPG_PASSPHRASE`. The environment only accepts `main`, so the key never reaches a workflow that
 runs from a tag or a branch. The registry checks each release against the public half of the same
-key. If the `release` job fails, use "Re-run failed jobs": re-running all jobs finds the commit
-already tagged and skips the release. A commit older than an already-tagged one is never tagged.
+key. If the `tag` or `release` job fails, re-run it: the release reads its tag from the commit,
+not from the `tag` job, so a rerun that finds the commit already tagged still releases it. A
+commit older than an already-tagged one is never tagged.
 
 CI's `release-snapshot` job runs the same build, signed with a throwaway key and not published,
 so a change that breaks a release fails before it merges. To reproduce it locally, without
