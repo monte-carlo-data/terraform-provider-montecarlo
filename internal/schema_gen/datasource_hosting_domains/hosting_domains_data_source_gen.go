@@ -34,13 +34,13 @@ func HostingDomainsDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"m2m_instance_scope": schema.StringAttribute{
 				Computed:            true,
-				Description:         "Scope an OAuth client requests for its token to reach this deployment. Null when the deployment does not support OAuth clients.",
-				MarkdownDescription: "Scope an OAuth client requests for its token to reach this deployment. Null when the deployment does not support OAuth clients.",
+				Description:         "Scope an OAuth client requests for its token to reach this instance. Null when the instance does not support OAuth clients.",
+				MarkdownDescription: "Scope an OAuth client requests for its token to reach this instance. Null when the instance does not support OAuth clients.",
 			},
 			"m2m_token_url": schema.StringAttribute{
 				Computed:            true,
-				Description:         "URL an OAuth client requests an access token from, with the client-credentials grant. Null when the deployment does not support OAuth clients.",
-				MarkdownDescription: "URL an OAuth client requests an access token from, with the client-credentials grant. Null when the deployment does not support OAuth clients.",
+				Description:         "URL an OAuth client requests an access token from, with the client-credentials grant. Null when the instance does not support OAuth clients.",
+				MarkdownDescription: "URL an OAuth client requests an access token from, with the client-credentials grant. Null when the instance does not support OAuth clients.",
 			},
 			"ui_url": schema.StringAttribute{
 				Computed:            true,
@@ -48,8 +48,8 @@ func HostingDomainsDataSourceSchema(ctx context.Context) schema.Schema {
 				MarkdownDescription: "URL of the Monte Carlo web app.",
 			},
 		},
-		Description:         "The URLs your Monte Carlo deployment serves, such as the webhook URL to give dbt Cloud.",
-		MarkdownDescription: "The URLs your Monte Carlo deployment serves, such as the webhook URL to give dbt Cloud.",
+		Description:         "The URLs your Monte Carlo instance serves, such as the webhook URL to give dbt Cloud.",
+		MarkdownDescription: "The URLs your Monte Carlo instance serves, such as the webhook URL to give dbt Cloud.",
 	}
 }
 

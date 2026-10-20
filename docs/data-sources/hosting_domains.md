@@ -3,12 +3,12 @@
 page_title: "montecarlo_hosting_domains Data Source - Monte Carlo"
 subcategory: "Hosting"
 description: |-
-  The URLs your Monte Carlo deployment serves, such as the webhook URL to give dbt Cloud.
+  The URLs your Monte Carlo instance serves, such as the webhook URL to give dbt Cloud.
 ---
 
 # montecarlo_hosting_domains (Data Source)
 
-The URLs your Monte Carlo deployment serves, such as the webhook URL to give dbt Cloud.
+The URLs your Monte Carlo instance serves, such as the webhook URL to give dbt Cloud.
 
 
 
@@ -21,6 +21,6 @@ The URLs your Monte Carlo deployment serves, such as the webhook URL to give dbt
 - `graphql_api_url` (String) URL of the GraphQL API, for API keys.
 - `graphql_oauth_api_url` (String) URL of the GraphQL API, for OAuth clients.
 - `integrations_url` (String) Base URL of the integrations gateway, which receives webhooks and other inbound requests from the tools you connect.
-- `m2m_instance_scope` (String) Scope an OAuth client requests for its token to reach this deployment. Null when the deployment does not support OAuth clients.
-- `m2m_token_url` (String) URL an OAuth client requests an access token from, with the client-credentials grant. Null when the deployment does not support OAuth clients.
+- `m2m_instance_scope` (String) Scope an OAuth client requests for its token to reach this instance. Null when the instance does not support OAuth clients.
+- `m2m_token_url` (String) URL an OAuth client requests an access token from, with the client-credentials grant. Null when the instance does not support OAuth clients.
 - `ui_url` (String) URL of the Monte Carlo web app.
