@@ -32,7 +32,7 @@ Creating an AWS deployment generates `aws_external_id`. The role Monte Carlo ass
 
 {{ tffile "examples/resources/montecarlo_aws_collection_agent/resource.tf" }}
 
-An AWS data store follows the same order, for the same reason. Replace `mcd_account_id` with your own value: the "AWS account ID" under Collection on the Account Information page in the Monte Carlo product. The value in the example is one deployment's account and may not be yours.
+An AWS data store follows the same order, for the same reason. Like the agent, it reads the Monte Carlo AWS account that assumes its role from `montecarlo_hosting_private_link`.
 
 {{ tffile "examples/resources/montecarlo_aws_collection_data_store/resource.tf" }}
 

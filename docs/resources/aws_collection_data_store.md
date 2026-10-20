@@ -47,13 +47,9 @@ provider "montecarlo" {
   # See the provider documentation for the alternatives.
 }
 
-# The Monte Carlo account that assumes the role, which differs per Monte Carlo
-# deployment. The value below is one deployment's account and may not be yours.
-# Take yours from the Account Information page in the product, under Collection,
-# as "AWS account ID", and substitute it before applying.
-locals {
-  mcd_account_id = "590183797493"
-}
+# The Monte Carlo AWS account that assumes the role. It differs per Monte Carlo
+# instance.
+data "montecarlo_hosting_private_link" "this" {}
 
 resource "montecarlo_deployment" "data_store" {
   name             = "production"
@@ -141,7 +137,7 @@ resource "aws_iam_role" "store" {
     Statement = [{
       Effect    = "Allow"
       Action    = "sts:AssumeRole"
-      Principal = { AWS = "arn:aws:iam::${local.mcd_account_id}:root" }
+      Principal = { AWS = "arn:aws:iam::${data.montecarlo_hosting_private_link.this.aws.account_id}:root" }
       Condition = {
         StringEquals = {
           "sts:ExternalId" = montecarlo_deployment.data_store.aws_external_id

@@ -59,13 +59,18 @@ resource "montecarlo_deployment" "agent" {
   runtime_platform = "AWS"
 }
 
+# The Monte Carlo AWS account that invokes the agent. It differs per Monte Carlo
+# instance, so read it rather than relying on the module's default.
+data "montecarlo_hosting_private_link" "this" {}
+
 # https://registry.terraform.io/modules/monte-carlo-data/mcd-agent/aws
 # The module configures the AWS provider itself, from its own `region` variable.
 module "mcd_agent" {
   source  = "monte-carlo-data/mcd-agent/aws"
   version = "~> 1.0"
 
-  region = "us-east-1"
+  region           = "us-east-1"
+  cloud_account_id = data.montecarlo_hosting_private_link.this.aws.account_id
 
   # The external id the deployment generated. This is the dependency that forces
   # the ordering.
@@ -89,7 +94,7 @@ output "agent_enabled" {
 }
 ```
 
-An AWS data store follows the same order, for the same reason. Replace `mcd_account_id` with your own value: the "AWS account ID" under Collection on the Account Information page in the Monte Carlo product. The value in the example is one deployment's account and may not be yours.
+An AWS data store follows the same order, for the same reason. Like the agent, it reads the Monte Carlo AWS account that assumes its role from `montecarlo_hosting_private_link`.
 
 ```terraform
 # An AWS data store, end to end: the deployment, the bucket and role Monte Carlo
@@ -126,13 +131,9 @@ provider "montecarlo" {
   # See the provider documentation for the alternatives.
 }
 
-# The Monte Carlo account that assumes the role, which differs per Monte Carlo
-# deployment. The value below is one deployment's account and may not be yours.
-# Take yours from the Account Information page in the product, under Collection,
-# as "AWS account ID", and substitute it before applying.
-locals {
-  mcd_account_id = "590183797493"
-}
+# The Monte Carlo AWS account that assumes the role. It differs per Monte Carlo
+# instance.
+data "montecarlo_hosting_private_link" "this" {}
 
 resource "montecarlo_deployment" "data_store" {
   name             = "production"
@@ -220,7 +221,7 @@ resource "aws_iam_role" "store" {
     Statement = [{
       Effect    = "Allow"
       Action    = "sts:AssumeRole"
-      Principal = { AWS = "arn:aws:iam::${local.mcd_account_id}:root" }
+      Principal = { AWS = "arn:aws:iam::${data.montecarlo_hosting_private_link.this.aws.account_id}:root" }
       Condition = {
         StringEquals = {
           "sts:ExternalId" = montecarlo_deployment.data_store.aws_external_id

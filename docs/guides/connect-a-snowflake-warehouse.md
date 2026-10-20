@@ -67,13 +67,18 @@ resource "montecarlo_deployment" "agent" {
   runtime_platform = "AWS"
 }
 
+# The Monte Carlo AWS account that invokes the agent. It differs per Monte Carlo
+# instance, so read it rather than relying on the module's default.
+data "montecarlo_hosting_private_link" "this" {}
+
 # https://registry.terraform.io/modules/monte-carlo-data/mcd-agent/aws
 # The module configures the AWS provider itself, from its own `region` variable.
 module "mcd_agent" {
   source  = "monte-carlo-data/mcd-agent/aws"
   version = "~> 1.0"
 
-  region = "us-east-1"
+  region           = "us-east-1"
+  cloud_account_id = data.montecarlo_hosting_private_link.this.aws.account_id
 
   # The external id the deployment generated. This is the dependency that forces
   # the ordering.
