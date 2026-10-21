@@ -136,6 +136,7 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAirflowCallbacksKeyResource,
 		NewAirflowCredentialsResource,
+		NewAthenaCredentialsResource,
 		NewAwsCollectionAgentResource,
 		NewAwsCollectionDataStoreResource,
 		NewAzureCollectionAgentResource,
@@ -160,6 +161,7 @@ func (p *mcProvider) Resources(_ context.Context) []func() resource.Resource {
 		NewGenericCollectionAgentResource,
 		NewGenericCollectionAgentOauthClientResource,
 		NewGenericCollectionAgentTokenResource,
+		NewGlueCredentialsResource,
 		NewInformaticaV2CredentialsResource,
 		NewIngestionKeyResource,
 		NewLookerCredentialsResource,
@@ -191,6 +193,7 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		NewAirflowCallbacksKeyDataSource,
 		NewAirflowCredentialsDataSource,
+		NewAthenaCredentialsDataSource,
 		NewAwsCollectionAgentDataSource,
 		NewAwsCollectionDataStoreDataSource,
 		NewAzureCollectionAgentDataSource,
@@ -215,6 +218,7 @@ func (p *mcProvider) DataSources(_ context.Context) []func() datasource.DataSour
 		NewGenericCollectionAgentDataSource,
 		NewGenericCollectionAgentOauthClientDataSource,
 		NewGenericCollectionAgentTokenDataSource,
+		NewGlueCredentialsDataSource,
 		NewHostingDomainsDataSource,
 		NewHostingNetworkDataSource,
 		NewHostingPrivateLinkDataSource,
