@@ -175,6 +175,7 @@ output "job_types" {
 
 Optional:
 
-- `allowed_connections` (List of String) The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.
+- `allowed_connection_fields` (List of String) The dbt connection fields to compare, such as `account` for Snowflake. `name` and `id` match a dbt connection by its own name or id. At least one for `allow_list`. Empty otherwise.
+- `allowed_connection_values` (List of String) The values to match, exactly as they appear in dbt Cloud. A run is kept when one of `allowed_connection_fields` on its dbt connection equals one of them. At least one for `allow_list`. Empty otherwise.
 - `allowed_environments` (List of String) The dbt environments, by name and ignoring case, whose runs are kept. Empty keeps runs from every environment.
 - `connection_match` (String) How a run is matched to the connection's warehouse. `off`, the default, drops no run for its dbt connection.

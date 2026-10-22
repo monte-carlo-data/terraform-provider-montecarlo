@@ -89,7 +89,7 @@ func (r *connectionResource) Create(ctx context.Context, req resource.CreateRequ
 		body.SetWarehouseId(plan.WarehouseId.ValueString())
 	}
 	if !plan.DbtCloud.IsNull() && !plan.DbtCloud.IsUnknown() {
-		nested := sdk.NewDbtCloudSettingsIn(sdk.ConnectionMatch(plan.DbtCloud.ConnectionMatch.ValueString()), listOfStrings(ctx, plan.DbtCloud.AllowedConnections), listOfStrings(ctx, plan.DbtCloud.AllowedEnvironments))
+		nested := sdk.NewDbtCloudSettingsIn(sdk.ConnectionMatch(plan.DbtCloud.ConnectionMatch.ValueString()), listOfStrings(ctx, plan.DbtCloud.AllowedConnectionFields), listOfStrings(ctx, plan.DbtCloud.AllowedConnectionValues), listOfStrings(ctx, plan.DbtCloud.AllowedEnvironments))
 		body.SetDbtCloud(*nested)
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
@@ -139,7 +139,7 @@ func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	// The read returns dbt_cloud, so it is sent only when the plan changes it.
 	if !plan.DbtCloud.IsNull() && !plan.DbtCloud.IsUnknown() && !plan.DbtCloud.Equal(state.DbtCloud) {
-		nested := sdk.NewDbtCloudSettingsIn(sdk.ConnectionMatch(plan.DbtCloud.ConnectionMatch.ValueString()), listOfStrings(ctx, plan.DbtCloud.AllowedConnections), listOfStrings(ctx, plan.DbtCloud.AllowedEnvironments))
+		nested := sdk.NewDbtCloudSettingsIn(sdk.ConnectionMatch(plan.DbtCloud.ConnectionMatch.ValueString()), listOfStrings(ctx, plan.DbtCloud.AllowedConnectionFields), listOfStrings(ctx, plan.DbtCloud.AllowedConnectionValues), listOfStrings(ctx, plan.DbtCloud.AllowedEnvironments))
 		body.SetDbtCloud(*nested)
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
@@ -242,9 +242,10 @@ func connectionToModel(ctx context.Context, o *sdk.ConnectionOut, diags *diag.Di
 // connectionResourceDbtCloud converts the SDK's DbtCloudSettingsOut into the dbt_cloud attribute's value.
 func connectionResourceDbtCloud(ctx context.Context, o sdk.DbtCloudSettingsOut, diags *diag.Diagnostics) resource_connection.DbtCloudValue {
 	attrs := map[string]attr.Value{
-		"allowed_connections":  stringList(o.GetAllowedConnections()),
-		"allowed_environments": stringList(o.GetAllowedEnvironments()),
-		"connection_match":     types.StringValue(string(o.GetConnectionMatch())),
+		"allowed_connection_fields": stringList(o.GetAllowedConnectionFields()),
+		"allowed_connection_values": stringList(o.GetAllowedConnectionValues()),
+		"allowed_environments":      stringList(o.GetAllowedEnvironments()),
+		"connection_match":          types.StringValue(string(o.GetConnectionMatch())),
 	}
 	v, d := resource_connection.NewDbtCloudValue(resource_connection.DbtCloudValue{}.AttributeTypes(ctx), attrs)
 	diags.Append(d...)
