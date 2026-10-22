@@ -55,11 +55,17 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"dbt_cloud": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
-					"allowed_connections": schema.ListAttribute{
+					"allowed_connection_fields": schema.ListAttribute{
 						ElementType:         types.StringType,
 						Computed:            true,
-						Description:         "The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.",
-						MarkdownDescription: "The dbt connections, by id or name, whose runs are kept. At least one for `allow_list`. Empty otherwise.",
+						Description:         "The dbt connection fields to compare, such as `account` for Snowflake. `name` and `id` match a dbt connection by its own name or id. At least one for `allow_list`. Empty otherwise.",
+						MarkdownDescription: "The dbt connection fields to compare, such as `account` for Snowflake. `name` and `id` match a dbt connection by its own name or id. At least one for `allow_list`. Empty otherwise.",
+					},
+					"allowed_connection_values": schema.ListAttribute{
+						ElementType:         types.StringType,
+						Computed:            true,
+						Description:         "The values to match, exactly as they appear in dbt Cloud. A run is kept when one of `allowed_connection_fields` on its dbt connection equals one of them. At least one for `allow_list`. Empty otherwise.",
+						MarkdownDescription: "The values to match, exactly as they appear in dbt Cloud. A run is kept when one of `allowed_connection_fields` on its dbt connection equals one of them. At least one for `allow_list`. Empty otherwise.",
 					},
 					"allowed_environments": schema.ListAttribute{
 						ElementType:         types.StringType,
@@ -179,22 +185,40 @@ func (t DbtCloudType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 
 	attributes := in.Attributes()
 
-	allowedConnectionsAttribute, ok := attributes["allowed_connections"]
+	allowedConnectionFieldsAttribute, ok := attributes["allowed_connection_fields"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`allowed_connections is missing from object`)
+			`allowed_connection_fields is missing from object`)
 
 		return nil, diags
 	}
 
-	allowedConnectionsVal, ok := allowedConnectionsAttribute.(basetypes.ListValue)
+	allowedConnectionFieldsVal, ok := allowedConnectionFieldsAttribute.(basetypes.ListValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`allowed_connections expected to be basetypes.ListValue, was: %T`, allowedConnectionsAttribute))
+			fmt.Sprintf(`allowed_connection_fields expected to be basetypes.ListValue, was: %T`, allowedConnectionFieldsAttribute))
+	}
+
+	allowedConnectionValuesAttribute, ok := attributes["allowed_connection_values"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`allowed_connection_values is missing from object`)
+
+		return nil, diags
+	}
+
+	allowedConnectionValuesVal, ok := allowedConnectionValuesAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`allowed_connection_values expected to be basetypes.ListValue, was: %T`, allowedConnectionValuesAttribute))
 	}
 
 	allowedEnvironmentsAttribute, ok := attributes["allowed_environments"]
@@ -238,10 +262,11 @@ func (t DbtCloudType) ValueFromObject(ctx context.Context, in basetypes.ObjectVa
 	}
 
 	return DbtCloudValue{
-		AllowedConnections:  allowedConnectionsVal,
-		AllowedEnvironments: allowedEnvironmentsVal,
-		ConnectionMatch:     connectionMatchVal,
-		state:               attr.ValueStateKnown,
+		AllowedConnectionFields: allowedConnectionFieldsVal,
+		AllowedConnectionValues: allowedConnectionValuesVal,
+		AllowedEnvironments:     allowedEnvironmentsVal,
+		ConnectionMatch:         connectionMatchVal,
+		state:                   attr.ValueStateKnown,
 	}, diags
 }
 
@@ -308,22 +333,40 @@ func NewDbtCloudValue(attributeTypes map[string]attr.Type, attributes map[string
 		return NewDbtCloudValueUnknown(), diags
 	}
 
-	allowedConnectionsAttribute, ok := attributes["allowed_connections"]
+	allowedConnectionFieldsAttribute, ok := attributes["allowed_connection_fields"]
 
 	if !ok {
 		diags.AddError(
 			"Attribute Missing",
-			`allowed_connections is missing from object`)
+			`allowed_connection_fields is missing from object`)
 
 		return NewDbtCloudValueUnknown(), diags
 	}
 
-	allowedConnectionsVal, ok := allowedConnectionsAttribute.(basetypes.ListValue)
+	allowedConnectionFieldsVal, ok := allowedConnectionFieldsAttribute.(basetypes.ListValue)
 
 	if !ok {
 		diags.AddError(
 			"Attribute Wrong Type",
-			fmt.Sprintf(`allowed_connections expected to be basetypes.ListValue, was: %T`, allowedConnectionsAttribute))
+			fmt.Sprintf(`allowed_connection_fields expected to be basetypes.ListValue, was: %T`, allowedConnectionFieldsAttribute))
+	}
+
+	allowedConnectionValuesAttribute, ok := attributes["allowed_connection_values"]
+
+	if !ok {
+		diags.AddError(
+			"Attribute Missing",
+			`allowed_connection_values is missing from object`)
+
+		return NewDbtCloudValueUnknown(), diags
+	}
+
+	allowedConnectionValuesVal, ok := allowedConnectionValuesAttribute.(basetypes.ListValue)
+
+	if !ok {
+		diags.AddError(
+			"Attribute Wrong Type",
+			fmt.Sprintf(`allowed_connection_values expected to be basetypes.ListValue, was: %T`, allowedConnectionValuesAttribute))
 	}
 
 	allowedEnvironmentsAttribute, ok := attributes["allowed_environments"]
@@ -367,10 +410,11 @@ func NewDbtCloudValue(attributeTypes map[string]attr.Type, attributes map[string
 	}
 
 	return DbtCloudValue{
-		AllowedConnections:  allowedConnectionsVal,
-		AllowedEnvironments: allowedEnvironmentsVal,
-		ConnectionMatch:     connectionMatchVal,
-		state:               attr.ValueStateKnown,
+		AllowedConnectionFields: allowedConnectionFieldsVal,
+		AllowedConnectionValues: allowedConnectionValuesVal,
+		AllowedEnvironments:     allowedEnvironmentsVal,
+		ConnectionMatch:         connectionMatchVal,
+		state:                   attr.ValueStateKnown,
 	}, diags
 }
 
@@ -442,19 +486,23 @@ func (t DbtCloudType) ValueType(ctx context.Context) attr.Value {
 var _ basetypes.ObjectValuable = DbtCloudValue{}
 
 type DbtCloudValue struct {
-	AllowedConnections  basetypes.ListValue   `tfsdk:"allowed_connections"`
-	AllowedEnvironments basetypes.ListValue   `tfsdk:"allowed_environments"`
-	ConnectionMatch     basetypes.StringValue `tfsdk:"connection_match"`
-	state               attr.ValueState
+	AllowedConnectionFields basetypes.ListValue   `tfsdk:"allowed_connection_fields"`
+	AllowedConnectionValues basetypes.ListValue   `tfsdk:"allowed_connection_values"`
+	AllowedEnvironments     basetypes.ListValue   `tfsdk:"allowed_environments"`
+	ConnectionMatch         basetypes.StringValue `tfsdk:"connection_match"`
+	state                   attr.ValueState
 }
 
 func (v DbtCloudValue) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	attrTypes := make(map[string]tftypes.Type, 3)
+	attrTypes := make(map[string]tftypes.Type, 4)
 
 	var val tftypes.Value
 	var err error
 
-	attrTypes["allowed_connections"] = basetypes.ListType{
+	attrTypes["allowed_connection_fields"] = basetypes.ListType{
+		ElemType: types.StringType,
+	}.TerraformType(ctx)
+	attrTypes["allowed_connection_values"] = basetypes.ListType{
 		ElemType: types.StringType,
 	}.TerraformType(ctx)
 	attrTypes["allowed_environments"] = basetypes.ListType{
@@ -466,15 +514,23 @@ func (v DbtCloudValue) ToTerraformValue(ctx context.Context) (tftypes.Value, err
 
 	switch v.state {
 	case attr.ValueStateKnown:
-		vals := make(map[string]tftypes.Value, 3)
+		vals := make(map[string]tftypes.Value, 4)
 
-		val, err = v.AllowedConnections.ToTerraformValue(ctx)
+		val, err = v.AllowedConnectionFields.ToTerraformValue(ctx)
 
 		if err != nil {
 			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
 		}
 
-		vals["allowed_connections"] = val
+		vals["allowed_connection_fields"] = val
+
+		val, err = v.AllowedConnectionValues.ToTerraformValue(ctx)
+
+		if err != nil {
+			return tftypes.NewValue(objectType, tftypes.UnknownValue), err
+		}
+
+		vals["allowed_connection_values"] = val
 
 		val, err = v.AllowedEnvironments.ToTerraformValue(ctx)
 
@@ -521,21 +577,51 @@ func (v DbtCloudValue) String() string {
 func (v DbtCloudValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var allowedConnectionsVal basetypes.ListValue
+	var allowedConnectionFieldsVal basetypes.ListValue
 	switch {
-	case v.AllowedConnections.IsUnknown():
-		allowedConnectionsVal = types.ListUnknown(types.StringType)
-	case v.AllowedConnections.IsNull():
-		allowedConnectionsVal = types.ListNull(types.StringType)
+	case v.AllowedConnectionFields.IsUnknown():
+		allowedConnectionFieldsVal = types.ListUnknown(types.StringType)
+	case v.AllowedConnectionFields.IsNull():
+		allowedConnectionFieldsVal = types.ListNull(types.StringType)
 	default:
 		var d diag.Diagnostics
-		allowedConnectionsVal, d = types.ListValue(types.StringType, v.AllowedConnections.Elements())
+		allowedConnectionFieldsVal, d = types.ListValue(types.StringType, v.AllowedConnectionFields.Elements())
 		diags.Append(d...)
 	}
 
 	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
-			"allowed_connections": basetypes.ListType{
+			"allowed_connection_fields": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"allowed_connection_values": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"allowed_environments": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"connection_match": basetypes.StringType{},
+		}), diags
+	}
+
+	var allowedConnectionValuesVal basetypes.ListValue
+	switch {
+	case v.AllowedConnectionValues.IsUnknown():
+		allowedConnectionValuesVal = types.ListUnknown(types.StringType)
+	case v.AllowedConnectionValues.IsNull():
+		allowedConnectionValuesVal = types.ListNull(types.StringType)
+	default:
+		var d diag.Diagnostics
+		allowedConnectionValuesVal, d = types.ListValue(types.StringType, v.AllowedConnectionValues.Elements())
+		diags.Append(d...)
+	}
+
+	if diags.HasError() {
+		return types.ObjectUnknown(map[string]attr.Type{
+			"allowed_connection_fields": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"allowed_connection_values": basetypes.ListType{
 				ElemType: types.StringType,
 			},
 			"allowed_environments": basetypes.ListType{
@@ -559,7 +645,10 @@ func (v DbtCloudValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 
 	if diags.HasError() {
 		return types.ObjectUnknown(map[string]attr.Type{
-			"allowed_connections": basetypes.ListType{
+			"allowed_connection_fields": basetypes.ListType{
+				ElemType: types.StringType,
+			},
+			"allowed_connection_values": basetypes.ListType{
 				ElemType: types.StringType,
 			},
 			"allowed_environments": basetypes.ListType{
@@ -570,7 +659,10 @@ func (v DbtCloudValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 	}
 
 	attributeTypes := map[string]attr.Type{
-		"allowed_connections": basetypes.ListType{
+		"allowed_connection_fields": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"allowed_connection_values": basetypes.ListType{
 			ElemType: types.StringType,
 		},
 		"allowed_environments": basetypes.ListType{
@@ -590,9 +682,10 @@ func (v DbtCloudValue) ToObjectValue(ctx context.Context) (basetypes.ObjectValue
 	objVal, diags := types.ObjectValue(
 		attributeTypes,
 		map[string]attr.Value{
-			"allowed_connections":  allowedConnectionsVal,
-			"allowed_environments": allowedEnvironmentsVal,
-			"connection_match":     v.ConnectionMatch,
+			"allowed_connection_fields": allowedConnectionFieldsVal,
+			"allowed_connection_values": allowedConnectionValuesVal,
+			"allowed_environments":      allowedEnvironmentsVal,
+			"connection_match":          v.ConnectionMatch,
 		})
 
 	return objVal, diags
@@ -613,7 +706,11 @@ func (v DbtCloudValue) Equal(o attr.Value) bool {
 		return true
 	}
 
-	if !v.AllowedConnections.Equal(other.AllowedConnections) {
+	if !v.AllowedConnectionFields.Equal(other.AllowedConnectionFields) {
+		return false
+	}
+
+	if !v.AllowedConnectionValues.Equal(other.AllowedConnectionValues) {
 		return false
 	}
 
@@ -638,7 +735,10 @@ func (v DbtCloudValue) Type(ctx context.Context) attr.Type {
 
 func (v DbtCloudValue) AttributeTypes(ctx context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"allowed_connections": basetypes.ListType{
+		"allowed_connection_fields": basetypes.ListType{
+			ElemType: types.StringType,
+		},
+		"allowed_connection_values": basetypes.ListType{
 			ElemType: types.StringType,
 		},
 		"allowed_environments": basetypes.ListType{
