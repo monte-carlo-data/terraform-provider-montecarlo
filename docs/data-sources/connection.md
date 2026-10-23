@@ -25,7 +25,7 @@ A connection lets Monte Carlo reach a warehouse's data platform, a BI container'
 - `bi_container_name` (String) Display name of that BI container. Null for a container that was never named, and for a connection on a warehouse or an ETL container.
 - `connection_type` (String) What the connection reaches, such as `snowflake`. Taken from the credentials the connection was created with, and fixed once created.
 - `created_time` (String) When the connection was created.
-- `credentials_id` (String) The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.
+- `credentials_id` (String) The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API until an update sets `credentials_id`.
 - `credentials_storage_type` (String) Where that secret lives. Null when there are no credentials to describe.
 - `dbt_cloud` (Attributes) Which dbt Cloud runs a dbt Cloud webhook connection processes. A dbt Cloud webhook reports runs from every environment in the dbt account. These settings decide which of them Monte Carlo processes for the connection's warehouse. Null for every other connection type. (see [below for nested schema](#nestedatt--dbt_cloud))
 - `deployment_id` (String) The deployment the connection runs through, taken from its warehouse, BI container or ETL container. Null when that has no deployment, as an Airflow ETL container has none. The id may name a deployment on Monte Carlo's older collection platform, which the deployments endpoints do not list.

@@ -38,15 +38,14 @@ func (r *connectionResource) Schema(ctx context.Context, _ resource.SchemaReques
 	useStateForUnknown(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.connection_type", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.created_time", &resp.Diagnostics)
-	useStateForUnknown(s.Attributes, "connection.credentials_storage_type", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	// Updating the resource changes these only when it changes the attributes named with them. Until then the plan keeps what state holds, a null included.
+	useStateUnlessChanged(s.Attributes, "connection.credentials_storage_type", []string{"credentials_id"}, &resp.Diagnostics)
 	useStateUnlessChanged(s.Attributes, "connection.etl_container_id", []string{"job_types"}, &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "connection.bi_container_id", &resp.Diagnostics)
-	requiresReplace(s.Attributes, "connection.credentials_id", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "connection.warehouse_id", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one in the config replaces the resource. An update can still change them as a result of another attribute changing, and that does not.
 	requiresReplaceIfConfigured(s.Attributes, "connection.etl_container_id", &resp.Diagnostics)
@@ -131,6 +130,9 @@ func (r *connectionResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	body := sdk.NewConnectionPatch()
+	if !plan.CredentialsId.IsNull() && !plan.CredentialsId.IsUnknown() {
+		body.SetCredentialsId(plan.CredentialsId.ValueString())
+	}
 	if !plan.JobTypes.IsNull() && !plan.JobTypes.IsUnknown() {
 		body.SetJobTypes(listOfStrings(ctx, plan.JobTypes))
 	}
