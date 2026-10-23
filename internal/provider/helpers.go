@@ -363,19 +363,20 @@ func useNonNullStateForUnknown(attrs map[string]schema.Attribute, name string, d
 
 // useStateForUnknown keeps an attribute's prior state value in the plan, including a null one.
 //
-// The plain variant, for attributes whose null is final. The unreturned inputs are the case
-// that matters most: ones the API accepts and no response carries.
+// The plain variant. The unreturned inputs are the case that matters most: ones the API accepts
+// and no response carries.
 // State holds null for one of those as soon as the config omits it, and
 // `useNonNullStateForUnknown` refuses to copy a null, which leaves the attribute unknown. An
 // unknown planned value is what `requiresReplace` reads as a change, so an unreturned attribute
 // that requires replacement destroys the resource on any edit until its null is held.
 //
-// Only safe where a null is final: an attribute the API fills in later needs the non-null
-// variant, or the plan says null and the apply says otherwise.
+// Only safe where the update leaves a null as it is: one that is final, or one the update changes
+// only when the config sends a value, which then plans as configured. An attribute the API fills
+// in later needs the non-null variant, or the plan says null and the apply says otherwise.
 //
-// The generated code calls this for every response field marked `x-mc-terraform-stable`, whose
-// null is final, for every optional returned input the update body refuses, and for every
-// optional unreturned input that requires replacement.
+// The generated code calls this for every response field marked `x-mc-terraform-stable` or
+// `x-mc-terraform-stable-unless-configured`, for every optional returned input the update body
+// refuses, and for every optional unreturned input that requires replacement.
 func useStateForUnknown(attrs map[string]schema.Attribute, name string, diags *diag.Diagnostics) {
 	applyPlanModifier(attrs, name, planModifierSet{
 		str:     stringplanmodifier.UseStateForUnknown(),
