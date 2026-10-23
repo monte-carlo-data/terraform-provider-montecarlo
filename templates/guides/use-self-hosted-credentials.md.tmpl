@@ -16,7 +16,7 @@ Monte Carlo managed credentials, such as `montecarlo_snowflake_credentials`, giv
 | `montecarlo_self_hosted_env_var_credentials` | An environment variable on the agent, named `MCD_…` |
 | `montecarlo_self_hosted_file_credentials` | A file on the agent |
 
-A connection uses them the same way it uses managed credentials, through `credentials_id`. Switching a connection between the two changes nothing else in its configuration, but Terraform replaces the connection, because `credentials_id` can't change in place.
+A connection uses them the same way it uses managed credentials, through `credentials_id`. Switching a connection between the two changes nothing else in its configuration, and Terraform updates the connection in place.
 
 ## Before you start
 
