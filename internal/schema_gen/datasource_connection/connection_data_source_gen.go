@@ -45,8 +45,8 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"credentials_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.",
-				MarkdownDescription: "The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API.",
+				Description:         "The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API until an update sets `credentials_id`.",
+				MarkdownDescription: "The credentials the connection reads with. Null for a connection created before credentials became their own resource, and for one created outside this API until an update sets `credentials_id`.",
 			},
 			"credentials_storage_type": schema.StringAttribute{
 				Computed:            true,
