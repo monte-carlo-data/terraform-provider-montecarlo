@@ -13,7 +13,7 @@ A connection created in the Monte Carlo app can be brought under Terraform witho
 
 ## Before you start
 
-- The official provider, `monte-carlo-data/montecarlo`. A registry search for Monte Carlo also returns community providers, whose resources and import ids are different.
+- The official provider, `monte-carlo-data/montecarlo`, at v0.1.34 or later. Earlier versions replace the connection when `credentials_id` changes. A registry search for Monte Carlo also returns community providers, whose resources and import ids are different.
 - Terraform 1.11 or later, for write-only arguments.
 - The provider configured with an API token or OAuth client credentials. See [Authenticate the provider](authenticate-the-provider).
 - The ids of the warehouse, its deployment and the connection. With the Monte Carlo CLI, `montecarlo warehouses list` prints each warehouse with its `deployment_id`, and `montecarlo connections list --warehouse-id <warehouse id>` prints its connections.
