@@ -34,5 +34,5 @@ To have Monte Carlo run the queries, skip the deployment and agent. Put the ware
 ## Afterwards
 
 - To rotate the key, change `private_key_wo` and bump `private_key_wo_version`. Changing the key without bumping the version plans nothing.
-- On a deployment you run, you can keep the key in your own secret store instead of Monte Carlo's. Replace `montecarlo_snowflake_credentials` with a self-hosted credentials resource and point `credentials_id` at it. Terraform replaces the connection, because `credentials_id` can't change in place. Your collection agent reads self-hosted credentials, so this doesn't apply on the deployment Monte Carlo hosts. See [Use self-hosted credentials](use-self-hosted-credentials).
+- On a deployment you run, you can keep the key in your own secret store instead of Monte Carlo's. Replace `montecarlo_snowflake_credentials` with a self-hosted credentials resource and point `credentials_id` at it. Terraform updates the connection in place. Your collection agent reads self-hosted credentials, so this doesn't apply on the deployment Monte Carlo hosts. See [Use self-hosted credentials](use-self-hosted-credentials).
 - `job_types` on the connection defaults to the jobs the Monte Carlo app runs for Snowflake. Set it only to run fewer.
