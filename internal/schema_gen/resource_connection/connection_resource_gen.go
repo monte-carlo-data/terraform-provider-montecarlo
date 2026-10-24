@@ -47,8 +47,8 @@ func ConnectionResourceSchema(ctx context.Context) schema.Schema {
 			"credentials_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
-				MarkdownDescription: "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type.",
+				Description:         "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required to create a connection, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type. A connection created outside this API, such as in the Monte Carlo app, has none until an update sets them.",
+				MarkdownDescription: "The credentials the connection reads with. They also decide the connection's type. Create them first, through one of the credentials endpoints. Required to create a connection, except on a push-only container: a `custom-etl-connector` or `custom-bi-connector` container with no deployment. Its connection takes no credentials, and has the container's type. A connection created outside this API, such as in the Monte Carlo app, has none until an update sets them.",
 			},
 			"credentials_storage_type": schema.StringAttribute{
 				Computed:            true,
