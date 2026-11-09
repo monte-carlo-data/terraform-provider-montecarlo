@@ -1,14 +1,15 @@
-# A Azure SQL Database connection with credentials Monte Carlo stores: the warehouse, a
-# database user and its password, and the connection that joins them.
+# An Azure SQL Database connection with credentials Monte Carlo stores: the
+# warehouse, a database user and its password, and the connection that joins
+# them.
 #
-# The warehouse type is taken from `connection_type`: Azure SQL Database connections
-# live on a `transactional-db` warehouse.
+# The warehouse type is taken from `connection_type`: Azure SQL Database
+# connections live on a `transactional-db` warehouse.
 #
 # To keep the password in your own store instead, use one of the self-hosted
 # credentials resources.
 #
-# See https://docs.getmontecarlo.com/docs/azure-sql-database for creating the user and
-# granting it the reads Monte Carlo needs.
+# See https://docs.getmontecarlo.com/docs/azure-sql-database for creating the
+# user and granting it the reads Monte Carlo needs.
 
 terraform {
   # Write-only arguments need Terraform 1.11 or later.

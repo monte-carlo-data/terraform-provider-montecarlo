@@ -1,4 +1,4 @@
-# A Oracle connection with credentials Monte Carlo stores: the warehouse, a
+# An Oracle connection with credentials Monte Carlo stores: the warehouse, a
 # database user and its password, and the connection that joins them.
 #
 # The warehouse type is taken from `connection_type`, and is `oracle` too.
