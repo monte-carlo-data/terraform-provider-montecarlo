@@ -47,6 +47,11 @@ func HiveMysqlCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 				Description:         "Port the database listens on.",
 				MarkdownDescription: "Port the database listens on.",
 			},
+			"ssl_ca_url": schema.StringAttribute{
+				Computed:            true,
+				Description:         "https URL of the PEM bundle of certificate authorities the MySQL server's certificate is checked against. Monte Carlo downloads it at each connection and connects over TLS. For Amazon RDS, use https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem. Null when none is set, or when the stored CA is not fetched from a URL and checked, as when it was set up to read from Monte Carlo storage or to skip the check. Setting `ssl_ca_url` replaces such a setup.",
+				MarkdownDescription: "https URL of the PEM bundle of certificate authorities the MySQL server's certificate is checked against. Monte Carlo downloads it at each connection and connects over TLS. For Amazon RDS, use https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem. Null when none is set, or when the stored CA is not fetched from a URL and checked, as when it was set up to read from Monte Carlo storage or to skip the check. Setting `ssl_ca_url` replaces such a setup.",
+			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Where the secret lives. Fixed once created.",
@@ -71,6 +76,7 @@ type HiveMysqlCredentialsModel struct {
 	Host           types.String `tfsdk:"host"`
 	Id             types.String `tfsdk:"id"`
 	Port           types.Int64  `tfsdk:"port"`
+	SslCaUrl       types.String `tfsdk:"ssl_ca_url"`
 	StorageType    types.String `tfsdk:"storage_type"`
 	User           types.String `tfsdk:"user"`
 }

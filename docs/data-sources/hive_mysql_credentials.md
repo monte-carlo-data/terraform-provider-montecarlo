@@ -27,5 +27,6 @@ Hive (MySQL) credentials are the login Monte Carlo stores for the MySQL database
 - `host` (String) Hostname of the database endpoint.
 - `id` (String) Unique identifier of the credentials.
 - `port` (Number) Port the database listens on.
+- `ssl_ca_url` (String) https URL of the PEM bundle of certificate authorities the MySQL server's certificate is checked against. Monte Carlo downloads it at each connection and connects over TLS. For Amazon RDS, use https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem. Null when none is set, or when the stored CA is not fetched from a URL and checked, as when it was set up to read from Monte Carlo storage or to skip the check. Setting `ssl_ca_url` replaces such a setup.
 - `storage_type` (String) Where the secret lives. Fixed once created.
 - `user` (String) Database user Monte Carlo logs in as.
