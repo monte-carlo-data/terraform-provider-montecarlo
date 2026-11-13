@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -68,6 +69,16 @@ func HiveMysqlCredentialsResourceSchema(ctx context.Context) schema.Schema {
 					int64validator.Between(1, 65535),
 				},
 			},
+			"ssl_ca_url": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "https URL of the PEM bundle of certificate authorities the MySQL server's certificate is checked against. Monte Carlo downloads it at each connection and connects over TLS. For Amazon RDS, use https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem. Leave it out and the server's certificate is not checked.",
+				MarkdownDescription: "https URL of the PEM bundle of certificate authorities the MySQL server's certificate is checked against. Monte Carlo downloads it at each connection and connects over TLS. For Amazon RDS, use https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem. Leave it out and the server's certificate is not checked.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(2048),
+					stringvalidator.RegexMatches(regexp.MustCompile("^https://[^\\s/?#]+\\S*$"), ""),
+				},
+			},
 			"storage_type": schema.StringAttribute{
 				Computed:            true,
 				Description:         "Where the secret lives. Fixed once created.",
@@ -96,6 +107,7 @@ type HiveMysqlCredentialsModel struct {
 	PasswordWo        types.String `tfsdk:"password_wo"`
 	PasswordWoVersion types.Int64  `tfsdk:"password_wo_version"`
 	Port              types.Int64  `tfsdk:"port"`
+	SslCaUrl          types.String `tfsdk:"ssl_ca_url"`
 	StorageType       types.String `tfsdk:"storage_type"`
 	User              types.String `tfsdk:"user"`
 }

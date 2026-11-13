@@ -67,5 +67,10 @@ func (d *hiveMysqlCredentialsDataSource) Read(ctx context.Context, req datasourc
 		StorageType:    types.StringValue(string(out.GetStorageType())),
 		User:           types.StringValue(out.GetUser()),
 	}
+	if v, ok := out.GetSslCaUrlOk(); ok && v != nil {
+		m.SslCaUrl = types.StringValue(*v)
+	} else {
+		m.SslCaUrl = types.StringNull()
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, m)...)
 }

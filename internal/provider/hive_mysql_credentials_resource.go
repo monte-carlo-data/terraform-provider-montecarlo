@@ -64,6 +64,9 @@ func (r *hiveMysqlCredentialsResource) Create(ctx context.Context, req resource.
 		return
 	}
 	body := sdk.NewHiveMySqlCredentialsIn(plan.Host.ValueString(), int32(plan.Port.ValueInt64()), plan.User.ValueString(), config.PasswordWo.ValueString(), plan.DbName.ValueString())
+	if !plan.SslCaUrl.IsNull() && !plan.SslCaUrl.IsUnknown() {
+		body.SetSslCaUrl(plan.SslCaUrl.ValueString())
+	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.HiveMySqlCredentialsOut, *http.Response, error) {
 		return r.clients.api.CredentialsAPI.CreateHiveMysqlCredentials(ctx).HiveMySqlCredentialsIn(*body).Execute()
@@ -118,6 +121,9 @@ func (r *hiveMysqlCredentialsResource) Update(ctx context.Context, req resource.
 	if !plan.Port.IsNull() && !plan.Port.IsUnknown() {
 		body.SetPort(int32(plan.Port.ValueInt64()))
 	}
+	if !plan.SslCaUrl.IsNull() && !plan.SslCaUrl.IsUnknown() {
+		body.SetSslCaUrl(plan.SslCaUrl.ValueString())
+	}
 	if !plan.User.IsNull() && !plan.User.IsUnknown() {
 		body.SetUser(plan.User.ValueString())
 	}
@@ -159,6 +165,11 @@ func hiveMysqlCredentialsToModel(o *sdk.HiveMySqlCredentialsOut, password_wo_ver
 		StorageType:       types.StringValue(string(o.GetStorageType())),
 		User:              types.StringValue(o.GetUser()),
 		PasswordWoVersion: password_wo_version,
+	}
+	if v, ok := o.GetSslCaUrlOk(); ok && v != nil {
+		m.SslCaUrl = types.StringValue(*v)
+	} else {
+		m.SslCaUrl = types.StringNull()
 	}
 	// An unreturned field the config omits arrives unknown and no response fills it, so it
 	// resolves to null. Terraform rejects an unknown after apply.
