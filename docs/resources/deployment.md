@@ -3,12 +3,12 @@
 page_title: "montecarlo_deployment Resource - Monte Carlo"
 subcategory: "Deployments"
 description: |-
-  A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created.
+  A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created. An AGENT_OBSERVABILITY deployment is hosted by Monte Carlo and stores your agents' traces. It is set up after the create returns: its status is PROVISIONING until it is READY or FAILED.
 ---
 
 # montecarlo_deployment (Resource)
 
-A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created.
+A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created. An `AGENT_OBSERVABILITY` deployment is hosted by Monte Carlo and stores your agents' traces. It is set up after the create returns: its `status` is `PROVISIONING` until it is `READY` or `FAILED`.
 
 ## Example Usage
 
@@ -56,17 +56,20 @@ output "deployment_enabled" {
 
 ### Required
 
-- `runtime_platform` (String) Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected.
-- `type` (String) What the deployment will host. Only `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned today. Any other value is rejected.
+- `type` (String) What the deployment will host. `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned, and an `AGENT_OBSERVABILITY` deployment can be created when your account has Monte Carlo hosted Agent Observability. Any other value is rejected.
 
 ### Optional
 
+- `deletion_protection` (Boolean) Whether deleting the deployment is refused once it has been ready. Only an `AGENT_OBSERVABILITY` deployment can be protected, and it is protected unless you send `false`. Any other type accepts only `false`.
 - `name` (String) Display name for the deployment. Monte Carlo generates one if you leave it out.
+- `runtime_platform` (String) Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected. Required for a collection agent or data store. Leave it out for `AGENT_OBSERVABILITY`, which Monte Carlo hosts.
 
 ### Read-Only
 
 - `aws_external_id` (String) Value to supply when you register an AWS collection agent or data store on this deployment. It goes in the trust policy of the role Monte Carlo assumes. Null until Monte Carlo has generated one, for a deployment on another platform, for a caller who is not permitted to register one, and if the value could not be read just now. Retry the request in that last case.
-- `created_time` (String) When the deployment was assigned to your account. Null when Monte Carlo has no record of that.
-- `enabled` (Boolean) Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled.
+- `created_time` (String) When the deployment was assigned to your account, or for an `AGENT_OBSERVABILITY` deployment, when it was created. Null when Monte Carlo has no record of that.
+- `enabled` (Boolean) Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled. An `AGENT_OBSERVABILITY` deployment is enabled only while its `status` is `READY`.
 - `id` (String) Unique identifier of the deployment.
 - `last_updated_time` (String) When Monte Carlo last updated the infrastructure behind the deployment. Null when Monte Carlo has no record of an update.
+- `status` (String) How far Monte Carlo has got with setting the deployment up. An `AGENT_OBSERVABILITY` deployment is `PROVISIONING` while Monte Carlo sets it up, then `READY` or `FAILED`. Every other deployment is `READY`. `enabled` says whether the deployment can serve connections.
+- `status_detail` (String) More about the status, such as why setting up the deployment failed. Null when there is nothing to add.

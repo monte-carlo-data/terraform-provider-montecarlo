@@ -30,8 +30,8 @@ func WarehouseResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"deployment_id": schema.StringAttribute{
 				Required:            true,
-				Description:         "The deployment the warehouse's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted.",
-				MarkdownDescription: "The deployment the warehouse's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted.",
+				Description:         "The deployment the warehouse's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. An `AGENT_OBSERVABILITY` deployment is not.",
+				MarkdownDescription: "The deployment the warehouse's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. An `AGENT_OBSERVABILITY` deployment is not.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,

@@ -22,7 +22,7 @@ description: |-
 
 ### Optional
 
-- `deployment_id` (String) The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `airflow` takes none. `custom-etl-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.
+- `deployment_id` (String) The deployment the container's connection will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. An `AGENT_OBSERVABILITY` deployment is not. `airflow` takes none. `custom-etl-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.
 
 ### Read-Only
 

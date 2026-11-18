@@ -21,13 +21,19 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 			},
 			"created_time": schema.StringAttribute{
 				Computed:            true,
-				Description:         "When the deployment was assigned to your account. Null when Monte Carlo has no record of that.",
-				MarkdownDescription: "When the deployment was assigned to your account. Null when Monte Carlo has no record of that.",
+				Description:         "When the deployment was assigned to your account, or for an `AGENT_OBSERVABILITY` deployment, when it was created. Null when Monte Carlo has no record of that.",
+				MarkdownDescription: "When the deployment was assigned to your account, or for an `AGENT_OBSERVABILITY` deployment, when it was created. Null when Monte Carlo has no record of that.",
+			},
+			"deletion_protection": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether deleting the deployment is refused once it has been ready. Only an `AGENT_OBSERVABILITY` deployment can be protected, and it is protected unless you send `false`. Any other type accepts only `false`.",
+				MarkdownDescription: "Whether deleting the deployment is refused once it has been ready. Only an `AGENT_OBSERVABILITY` deployment can be protected, and it is protected unless you send `false`. Any other type accepts only `false`.",
 			},
 			"enabled": schema.BoolAttribute{
 				Computed:            true,
-				Description:         "Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled.",
-				MarkdownDescription: "Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled.",
+				Description:         "Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled. An `AGENT_OBSERVABILITY` deployment is enabled only while its `status` is `READY`.",
+				MarkdownDescription: "Whether the deployment can serve connections. A deployment still waiting for its collection agent or data store to be registered, or with nothing provisioned on it, is not enabled. An `AGENT_OBSERVABILITY` deployment is enabled only while its `status` is `READY`.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -49,9 +55,10 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 				},
 			},
 			"runtime_platform": schema.StringAttribute{
-				Required:            true,
-				Description:         "Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected.",
-				MarkdownDescription: "Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected.",
+				Optional:            true,
+				Computed:            true,
+				Description:         "Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected. Required for a collection agent or data store. Leave it out for `AGENT_OBSERVABILITY`, which Monte Carlo hosts.",
+				MarkdownDescription: "Where the deployment's collection agent or data store will run. Either can be provisioned on `AWS`, `AZURE` or `GCP`, and a collection agent also on `GENERIC`. Any other combination is rejected. Required for a collection agent or data store. Leave it out for `AGENT_OBSERVABILITY`, which Monte Carlo hosts.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"AWS",
@@ -64,31 +71,45 @@ func DeploymentResourceSchema(ctx context.Context) schema.Schema {
 					),
 				},
 			},
+			"status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "How far Monte Carlo has got with setting the deployment up. An `AGENT_OBSERVABILITY` deployment is `PROVISIONING` while Monte Carlo sets it up, then `READY` or `FAILED`. Every other deployment is `READY`. `enabled` says whether the deployment can serve connections.",
+				MarkdownDescription: "How far Monte Carlo has got with setting the deployment up. An `AGENT_OBSERVABILITY` deployment is `PROVISIONING` while Monte Carlo sets it up, then `READY` or `FAILED`. Every other deployment is `READY`. `enabled` says whether the deployment can serve connections.",
+			},
+			"status_detail": schema.StringAttribute{
+				Computed:            true,
+				Description:         "More about the status, such as why setting up the deployment failed. Null when there is nothing to add.",
+				MarkdownDescription: "More about the status, such as why setting up the deployment failed. Null when there is nothing to add.",
+			},
 			"type": schema.StringAttribute{
 				Required:            true,
-				Description:         "What the deployment will host. Only `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned today. Any other value is rejected.",
-				MarkdownDescription: "What the deployment will host. Only `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned today. Any other value is rejected.",
+				Description:         "What the deployment will host. `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned, and an `AGENT_OBSERVABILITY` deployment can be created when your account has Monte Carlo hosted Agent Observability. Any other value is rejected.",
+				MarkdownDescription: "What the deployment will host. `COLLECTION_AGENT` and `COLLECTION_DATA_STORE` can be provisioned, and an `AGENT_OBSERVABILITY` deployment can be created when your account has Monte Carlo hosted Agent Observability. Any other value is rejected.",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"COLLECTION_AGENT",
 						"COLLECTION_DATA_STORE",
 						"CLOUD",
+						"AGENT_OBSERVABILITY",
 					),
 				},
 			},
 		},
-		Description:         "A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created.",
-		MarkdownDescription: "A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created.",
+		Description:         "A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created. An `AGENT_OBSERVABILITY` deployment is hosted by Monte Carlo and stores your agents' traces. It is set up after the create returns: its `status` is `PROVISIONING` until it is `READY` or `FAILED`.",
+		MarkdownDescription: "A deployment is where a collection agent or a data store you run in your own cloud is registered. Warehouses run on a deployment and reach their data through it. It serves nothing until its agent or data store is registered, and it counts against your account's deployment limit from the moment it is created. An `AGENT_OBSERVABILITY` deployment is hosted by Monte Carlo and stores your agents' traces. It is set up after the create returns: its `status` is `PROVISIONING` until it is `READY` or `FAILED`.",
 	}
 }
 
 type DeploymentModel struct {
-	AwsExternalId   types.String `tfsdk:"aws_external_id"`
-	CreatedTime     types.String `tfsdk:"created_time"`
-	Enabled         types.Bool   `tfsdk:"enabled"`
-	Id              types.String `tfsdk:"id"`
-	LastUpdatedTime types.String `tfsdk:"last_updated_time"`
-	Name            types.String `tfsdk:"name"`
-	RuntimePlatform types.String `tfsdk:"runtime_platform"`
-	Type            types.String `tfsdk:"type"`
+	AwsExternalId      types.String `tfsdk:"aws_external_id"`
+	CreatedTime        types.String `tfsdk:"created_time"`
+	DeletionProtection types.Bool   `tfsdk:"deletion_protection"`
+	Enabled            types.Bool   `tfsdk:"enabled"`
+	Id                 types.String `tfsdk:"id"`
+	LastUpdatedTime    types.String `tfsdk:"last_updated_time"`
+	Name               types.String `tfsdk:"name"`
+	RuntimePlatform    types.String `tfsdk:"runtime_platform"`
+	Status             types.String `tfsdk:"status"`
+	StatusDetail       types.String `tfsdk:"status_detail"`
+	Type               types.String `tfsdk:"type"`
 }
