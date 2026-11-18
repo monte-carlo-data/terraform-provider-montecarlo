@@ -96,7 +96,7 @@ output "warehouse_type" {
 
 ### Required
 
-- `deployment_id` (String) The deployment the warehouse's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted.
+- `deployment_id` (String) The deployment the warehouse's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. An `AGENT_OBSERVABILITY` deployment is not.
 - `name` (String) Display name for the warehouse. Unique among your warehouses of the same type.
 
 ### Optional

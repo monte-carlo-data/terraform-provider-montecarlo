@@ -22,7 +22,7 @@ A BI container groups the connections Monte Carlo uses to monitor one BI tool: a
 
 ### Optional
 
-- `deployment_id` (String) The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. `custom-bi-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.
+- `deployment_id` (String) The deployment the container's connections will run through. Pick one from the deployments list. Only a deployment on Monte Carlo's current collection platform is accepted. An `AGENT_OBSERVABILITY` deployment is not. `custom-bi-connector` takes the deployment of the agent that registered the connector, or none for a push-only connector. Every other type requires one.
 
 ### Read-Only
 

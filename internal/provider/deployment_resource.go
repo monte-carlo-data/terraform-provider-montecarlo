@@ -37,6 +37,8 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 	// Updating the resource never changes these, and a null in state is final. Only the plain modifier copies a null.
 	useStateForUnknown(s.Attributes, "deployment.created_time", &resp.Diagnostics)
 	useStateForUnknown(s.Attributes, "deployment.id", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "deployment.deletion_protection", &resp.Diagnostics)
+	useStateForUnknown(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
 	// The API accepts these on create and not on update, so changing one replaces the resource.
 	requiresReplace(s.Attributes, "deployment.runtime_platform", &resp.Diagnostics)
 	requiresReplace(s.Attributes, "deployment.type", &resp.Diagnostics)
@@ -62,9 +64,15 @@ func (r *deploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body := sdk.NewDeploymentIn(sdk.DeploymentType(plan.Type.ValueString()), sdk.RuntimePlatform(plan.RuntimePlatform.ValueString()))
+	body := sdk.NewDeploymentIn(sdk.DeploymentType(plan.Type.ValueString()))
+	if !plan.DeletionProtection.IsNull() && !plan.DeletionProtection.IsUnknown() {
+		body.SetDeletionProtection(plan.DeletionProtection.ValueBool())
+	}
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
+	}
+	if !plan.RuntimePlatform.IsNull() && !plan.RuntimePlatform.IsUnknown() {
+		body.SetRuntimePlatform(sdk.RuntimePlatform(plan.RuntimePlatform.ValueString()))
 	}
 	// Retried: the spec marks this operation x-mc-retry-on-transient.
 	out, err := withRetryOnTransient(ctx, func() (*sdk.DeploymentOut, *http.Response, error) {
@@ -105,6 +113,9 @@ func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	body := sdk.NewDeploymentPatch()
+	if !plan.DeletionProtection.IsNull() && !plan.DeletionProtection.IsUnknown() {
+		body.SetDeletionProtection(plan.DeletionProtection.ValueBool())
+	}
 	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
 		body.SetName(plan.Name.ValueString())
 	}
@@ -137,9 +148,11 @@ func (r *deploymentResource) ImportState(ctx context.Context, req resource.Impor
 
 func deploymentToModel(o *sdk.DeploymentOut) resource_deployment.DeploymentModel {
 	m := resource_deployment.DeploymentModel{
-		Enabled: types.BoolValue(o.GetEnabled()),
-		Id:      types.StringValue(o.GetId()),
-		Name:    types.StringValue(o.GetName()),
+		DeletionProtection: types.BoolValue(o.GetDeletionProtection()),
+		Enabled:            types.BoolValue(o.GetEnabled()),
+		Id:                 types.StringValue(o.GetId()),
+		Name:               types.StringValue(o.GetName()),
+		Status:             types.StringValue(string(o.GetStatus())),
 	}
 	if v, ok := o.GetAwsExternalIdOk(); ok && v != nil {
 		m.AwsExternalId = types.StringValue(*v)
@@ -160,6 +173,11 @@ func deploymentToModel(o *sdk.DeploymentOut) resource_deployment.DeploymentModel
 		m.RuntimePlatform = types.StringValue(string(*v))
 	} else {
 		m.RuntimePlatform = types.StringNull()
+	}
+	if v, ok := o.GetStatusDetailOk(); ok && v != nil {
+		m.StatusDetail = types.StringValue(*v)
+	} else {
+		m.StatusDetail = types.StringNull()
 	}
 	if v, ok := o.GetTypeOk(); ok && v != nil {
 		m.Type = types.StringValue(string(*v))
