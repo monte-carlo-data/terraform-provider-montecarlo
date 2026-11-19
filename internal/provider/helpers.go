@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -115,6 +116,84 @@ func retryAfter(httpResp *http.Response) time.Duration {
 		return wait
 	}
 	return retryAfterFloor
+}
+
+// The status wait's timings. Variables rather than constants only so a test can shrink them;
+// nothing in the provider writes them at runtime.
+var (
+	// statusPollInterval is the wait between two reads of a resource that has not settled.
+	statusPollInterval = 10 * time.Second
+
+	// statusTimeoutUnit is the unit waitForStatus counts its timeout in.
+	statusTimeoutUnit = time.Second
+)
+
+// waitForStatus polls a resource until its status is one of ready or failed, and returns the
+// last value it read.
+//
+// Some resources answer a create before they are usable and settle later. first is the value
+// the create returned; if it is already ready, waitForStatus returns it without reading. A
+// status in neither list is still settling, so the wait goes on until timeoutSeconds have
+// passed. A failed status is an error carrying the status detail. A read answering 503 or 429
+// is retried, honouring Retry-After; any other read failure ends the wait with that error.
+//
+// Every error comes back with the latest value the wait holds: the failed read for a failed
+// status, otherwise the last successful read, or first if no read succeeded. The caller can
+// record it in state, so a resource that exists is never lost to a failed wait.
+//
+// The generated code calls this for operations the spec marks as settling asynchronously.
+func waitForStatus[T any](
+	ctx context.Context,
+	first *T,
+	status func(*T) (value, detail string),
+	read func() (*T, *http.Response, error),
+	ready, failed []string,
+	timeoutSeconds int,
+) (*T, error) {
+	timeout := time.Duration(timeoutSeconds) * statusTimeoutUnit
+	deadline := time.Now().Add(timeout)
+	latest := first
+	wait := statusPollInterval
+	for {
+		value, detail := status(latest)
+		if slices.Contains(ready, value) {
+			return latest, nil
+		}
+		if slices.Contains(failed, value) {
+			return latest, settledErr(value, detail)
+		}
+		// Waiting past the deadline would only delay the same timeout.
+		if wait >= time.Until(deadline) {
+			return latest, fmt.Errorf(
+				"timed out after %d seconds waiting for status %s; the last status was %q",
+				timeoutSeconds, strings.Join(ready, " or "), value,
+			)
+		}
+		select {
+		case <-ctx.Done():
+			return latest, ctx.Err()
+		case <-time.After(wait):
+		}
+
+		out, httpResp, err := read()
+		if err != nil {
+			if httpResp == nil || !retryableStatus(httpResp.StatusCode) {
+				return latest, err
+			}
+			wait = retryAfter(httpResp)
+			continue
+		}
+		latest = out
+		wait = statusPollInterval
+	}
+}
+
+// settledErr is the error for a resource that settled in a failed status.
+func settledErr(value, detail string) error {
+	if detail == "" {
+		return fmt.Errorf("reached status %s", value)
+	}
+	return fmt.Errorf("reached status %s: %s", value, detail)
 }
 
 // planModifierSet is one plan modifier, expressed once per attribute type.

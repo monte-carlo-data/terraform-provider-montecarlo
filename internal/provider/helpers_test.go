@@ -1359,3 +1359,285 @@ func TestAPIErrNamesAProblemsFieldErrors(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+// shrinkStatusWaitTimings makes waitForStatus poll every millisecond and count its timeout in
+// milliseconds, so a test can run the wait to its end without sleeping for real seconds. It
+// shrinks the retry timings too, since a retried read waits by those.
+func shrinkStatusWaitTimings(t *testing.T) {
+	t.Helper()
+	shrinkRetryTimings(t)
+	interval, unit := statusPollInterval, statusTimeoutUnit
+	t.Cleanup(func() {
+		statusPollInterval, statusTimeoutUnit = interval, unit
+	})
+	statusPollInterval = time.Millisecond
+	statusTimeoutUnit = time.Millisecond
+}
+
+// polled is a resource as one read returns it. read numbers the reads, so a test can tell which
+// one waitForStatus handed back; first is read 0.
+type polled struct {
+	status string
+	detail string
+	read   int
+}
+
+func polledStatus(p *polled) (string, string) { return p.status, p.detail }
+
+// readResult is what one read returns.
+type readResult struct {
+	status string
+	detail string
+	resp   *http.Response
+	err    error
+}
+
+// scriptedRead returns a read that answers with results in order and repeats the last one once
+// they run out, and a pointer to the number of reads made.
+func scriptedRead(results ...readResult) (func() (*polled, *http.Response, error), *int) {
+	reads := 0
+	return func() (*polled, *http.Response, error) {
+		reads++
+		r := results[min(reads, len(results))-1]
+		if r.err != nil {
+			return nil, r.resp, r.err
+		}
+		return &polled{status: r.status, detail: r.detail, read: reads}, &http.Response{StatusCode: http.StatusOK}, nil
+	}, &reads
+}
+
+func waitWith(ctx context.Context, first *polled, read func() (*polled, *http.Response, error), timeoutSeconds int) (*polled, error) {
+	return waitForStatus(ctx, first, polledStatus, read, []string{"READY"}, []string{"FAILED"}, timeoutSeconds)
+}
+
+func provisioning() *polled { return &polled{status: "PROVISIONING"} }
+
+func unavailable(retryAfter string) *http.Response {
+	resp := &http.Response{StatusCode: http.StatusServiceUnavailable, Header: http.Header{}}
+	resp.Header.Set("Retry-After", retryAfter)
+	return resp
+}
+
+func TestWaitForStatusReturnsAReadyFirstValueWithoutReading(t *testing.T) {
+	first := &polled{status: "READY"}
+	read, reads := scriptedRead(readResult{status: "READY"})
+
+	got, err := waitWith(t.Context(), first, read, 1800)
+
+	if err != nil {
+		t.Fatalf("returned %v", err)
+	}
+	if got != first || *reads != 0 {
+		t.Errorf("got read %d after %d reads, want first after 0", got.read, *reads)
+	}
+}
+
+func TestWaitForStatusPollsUntilTheStatusIsReady(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, reads := scriptedRead(
+		readResult{status: "PROVISIONING"},
+		readResult{status: "PROVISIONING"},
+		readResult{status: "READY"},
+	)
+
+	got, err := waitWith(t.Context(), provisioning(), read, 60_000)
+
+	if err != nil {
+		t.Fatalf("returned %v", err)
+	}
+	if got.read != 3 || *reads != 3 {
+		t.Errorf("got read %d after %d reads, want read 3 after 3", got.read, *reads)
+	}
+}
+
+// The caller reports the error through apiErr, which passes a plain error's text through, so
+// the detail has to be in that text for the practitioner to see why the resource failed.
+func TestWaitForStatusReturnsAFailedReadWithAnErrorCarryingItsDetail(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, _ := scriptedRead(
+		readResult{status: "PROVISIONING"},
+		readResult{status: "FAILED", detail: "subnet has no free addresses"},
+	)
+
+	got, err := waitWith(t.Context(), provisioning(), read, 60_000)
+
+	if err == nil {
+		t.Fatal("a failed status must be returned as an error")
+	}
+	if msg := apiErr(err); !strings.Contains(msg, "FAILED") || !strings.Contains(msg, "subnet has no free addresses") {
+		t.Errorf("error reads %q, want the status and its detail", msg)
+	}
+	if got == nil || got.read != 2 {
+		t.Errorf("got %+v, want the failed read 2", got)
+	}
+}
+
+func TestWaitForStatusTimeoutNamesTheTimeout(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, _ := scriptedRead(readResult{status: "PROVISIONING"})
+
+	_, err := waitWith(t.Context(), provisioning(), read, 50)
+
+	if err == nil {
+		t.Fatal("a wait that never settles must time out")
+	}
+	if msg := apiErr(err); !strings.Contains(msg, "timed out after 50 seconds") {
+		t.Errorf("error reads %q, want it to name the 50-second timeout", msg)
+	}
+}
+
+// Terraform relies on cancellation to honour Ctrl-C and per-operation timeouts. The poll
+// interval is left at its real length, so only the cancelled context can end the wait.
+func TestWaitForStatusStopsWhenTheContextIsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	read, reads := scriptedRead(readResult{status: "READY"})
+
+	first := provisioning()
+
+	got, err := waitWith(ctx, first, read, 1800)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("returned %v, want %v", err, context.Canceled)
+	}
+	if got != first || *reads != 0 {
+		t.Errorf("got %+v after %d reads, want first after 0", got, *reads)
+	}
+}
+
+func TestWaitForStatusRetriesARateLimitedOrUnavailableRead(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, reads := scriptedRead(
+		readResult{resp: rateLimited("0"), err: errors.New("too many requests")},
+		readResult{resp: unavailable("0"), err: errors.New("service unavailable")},
+		readResult{status: "READY"},
+	)
+
+	got, err := waitWith(t.Context(), provisioning(), read, 60_000)
+
+	if err != nil {
+		t.Fatalf("returned %v", err)
+	}
+	if got.read != 3 || *reads != 3 {
+		t.Errorf("got read %d after %d reads, want read 3 after 3", got.read, *reads)
+	}
+}
+
+// A Retry-After of one second cannot fit the 50 milliseconds the wait has, so honouring it ends
+// the wait at once. Polling at the millisecond interval instead would read again.
+func TestWaitForStatusHonoursRetryAfterOnARetriedRead(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, reads := scriptedRead(readResult{resp: rateLimited("1"), err: errors.New("too many requests")})
+	started := time.Now()
+
+	_, err := waitWith(t.Context(), provisioning(), read, 50)
+
+	if err == nil || !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("returned %v, want the timeout", err)
+	}
+	if *reads != 1 {
+		t.Errorf("read %d times, want 1", *reads)
+	}
+	if slept := time.Since(started); slept > 500*time.Millisecond {
+		t.Errorf("waited %s, want no wait for a Retry-After that cannot fit", slept)
+	}
+}
+
+// A status the provider does not know, such as one the API adds later, is not a failure. The
+// resource may still settle, so the wait goes on.
+func TestWaitForStatusKeepsPollingAStatusInNeitherList(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, reads := scriptedRead(readResult{status: "UPGRADING"})
+
+	_, err := waitWith(t.Context(), provisioning(), read, 50)
+
+	if err == nil || !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("returned %v, want the timeout", err)
+	}
+	if *reads < 2 {
+		t.Errorf("read %d times, want the wait to keep polling", *reads)
+	}
+}
+
+// The caller records the returned value in state whenever it is not nil. A resource that
+// exists must reach state even when the wait fails, or the next apply creates a second one.
+func TestWaitForStatusReturnsTheLatestValueWithEveryError(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+
+	// A cancellation returns first; TestWaitForStatusStopsWhenTheContextIsCancelled covers it.
+	cases := []struct {
+		name     string
+		results  []readResult
+		wantRead int
+	}{
+		{
+			name:     "a failed status returns the failed read",
+			results:  []readResult{{status: "PROVISIONING"}, {status: "FAILED"}},
+			wantRead: 2,
+		},
+		{
+			name:     "a timeout returns the most recent read",
+			results:  []readResult{{status: "PROVISIONING"}},
+			wantRead: -1,
+		},
+		{
+			name: "a read failure returns the most recent successful read",
+			results: []readResult{
+				{status: "PROVISIONING"},
+				{resp: &http.Response{StatusCode: http.StatusInternalServerError}, err: errors.New("internal error")},
+			},
+			wantRead: 1,
+		},
+		{
+			name: "a read failure before any successful read returns first",
+			results: []readResult{
+				{resp: rateLimited("0"), err: errors.New("too many requests")},
+				{resp: nil, err: errors.New("connection reset")},
+			},
+			wantRead: 0,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			read, reads := scriptedRead(tc.results...)
+
+			got, err := waitWith(t.Context(), provisioning(), read, 50)
+
+			if err == nil {
+				t.Fatal("want an error")
+			}
+			want := tc.wantRead
+			if want < 0 {
+				want = *reads
+			}
+			if got == nil || got.read != want {
+				t.Errorf("got %+v, want read %d", got, want)
+			}
+		})
+	}
+}
+
+// Only 503 and 429 say the read was not carried out. Anything else is the caller's to report.
+func TestWaitForStatusEndsOnAReadFailureItCannotRetry(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	cases := map[string]*http.Response{
+		"500":               {StatusCode: http.StatusInternalServerError},
+		"404":               {StatusCode: http.StatusNotFound},
+		"transport failure": nil,
+	}
+	for name, resp := range cases {
+		t.Run(name, func(t *testing.T) {
+			readErr := errors.New("read failed")
+			read, reads := scriptedRead(readResult{resp: resp, err: readErr})
+
+			_, err := waitWith(t.Context(), provisioning(), read, 60_000)
+
+			if !errors.Is(err, readErr) {
+				t.Fatalf("returned %v, want the read's own error", err)
+			}
+			if *reads != 1 {
+				t.Errorf("read %d times, want 1", *reads)
+			}
+		})
+	}
+}
