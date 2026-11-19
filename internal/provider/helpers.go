@@ -56,8 +56,8 @@ var (
 // Provisioning reaches systems that are not immediately consistent — a freshly created role
 // is not usable the instant it exists — so the API reports a transient failure rather than
 // pretending. Terraform has no notion of "try again shortly", so the wait happens here.
-// Exhausting the budget returns the last error to the caller, and so does a Retry-After longer
-// than what is left of the budget, at once.
+// Exhausting the budget returns the last error to the caller, as does a Retry-After longer
+// than what is left of the budget, without waiting.
 //
 // The generated code calls this for operations the spec marks as retryable.
 func withRetryOnTransient[T any](
@@ -73,7 +73,8 @@ func withRetryOnTransient[T any](
 			return nil, err
 		}
 		remaining := time.Until(deadline)
-		// The server asked for a wait the budget cannot cover, so no retry inside it can succeed.
+		// Checked on the raw value: retryAfter turns an over-budget Retry-After into the fixed
+		// interval, which the check below would let through.
 		if seconds, ok := retryAfterSeconds(httpResp); ok && float64(seconds) > remaining.Seconds() {
 			return nil, err
 		}
