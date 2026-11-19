@@ -1544,23 +1544,110 @@ func TestWaitForStatusRetriesARateLimitedOrUnavailableRead(t *testing.T) {
 	}
 }
 
-// A Retry-After of one second cannot fit the 50 milliseconds the wait has, so honouring it ends
-// the wait at once. Polling at the millisecond interval instead would read again.
+// A Retry-After of one second cannot fit the 50 milliseconds the wait has, so the wait ends at
+// once with the read's own error. Polling at the millisecond interval instead would read again.
 func TestWaitForStatusHonoursRetryAfterOnARetriedRead(t *testing.T) {
 	shrinkStatusWaitTimings(t)
-	read, reads := scriptedRead(readResult{resp: rateLimited("1"), err: errors.New("too many requests")})
+	readErr := errors.New("too many requests")
+	read, reads := scriptedRead(readResult{resp: rateLimited("1"), err: readErr})
 	started := time.Now()
 
-	_, err := waitWith(t.Context(), provisioning(), read, 50)
+	got, err := waitWith(t.Context(), provisioning(), read, 50)
 
-	if err == nil || !strings.Contains(err.Error(), "timed out") {
-		t.Fatalf("returned %v, want the timeout", err)
+	if err != readErr {
+		t.Fatalf("returned %v, want the read's own error, unwrapped", err)
+	}
+	if got == nil {
+		t.Error("returned no value, want the latest one")
 	}
 	if *reads != 1 {
 		t.Errorf("read %d times, want 1", *reads)
 	}
 	if slept := time.Since(started); slept > 500*time.Millisecond {
 		t.Errorf("waited %s, want no wait for a Retry-After that cannot fit", slept)
+	}
+}
+
+// The wait has its own deadline, so a Retry-After beyond the retry budget is honoured when it
+// fits that deadline. The retry cap is shrunk below the one-second Retry-After; capping the wait
+// by it would read again after a millisecond.
+func TestWaitForStatusHonoursARetryAfterLongerThanTheRetryBudget(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	transientRetryTimeout = time.Millisecond
+	readErr := errors.New("too many requests")
+	var times []time.Time
+	reads := 0
+	read := func() (*polled, *http.Response, error) {
+		reads++
+		times = append(times, time.Now())
+		if reads == 1 {
+			return nil, rateLimited("1"), readErr
+		}
+		return &polled{status: "READY", read: reads}, &http.Response{StatusCode: http.StatusOK}, nil
+	}
+
+	got, err := waitWith(t.Context(), provisioning(), read, 5000)
+
+	if err != nil {
+		t.Fatalf("returned %v", err)
+	}
+	if got == nil || got.read != 2 || reads != 2 {
+		t.Fatalf("got %+v after %d reads, want read 2 after 2", got, reads)
+	}
+	if gap := times[1].Sub(times[0]); gap < 900*time.Millisecond {
+		t.Errorf("read again after %s, want the 1s Retry-After honoured", gap)
+	}
+}
+
+// A Retry-After that cannot fit what is left of the deadline would only delay the timeout, so
+// the wait returns the read's own error at once, unwrapped, with the last value it held.
+func TestWaitForStatusReturnsTheReadErrorWhenRetryAfterCannotFitTheTimeout(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	readErr := errors.New("too many requests")
+	read, reads := scriptedRead(
+		readResult{status: "PROVISIONING"},
+		readResult{resp: rateLimited("86400"), err: readErr},
+	)
+	started := time.Now()
+
+	got, err := waitWith(t.Context(), provisioning(), read, 2000)
+
+	if err != readErr || !errors.Is(err, readErr) {
+		t.Fatalf("returned %v, want the read's own error, unwrapped", err)
+	}
+	if got == nil || got.read != 1 {
+		t.Errorf("got %+v, want the last successful read 1", got)
+	}
+	if *reads != 2 {
+		t.Errorf("read %d times, want no read after the rate-limited one", *reads)
+	}
+	if elapsed := time.Since(started); elapsed > 500*time.Millisecond {
+		t.Errorf("returned after %s, want it at once rather than at the timeout", elapsed)
+	}
+}
+
+// With no usable Retry-After the wait keeps polling and may run out of time. The timeout then
+// names the failure that kept the resource from being read, not only its last status.
+func TestWaitForStatusTimeoutNamesTheLastRetriedReadError(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	cases := map[string]*http.Response{
+		"no header":   {StatusCode: http.StatusTooManyRequests, Header: http.Header{}},
+		"unparseable": rateLimited("soon"),
+	}
+	for name, resp := range cases {
+		t.Run(name, func(t *testing.T) {
+			readErr := errors.New("gateway shed this request")
+			read, _ := scriptedRead(readResult{resp: resp, err: readErr})
+
+			_, err := waitWith(t.Context(), provisioning(), read, 50)
+
+			if err == nil || !strings.Contains(err.Error(), "timed out") {
+				t.Fatalf("returned %v, want the timeout", err)
+			}
+			if !strings.Contains(err.Error(), readErr.Error()) {
+				t.Errorf("error reads %q, want it to name the read error %q", err, readErr)
+			}
+		})
 	}
 }
 

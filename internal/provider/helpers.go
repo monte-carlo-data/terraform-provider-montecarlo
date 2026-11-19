@@ -152,7 +152,13 @@ var (
 // the create returned; if it is already ready, waitForStatus returns it without reading. A
 // status in neither list is still settling, so the wait goes on until timeoutSeconds have
 // passed. A failed status is an error carrying the status detail. A read answering 503 or 429
-// is retried, honouring Retry-After; any other read failure ends the wait with that error.
+// is retried; any other read failure ends the wait with that error.
+//
+// A retried read waits for its Retry-After, floored at retryAfterFloor, however long that is
+// against the retry helper's budget: only this wait's own deadline bounds it. A Retry-After that
+// cannot fit what is left of the deadline ends the wait at once with the read's own error. With
+// no usable Retry-After the wait retries after the fixed retry interval, and if it then times
+// out, the timeout error names the last retried read's failure.
 //
 // Every error comes back with the latest value the wait holds: the failed read for a failed
 // status, otherwise the last successful read, or first if no read succeeded. The caller can
@@ -171,6 +177,7 @@ func waitForStatus[T any](
 	deadline := time.Now().Add(timeout)
 	latest := first
 	wait := statusPollInterval
+	var retriedErr error
 	for {
 		value, detail := status(latest)
 		if slices.Contains(ready, value) {
@@ -181,6 +188,12 @@ func waitForStatus[T any](
 		}
 		// Waiting past the deadline would only delay the same timeout.
 		if wait >= time.Until(deadline) {
+			if retriedErr != nil {
+				return latest, fmt.Errorf(
+					"timed out after %d seconds waiting for status %s; the last status was %q; the last read failed: %w",
+					timeoutSeconds, strings.Join(ready, " or "), value, retriedErr,
+				)
+			}
 			return latest, fmt.Errorf(
 				"timed out after %d seconds waiting for status %s; the last status was %q",
 				timeoutSeconds, strings.Join(ready, " or "), value,
@@ -197,10 +210,20 @@ func waitForStatus[T any](
 			if httpResp == nil || !retryableStatus(httpResp.StatusCode) {
 				return latest, err
 			}
-			wait = retryAfter(httpResp)
+			retriedErr = err
+			wait = transientRetryInterval
+			if seconds, ok := retryAfterSeconds(httpResp); ok {
+				// The wait's own deadline bounds Retry-After, not the retry helper's budget. Compare
+				// whole seconds before converting, so a huge value cannot overflow time.Duration.
+				if float64(seconds) > time.Until(deadline).Seconds() {
+					return latest, err
+				}
+				wait = max(time.Duration(seconds)*time.Second, retryAfterFloor)
+			}
 			continue
 		}
 		latest = out
+		retriedErr = nil
 		wait = statusPollInterval
 	}
 }
