@@ -153,14 +153,16 @@ var (
 // the create returned; if it is already ready, waitForStatus returns it without reading. A
 // status in neither list is still settling, so the wait goes on until timeoutSeconds have
 // passed; the last sleep is shortened to the time left, and one final read at the deadline
-// decides between success and the timeout. A failed status is an error carrying the status detail. A read answering 503 or 429
-// is retried; any other read failure ends the wait with that error.
+// decides between success and the timeout. A failed status is an error carrying the status
+// detail. A read answering 503 or 429 is retried; any other read failure ends the wait with that
+// error.
 //
 // A retried read waits for its Retry-After, floored at retryAfterFloor, however long that is
 // against the retry helper's budget: only this wait's own deadline bounds it. A Retry-After that
 // cannot fit what is left of the deadline ends the wait at once with the read's own error. With
 // no usable Retry-After the wait retries after the fixed retry interval, and if it then times
-// out, the timeout error names the last retried read's failure.
+// out, the timeout error names the last retried read's failure as text, not as a wrapped error,
+// so the timeout and the last status stay readable when it is reported through apiErr.
 //
 // Every error comes back with the latest value the wait holds: the failed read for a failed
 // status, otherwise the last successful read, or first if no read succeeded. The caller can
@@ -205,8 +207,8 @@ func waitForStatus[T any](
 		if remaining <= 0 {
 			if retriedErr != nil {
 				return latest, fmt.Errorf(
-					"timed out after %d seconds waiting for status %s; the last status was %q; the last read failed: %w",
-					timeoutSeconds, strings.Join(ready, " or "), value, retriedErr,
+					"timed out after %d seconds waiting for status %s; the last status was %q; the last read failed: %s",
+					timeoutSeconds, strings.Join(ready, " or "), value, apiErr(retriedErr),
 				)
 			}
 			return latest, fmt.Errorf(

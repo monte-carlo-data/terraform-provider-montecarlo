@@ -1813,6 +1813,28 @@ func TestWaitForStatusTimeoutNamesTheLastRetriedReadError(t *testing.T) {
 	}
 }
 
+// The generated Create reports a wait's error through apiErr, which renders a wrapped SDK error
+// on its own. A timeout that wraps the last read's SDK error would therefore reach the
+// practitioner as only that read's failure, with the timeout and the last status lost.
+func TestWaitForStatusTimeoutAfterARetriedReadSurvivesAPIErr(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	readErr := errorFrom(t, http.StatusServiceUnavailable, `{"Message":"Try again shortly."}`)
+	resp := &http.Response{StatusCode: http.StatusServiceUnavailable, Header: http.Header{}}
+	read, _ := scriptedRead(readResult{resp: resp, err: readErr})
+
+	_, err := waitWith(t.Context(), provisioning(), read, 50)
+
+	if err == nil {
+		t.Fatal("returned no error, want the timeout")
+	}
+	got := apiErr(err)
+	for _, want := range []string{"timed out after", "READY", "PROVISIONING", apiErr(readErr)} {
+		if !strings.Contains(got, want) {
+			t.Errorf("apiErr reads %q, want it to contain %q", got, want)
+		}
+	}
+}
+
 // A status the provider does not know, such as one the API adds later, is not a failure. The
 // resource may still settle, so the wait goes on.
 func TestWaitForStatusKeepsPollingAStatusInNeitherList(t *testing.T) {
