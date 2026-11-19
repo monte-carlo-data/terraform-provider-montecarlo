@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +56,8 @@ var (
 // Provisioning reaches systems that are not immediately consistent — a freshly created role
 // is not usable the instant it exists — so the API reports a transient failure rather than
 // pretending. Terraform has no notion of "try again shortly", so the wait happens here.
-// Exhausting the budget returns the last error to the caller.
+// Exhausting the budget returns the last error to the caller, as does a Retry-After longer
+// than what is left of the budget, without waiting.
 //
 // The generated code calls this for operations the spec marks as retryable.
 func withRetryOnTransient[T any](
@@ -70,9 +72,15 @@ func withRetryOnTransient[T any](
 		if httpResp == nil || !retryableStatus(httpResp.StatusCode) {
 			return nil, err
 		}
+		remaining := time.Until(deadline)
+		// Checked on the raw value: retryAfter turns an over-budget Retry-After into the fixed
+		// interval, which the check below would let through.
+		if seconds, ok := retryAfterSeconds(httpResp); ok && float64(seconds) > remaining.Seconds() {
+			return nil, err
+		}
 		wait := retryAfter(httpResp)
 		// Waiting past the deadline would return the same error having slept for nothing.
-		if remaining := time.Until(deadline); wait >= remaining {
+		if wait >= remaining {
 			return nil, err
 		}
 		select {
@@ -107,14 +115,145 @@ func retryableStatus(status int) bool {
 // overflow time.Duration's int64 nanosecond range on conversion — falls back to the fixed
 // interval instead of being converted at all, so the overflow never happens.
 func retryAfter(httpResp *http.Response) time.Duration {
-	seconds, err := strconv.Atoi(strings.TrimSpace(httpResp.Header.Get("Retry-After")))
-	if err != nil || seconds < 0 || seconds > int(transientRetryTimeout/time.Second) {
+	seconds, ok := retryAfterSeconds(httpResp)
+	if !ok || seconds > int(transientRetryTimeout/time.Second) {
 		return transientRetryInterval
 	}
 	if wait := time.Duration(seconds) * time.Second; wait > retryAfterFloor {
 		return wait
 	}
 	return retryAfterFloor
+}
+
+// retryAfterSeconds is the response's Retry-After as a whole number of seconds. It reports
+// false for a missing, negative or unparseable value, and for the date form, which the API
+// does not send.
+func retryAfterSeconds(httpResp *http.Response) (int, bool) {
+	seconds, err := strconv.Atoi(strings.TrimSpace(httpResp.Header.Get("Retry-After")))
+	if err != nil || seconds < 0 {
+		return 0, false
+	}
+	return seconds, true
+}
+
+// The status wait's timings. Variables rather than constants only so a test can shrink them;
+// nothing in the provider writes them at runtime.
+var (
+	// statusPollInterval is the wait between two reads of a resource that has not settled.
+	statusPollInterval = 10 * time.Second
+
+	// statusTimeoutUnit is the unit waitForStatus counts its timeout in.
+	statusTimeoutUnit = time.Second
+)
+
+// waitForStatus polls a resource until its status is one of ready or failed, and returns the
+// last value it read.
+//
+// Some resources answer a create before they are usable and settle later. first is the value
+// the create returned; if it is already ready, waitForStatus returns it without reading. A
+// status in neither list is still settling, so the wait goes on until timeoutSeconds have
+// passed; the last sleep is shortened to the time left, and one final read at the deadline
+// decides between success and the timeout. A failed status is an error carrying the status
+// detail. A read answering 503 or 429 is retried; any other read failure ends the wait with that
+// error.
+//
+// A retried read waits for its Retry-After, floored at retryAfterFloor, however long that is
+// against the retry helper's budget: only this wait's own deadline bounds it. A Retry-After that
+// cannot fit what is left of the deadline ends the wait at once with the read's own error. With
+// no usable Retry-After the wait retries after the fixed retry interval, and if it then times
+// out, the timeout error names the last retried read's failure as text, not as a wrapped error,
+// so the timeout and the last status stay readable when it is reported through apiErr.
+//
+// Every error comes back with the latest value the wait holds: the failed read for a failed
+// status, otherwise the last successful read, or first if no read succeeded. The caller can
+// record it in state, so a resource that exists is never lost to a failed wait. That value is
+// nil only when first was nil and no read succeeded.
+//
+// first can be nil, for a create that returned no value: status is never called with it, the
+// immediate check is skipped and the wait goes straight to polling. A read that succeeds with a
+// nil value ends the wait at once with an error, and the nil is not taken as the latest value.
+//
+// The generated code calls this for operations the spec marks as settling asynchronously.
+func waitForStatus[T any](
+	ctx context.Context,
+	first *T,
+	status func(*T) (value, detail string),
+	read func() (*T, *http.Response, error),
+	ready, failed []string,
+	timeoutSeconds int,
+) (*T, error) {
+	timeout := time.Duration(timeoutSeconds) * statusTimeoutUnit
+	deadline := time.Now().Add(timeout)
+	latest := first
+	wait := statusPollInterval
+	var retriedErr error
+	for {
+		// status is never handed a nil: a nil first is not checked, and the wait polls for the
+		// first real value. Until then the last status is empty.
+		var value, detail string
+		if latest != nil {
+			value, detail = status(latest)
+			if slices.Contains(ready, value) {
+				return latest, nil
+			}
+			if slices.Contains(failed, value) {
+				return latest, settledErr(value, detail)
+			}
+		}
+		// Only a deadline that has already passed ends the wait. A sleep that would overshoot it
+		// is shortened to the time left below, so the resource is read once more at the deadline
+		// instead of being reported as timed out unchecked.
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			if retriedErr != nil {
+				return latest, fmt.Errorf(
+					"timed out after %d seconds waiting for status %s; the last status was %q; the last read failed: %s",
+					timeoutSeconds, strings.Join(ready, " or "), value, apiErr(retriedErr),
+				)
+			}
+			return latest, fmt.Errorf(
+				"timed out after %d seconds waiting for status %s; the last status was %q",
+				timeoutSeconds, strings.Join(ready, " or "), value,
+			)
+		}
+		select {
+		case <-ctx.Done():
+			return latest, ctx.Err()
+		case <-time.After(min(wait, remaining)):
+		}
+
+		out, httpResp, err := read()
+		if err != nil {
+			if httpResp == nil || !retryableStatus(httpResp.StatusCode) {
+				return latest, err
+			}
+			retriedErr = err
+			wait = transientRetryInterval
+			if seconds, ok := retryAfterSeconds(httpResp); ok {
+				// The wait's own deadline bounds Retry-After, not the retry helper's budget. Compare
+				// whole seconds before converting, so a huge value cannot overflow time.Duration.
+				if float64(seconds) > time.Until(deadline).Seconds() {
+					return latest, err
+				}
+				wait = max(time.Duration(seconds)*time.Second, retryAfterFloor)
+			}
+			continue
+		}
+		if out == nil {
+			return latest, errors.New("reading the resource returned no value")
+		}
+		latest = out
+		retriedErr = nil
+		wait = statusPollInterval
+	}
+}
+
+// settledErr is the error for a resource that settled in a failed status.
+func settledErr(value, detail string) error {
+	if detail == "" {
+		return fmt.Errorf("reached status %s", value)
+	}
+	return fmt.Errorf("reached status %s: %s", value, detail)
 }
 
 // planModifierSet is one plan modifier, expressed once per attribute type.
