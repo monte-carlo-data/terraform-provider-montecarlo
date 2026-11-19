@@ -1147,10 +1147,35 @@ func TestWithRetryOnTransientReturnsATransportFailure(t *testing.T) {
 	}
 }
 
-// The budget is the only bound on the loop — there is no attempt cap — so it decides whether a
-// sustained rate limit surfaces as an error or as an apply that hangs. A wait of the whole
-// budget cannot fit inside what remains of it, so the branch is reached on the first response
-// and no test has to sit out five minutes to get there.
+// With no Retry-After the server never says when to come back, so only the deadline ends the
+// loop. There is no attempt cap, so without that bound a sustained 503 would hang the apply.
+func TestWithRetryOnTransientStopsAtTheDeadlineWithoutARetryAfter(t *testing.T) {
+	shrinkRetryTimings(t)
+	transientRetryTimeout = 50 * time.Millisecond
+	unavailable := errors.New("unavailable")
+	calls := 0
+	started := time.Now()
+
+	_, err := withRetryOnTransient(t.Context(), func() (*string, *http.Response, error) {
+		calls++
+		return nil, &http.Response{StatusCode: http.StatusServiceUnavailable, Header: http.Header{}}, unavailable
+	})
+
+	if !errors.Is(err, unavailable) {
+		t.Fatalf("returned %v, want the last error %v", err, unavailable)
+	}
+	if calls < 2 {
+		t.Errorf("called %d times, want a retry before the deadline", calls)
+	}
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Errorf("ran for %s, want to stop near the %s budget", elapsed, transientRetryTimeout)
+	}
+}
+
+// A Retry-After as long as the whole budget is longer than what is left of it by the time the
+// first response arrives, so the early return for an oversized Retry-After ends the loop on
+// that response without waiting. This overlaps
+// TestWithRetryOnTransientStopsWhenRetryAfterExceedsTheBudget, which uses a far larger value.
 func TestWithRetryOnTransientStopsWhenTheWaitCannotFitTheBudget(t *testing.T) {
 	wholeBudget := strconv.Itoa(int(transientRetryTimeout / time.Second))
 	calls := 0
