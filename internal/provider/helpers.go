@@ -56,7 +56,8 @@ var (
 // Provisioning reaches systems that are not immediately consistent — a freshly created role
 // is not usable the instant it exists — so the API reports a transient failure rather than
 // pretending. Terraform has no notion of "try again shortly", so the wait happens here.
-// Exhausting the budget returns the last error to the caller.
+// Exhausting the budget returns the last error to the caller, and so does a Retry-After longer
+// than what is left of the budget, at once.
 //
 // The generated code calls this for operations the spec marks as retryable.
 func withRetryOnTransient[T any](
@@ -71,9 +72,14 @@ func withRetryOnTransient[T any](
 		if httpResp == nil || !retryableStatus(httpResp.StatusCode) {
 			return nil, err
 		}
+		remaining := time.Until(deadline)
+		// The server asked for a wait the budget cannot cover, so no retry inside it can succeed.
+		if seconds, ok := retryAfterSeconds(httpResp); ok && float64(seconds) > remaining.Seconds() {
+			return nil, err
+		}
 		wait := retryAfter(httpResp)
 		// Waiting past the deadline would return the same error having slept for nothing.
-		if remaining := time.Until(deadline); wait >= remaining {
+		if wait >= remaining {
 			return nil, err
 		}
 		select {
@@ -108,14 +114,25 @@ func retryableStatus(status int) bool {
 // overflow time.Duration's int64 nanosecond range on conversion — falls back to the fixed
 // interval instead of being converted at all, so the overflow never happens.
 func retryAfter(httpResp *http.Response) time.Duration {
-	seconds, err := strconv.Atoi(strings.TrimSpace(httpResp.Header.Get("Retry-After")))
-	if err != nil || seconds < 0 || seconds > int(transientRetryTimeout/time.Second) {
+	seconds, ok := retryAfterSeconds(httpResp)
+	if !ok || seconds > int(transientRetryTimeout/time.Second) {
 		return transientRetryInterval
 	}
 	if wait := time.Duration(seconds) * time.Second; wait > retryAfterFloor {
 		return wait
 	}
 	return retryAfterFloor
+}
+
+// retryAfterSeconds is the response's Retry-After as a whole number of seconds. It reports
+// false for a missing, negative or unparseable value, and for the date form, which the API
+// does not send.
+func retryAfterSeconds(httpResp *http.Response) (int, bool) {
+	seconds, err := strconv.Atoi(strings.TrimSpace(httpResp.Header.Get("Retry-After")))
+	if err != nil || seconds < 0 {
+		return 0, false
+	}
+	return seconds, true
 }
 
 // The status wait's timings. Variables rather than constants only so a test can shrink them;

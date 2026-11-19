@@ -1079,9 +1079,6 @@ func TestRetryAfterStaysWithinTheRetryBudget(t *testing.T) {
 	}
 }
 
-// Two retries at the floored one-second wait, so this test really does sleep for about that
-// long: the budget and the interval are consts, so there is nothing to shorten. Making them
-// injectable is the outstanding half of F18 and needs helpers.go.
 // shrinkRetryTimings makes the helper's waits negligible for a test that exercises the retry
 // loop rather than the durations it waits. Restored afterwards; these tests do not run in
 // parallel, so the override cannot leak into another one.
@@ -1171,6 +1168,30 @@ func TestWithRetryOnTransientStopsWhenTheWaitCannotFitTheBudget(t *testing.T) {
 		t.Errorf("called %d times, want 1", calls)
 	}
 	if slept := time.Since(started); slept > time.Second {
+		t.Errorf("waited %s before giving up, want no wait at all", slept)
+	}
+}
+
+// retryAfter falls back to the fixed interval for a Retry-After beyond the budget, which would
+// retry at that interval until the budget ran out. The server has said no retry inside the
+// budget can succeed, so the first response is returned.
+func TestWithRetryOnTransientStopsWhenRetryAfterExceedsTheBudget(t *testing.T) {
+	shrinkRetryTimings(t)
+	calls := 0
+	started := time.Now()
+
+	_, err := withRetryOnTransient(t.Context(), func() (*string, *http.Response, error) {
+		calls++
+		return nil, rateLimited("86400"), errors.New("too many requests")
+	})
+
+	if err == nil {
+		t.Fatal("a Retry-After beyond the budget must return the error")
+	}
+	if calls != 1 {
+		t.Errorf("called %d times, want 1", calls)
+	}
+	if slept := time.Since(started); slept > 500*time.Millisecond {
 		t.Errorf("waited %s before giving up, want no wait at all", slept)
 	}
 }
