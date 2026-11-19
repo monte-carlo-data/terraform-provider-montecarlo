@@ -163,7 +163,12 @@ var (
 //
 // Every error comes back with the latest value the wait holds: the failed read for a failed
 // status, otherwise the last successful read, or first if no read succeeded. The caller can
-// record it in state, so a resource that exists is never lost to a failed wait.
+// record it in state, so a resource that exists is never lost to a failed wait. That value is
+// nil only when first was nil and no read succeeded.
+//
+// first can be nil, for a create that returned no value: status is never called with it, the
+// immediate check is skipped and the wait goes straight to polling. A read that succeeds with a
+// nil value ends the wait at once with an error, and the nil is not taken as the latest value.
 //
 // The generated code calls this for operations the spec marks as settling asynchronously.
 func waitForStatus[T any](
@@ -180,12 +185,17 @@ func waitForStatus[T any](
 	wait := statusPollInterval
 	var retriedErr error
 	for {
-		value, detail := status(latest)
-		if slices.Contains(ready, value) {
-			return latest, nil
-		}
-		if slices.Contains(failed, value) {
-			return latest, settledErr(value, detail)
+		// status is never handed a nil: a nil first is not checked, and the wait polls for the
+		// first real value. Until then the last status is empty.
+		var value, detail string
+		if latest != nil {
+			value, detail = status(latest)
+			if slices.Contains(ready, value) {
+				return latest, nil
+			}
+			if slices.Contains(failed, value) {
+				return latest, settledErr(value, detail)
+			}
 		}
 		// Only a deadline that has already passed ends the wait. A sleep that would overshoot it
 		// is shortened to the time left below, so the resource is read once more at the deadline
@@ -225,6 +235,9 @@ func waitForStatus[T any](
 				wait = max(time.Duration(seconds)*time.Second, retryAfterFloor)
 			}
 			continue
+		}
+		if out == nil {
+			return latest, errors.New("reading the resource returned no value")
 		}
 		latest = out
 		retriedErr = nil

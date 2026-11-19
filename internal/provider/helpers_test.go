@@ -1471,6 +1471,75 @@ func TestWaitForStatusPollsUntilTheStatusIsReady(t *testing.T) {
 	}
 }
 
+// nilGuardedStatus is a status closure that reports a nil value through t instead of
+// dereferencing it, the way generated code would, so a nil reaching it fails the test with a
+// clear message rather than panicking the whole test binary.
+func nilGuardedStatus(t *testing.T, sawNil *bool) func(*polled) (string, string) {
+	t.Helper()
+	return func(p *polled) (string, string) {
+		if p == nil {
+			*sawNil = true
+			t.Errorf("status was called with a nil value")
+			return "", ""
+		}
+		return polledStatus(p)
+	}
+}
+
+// A create can return no value. The wait must not hand that nil to the caller's status closure,
+// which dereferences it; it skips the immediate check and polls for the first real value.
+func TestWaitForStatusPollsWithoutCheckingANilFirst(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	read, reads := scriptedRead(readResult{status: "READY"})
+	sawNil := false
+
+	got, err := waitForStatus(
+		t.Context(), nil, nilGuardedStatus(t, &sawNil), read,
+		[]string{"READY"}, []string{"FAILED"}, 60_000,
+	)
+
+	if err != nil {
+		t.Fatalf("returned %v", err)
+	}
+	if got == nil || got.status != "READY" || got.read != 1 {
+		t.Errorf("got %+v, want the READY value from read 1", got)
+	}
+	if sawNil || *reads != 1 {
+		t.Errorf("status saw a nil: %t; reads: %d, want no nil and 1 read", sawNil, *reads)
+	}
+}
+
+// A read that succeeds without a value leaves nothing to check, so it ends the wait with an
+// error instead of reaching the status closure, and the caller keeps the latest value held.
+func TestWaitForStatusEndsWithAnErrorWhenAReadSucceedsWithNoValue(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	first := provisioning()
+	reads := 0
+	read := func() (*polled, *http.Response, error) {
+		reads++
+		return nil, &http.Response{StatusCode: http.StatusOK}, nil
+	}
+	sawNil := false
+
+	got, err := waitForStatus(
+		t.Context(), first, nilGuardedStatus(t, &sawNil), read,
+		[]string{"READY"}, []string{"FAILED"}, 50,
+	)
+
+	if err == nil {
+		t.Error("a read with no value must end the wait with an error")
+	}
+	if got != first {
+		t.Errorf("got %+v, want first, the latest non-nil value held", got)
+	}
+	if sawNil {
+		t.Error("status was handed the nil value from the read")
+	}
+	if reads != 1 {
+		t.Errorf("made %d reads, want the wait to end after 1", reads)
+	}
+}
+
 // The caller reports the error through apiErr, which passes a plain error's text through, so
 // the detail has to be in that text for the practitioner to see why the resource failed.
 func TestWaitForStatusReturnsAFailedReadWithAnErrorCarryingItsDetail(t *testing.T) {
