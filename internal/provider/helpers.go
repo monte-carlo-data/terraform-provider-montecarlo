@@ -151,7 +151,8 @@ var (
 // Some resources answer a create before they are usable and settle later. first is the value
 // the create returned; if it is already ready, waitForStatus returns it without reading. A
 // status in neither list is still settling, so the wait goes on until timeoutSeconds have
-// passed. A failed status is an error carrying the status detail. A read answering 503 or 429
+// passed; the last sleep is shortened to the time left, and one final read at the deadline
+// decides between success and the timeout. A failed status is an error carrying the status detail. A read answering 503 or 429
 // is retried; any other read failure ends the wait with that error.
 //
 // A retried read waits for its Retry-After, floored at retryAfterFloor, however long that is
@@ -186,8 +187,11 @@ func waitForStatus[T any](
 		if slices.Contains(failed, value) {
 			return latest, settledErr(value, detail)
 		}
-		// Waiting past the deadline would only delay the same timeout.
-		if wait >= time.Until(deadline) {
+		// Only a deadline that has already passed ends the wait. A sleep that would overshoot it
+		// is shortened to the time left below, so the resource is read once more at the deadline
+		// instead of being reported as timed out unchecked.
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
 			if retriedErr != nil {
 				return latest, fmt.Errorf(
 					"timed out after %d seconds waiting for status %s; the last status was %q; the last read failed: %w",
@@ -202,7 +206,7 @@ func waitForStatus[T any](
 		select {
 		case <-ctx.Done():
 			return latest, ctx.Err()
-		case <-time.After(wait):
+		case <-time.After(min(wait, remaining)):
 		}
 
 		out, httpResp, err := read()

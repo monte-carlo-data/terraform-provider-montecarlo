@@ -1507,6 +1507,74 @@ func TestWaitForStatusTimeoutNamesTheTimeout(t *testing.T) {
 	}
 }
 
+// A timeout shorter than the poll interval still gets one read, at the deadline. Returning the
+// timeout before the first sleep would report a resource that is ready as timed out unchecked.
+func TestWaitForStatusReadsOnceAtTheDeadlineWhenTheTimeoutIsShorterThanThePollInterval(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	statusPollInterval = time.Second
+	read, reads := scriptedRead(readResult{status: "READY"})
+	started := time.Now()
+
+	got, err := waitWith(t.Context(), provisioning(), read, 50)
+
+	elapsed := time.Since(started)
+	if err != nil {
+		t.Fatalf("returned %v, want the resource that is ready at the deadline", err)
+	}
+	if got == nil || got.read != 1 || *reads != 1 {
+		t.Errorf("got %+v after %d reads, want read 1 after 1", got, *reads)
+	}
+	if elapsed < 40*time.Millisecond || elapsed > 500*time.Millisecond {
+		t.Errorf("returned after %s, want about the 50ms deadline, not the one-second poll interval", elapsed)
+	}
+}
+
+// The last sleep is cut to the time left rather than skipped, so a status that settles during the
+// final stretch is seen: the poll interval overshoots the deadline, yet the read at the deadline
+// finds the resource ready.
+func TestWaitForStatusShortensTheLastSleepToTheDeadlineAndReadsThen(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	statusPollInterval = 200 * time.Millisecond
+	read, reads := scriptedRead(
+		readResult{status: "PROVISIONING"},
+		readResult{status: "READY"},
+	)
+
+	got, err := waitWith(t.Context(), provisioning(), read, 300)
+
+	if err != nil {
+		t.Fatalf("returned %v, want the read at the deadline to find the resource ready", err)
+	}
+	if got == nil || got.read != 2 || *reads != 2 {
+		t.Errorf("got %+v after %d reads, want read 2 after 2", got, *reads)
+	}
+}
+
+// A wait that never settles keeps the deadline it names: the timeout comes only once the full
+// timeout has passed and a final read at the deadline has still not found the resource settled.
+func TestWaitForStatusTimesOutOnlyAfterTheFullTimeoutAndAFinalRead(t *testing.T) {
+	shrinkStatusWaitTimings(t)
+	statusPollInterval = 200 * time.Millisecond
+	read, reads := scriptedRead(readResult{status: "PROVISIONING"})
+	started := time.Now()
+
+	_, err := waitWith(t.Context(), provisioning(), read, 300)
+
+	elapsed := time.Since(started)
+	if err == nil {
+		t.Fatal("a wait that never settles must time out")
+	}
+	if msg := apiErr(err); !strings.Contains(msg, "timed out after 300 seconds") {
+		t.Errorf("error reads %q, want it to name the 300-second timeout", msg)
+	}
+	if *reads < 2 {
+		t.Errorf("read %d times, want a read after the poll interval and a final one at the deadline", *reads)
+	}
+	if elapsed < 300*time.Millisecond {
+		t.Errorf("timed out after %s, want no earlier than the 300ms timeout it names", elapsed)
+	}
+}
+
 // Terraform relies on cancellation to honour Ctrl-C and per-operation timeouts. The poll
 // interval is left at its real length, so only the cancelled context can end the wait.
 func TestWaitForStatusStopsWhenTheContextIsCancelled(t *testing.T) {
