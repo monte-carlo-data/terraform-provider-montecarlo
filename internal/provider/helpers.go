@@ -157,12 +157,11 @@ var (
 // detail. A read answering 503 or 429 is retried; any other read failure ends the wait with that
 // error.
 //
-// A retried read waits for its Retry-After, floored at retryAfterFloor, however long that is
-// against the retry helper's budget: only this wait's own deadline bounds it. A Retry-After that
-// cannot fit what is left of the deadline ends the wait at once with the read's own error. With
-// no usable Retry-After the wait retries after the fixed retry interval, and if it then times
-// out, the timeout error names the last retried read's failure as text, not as a wrapped error,
-// so the timeout and the last status stay readable when it is reported through apiErr.
+// A retried read waits for its Retry-After, floored at retryAfterFloor, or for the fixed retry
+// interval when it has none; only this wait's own deadline bounds it. A Retry-After that cannot
+// fit the time left ends the wait at once. A retried read at the deadline, with no time left, is
+// a timeout whatever its Retry-After. Both errors name the last status and the read's failure as
+// text, not as a wrapped error, so they stay readable when reported through apiErr.
 //
 // Every error comes back with the latest value the wait holds: the failed read for a failed
 // status, otherwise the last successful read, or first if no read succeeded. The caller can
@@ -229,11 +228,17 @@ func waitForStatus[T any](
 			}
 			retriedErr = err
 			wait = transientRetryInterval
-			if seconds, ok := retryAfterSeconds(httpResp); ok {
+			// A deadline that has passed is left to the timeout at the top of the loop, whatever
+			// Retry-After says.
+			left := time.Until(deadline)
+			if seconds, ok := retryAfterSeconds(httpResp); ok && left > 0 {
 				// The wait's own deadline bounds Retry-After, not the retry helper's budget. Compare
 				// whole seconds before converting, so a huge value cannot overflow time.Duration.
-				if float64(seconds) > time.Until(deadline).Seconds() {
-					return latest, err
+				if float64(seconds) > left.Seconds() {
+					return latest, fmt.Errorf(
+						"stopped waiting for status %s: retrying the read would outlast the %d-second timeout; the last status was %q; the last read failed: %s",
+						strings.Join(ready, " or "), timeoutSeconds, value, apiErr(err),
+					)
 				}
 				wait = max(time.Duration(seconds)*time.Second, retryAfterFloor)
 			}
