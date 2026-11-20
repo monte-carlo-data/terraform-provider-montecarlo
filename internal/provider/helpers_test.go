@@ -1706,16 +1706,16 @@ func TestWaitForStatusRetriesARateLimitedOrUnavailableRead(t *testing.T) {
 	}
 }
 
-// A Retry-After of one second cannot fit the 50 milliseconds the wait has, so the wait ends at
+// A Retry-After of one second cannot fit the 400 milliseconds the wait has, so the wait ends at
 // once. Polling at the millisecond interval instead would read again.
 func TestWaitForStatusHonoursRetryAfterOnARetriedRead(t *testing.T) {
 	shrinkStatusWaitTimings(t)
 	read, reads := scriptedRead(readResult{resp: rateLimited("1"), err: errors.New("too many requests")})
 	started := time.Now()
 
-	got, err := waitWith(t.Context(), provisioning(), read, 50)
+	got, err := waitWith(t.Context(), provisioning(), read, 400)
 
-	if err == nil || !strings.Contains(apiErr(err), "retrying the read would outlast the 50-second timeout") {
+	if err == nil || !strings.Contains(apiErr(err), "retrying the read would outlast the 400-second timeout") {
 		t.Fatalf("returned %v, want the wait to stop because the retry cannot fit", err)
 	}
 	if got == nil {
