@@ -100,8 +100,8 @@ func ConnectionDataSourceSchema(ctx context.Context) schema.Schema {
 			},
 			"etl_container_id": schema.StringAttribute{
 				Computed:            true,
-				Description:         "The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI dataflows, and it changes when that is turned on or off. Null otherwise.",
-				MarkdownDescription: "The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI dataflows, and it changes when that is turned on or off. Null otherwise.",
+				Description:         "The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI ETL, and it changes when that is turned on or off. Null otherwise.",
+				MarkdownDescription: "The ETL container the connection belongs to. Fixed once created for a connection on an ETL container. A warehouse or BI connection has one while it collects ETL jobs through a container of its own, such as Snowflake Tasks, a Databricks metastore or Power BI ETL, and it changes when that is turned on or off. Null otherwise.",
 			},
 			"etl_container_name": schema.StringAttribute{
 				Computed:            true,
