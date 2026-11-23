@@ -191,9 +191,11 @@ func TestADeploymentThatFailsIsAnErrorAndStaysInState(t *testing.T) {
 }
 
 func TestADeploymentThatNeverSettlesTimesOutAndStaysInState(t *testing.T) {
+	// The reads carry a detail the create does not, so state shows which one it holds.
+	const detail = "Waiting for capacity."
 	api := &deploymentAPI{
 		created: deploymentBody("PROVISIONING", ""),
-		reads:   []string{deploymentBody("PROVISIONING", "")},
+		reads:   []string{deploymentBody("PROVISIONING", detail)},
 	}
 
 	// The create's timeout is 1800 seconds, so this one lasts 18ms.
@@ -214,6 +216,9 @@ func TestADeploymentThatNeverSettlesTimesOutAndStaysInState(t *testing.T) {
 	}
 	if status := stateString(t, created.State, path.Root("status")); status.ValueString() != "PROVISIONING" {
 		t.Errorf("state holds status %s, want PROVISIONING", status)
+	}
+	if got := stateString(t, created.State, path.Root("status_detail")); got.ValueString() != detail {
+		t.Errorf("state holds status_detail %s, want the last read's %q", got, detail)
 	}
 }
 
@@ -236,7 +241,11 @@ func TestADeploymentWaitThatTimesOutOnUnavailableReadsSaysBoth(t *testing.T) {
 	if !strings.Contains(msg, "Service Unavailable") {
 		t.Errorf("error reads %q, want it to name the last read's failure", msg)
 	}
+	// No read succeeded, so state keeps the deployment as the create returned it.
 	if id := stateString(t, created.State, path.Root("id")); id.ValueString() != waitingDeploymentID {
 		t.Errorf("state holds id %s, want %s", id, waitingDeploymentID)
+	}
+	if status := stateString(t, created.State, path.Root("status")); status.ValueString() != "PROVISIONING" {
+		t.Errorf("state holds status %s, want PROVISIONING", status)
 	}
 }
