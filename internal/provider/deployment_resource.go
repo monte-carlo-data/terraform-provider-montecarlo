@@ -82,7 +82,30 @@ func (r *deploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("Create deployment failed", apiErr(err))
 		return
 	}
+	// Waits: the spec marks this operation x-mc-wait-for-status. State holds the create
+	// response first, so a wait that fails leaves the resource tainted. After the wait, state
+	// holds the latest response it returns, a failed read included.
 	resp.Diagnostics.Append(resp.State.Set(ctx, deploymentToModel(out))...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	final, err := waitForStatus(ctx, out,
+		func(o *sdk.DeploymentOut) (string, string) {
+			return string(o.GetStatus()), o.GetStatusDetail()
+		},
+		func() (*sdk.DeploymentOut, *http.Response, error) {
+			return r.clients.api.DeploymentsAPI.GetDeployment(ctx, out.GetId()).Execute()
+		},
+		[]string{"READY"},
+		[]string{"FAILED"},
+		1800,
+	)
+	if final != nil {
+		resp.Diagnostics.Append(resp.State.Set(ctx, deploymentToModel(final))...)
+	}
+	if err != nil {
+		resp.Diagnostics.AddError("Create deployment failed", apiErr(err))
+	}
 }
 
 func (r *deploymentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
